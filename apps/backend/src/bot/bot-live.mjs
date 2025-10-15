@@ -33,8 +33,8 @@ const MIN_CONSENSUS = 2;
 
 // ✅ Service Role Key para ignorar RLS
 const supabase = createClient(
-  'https://vecofrvxrepogtigmeyj.supabase.co',
-  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZlY29mcnZ4cmVwb2d0aWdtZXlqIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc1OTI1NzQ1NSwiZXhwIjoyMDc0ODMzNDU1fQ.XQ57yvXp8mJc4ZE_cYnailskaPDFAhUSaUHNDbRZaOc'
+  process.env.SUPABASE_URL || 'https://vecofrvxrepogtigmeyj.supabase.co',
+  process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SERVICE_KEY
 );
 
 
