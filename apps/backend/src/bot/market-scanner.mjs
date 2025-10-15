@@ -1,17 +1,14 @@
-// src/scanner/market-scanner.mjs
+// Market Scanner - Real-time market analysis using Aggressive Hybrid Strategy
 import { ClientSdk, SsidAuthMethod } from '@quadcode-tech/client-sdk-js';
 import { createClient } from '@supabase/supabase-js';
-import { calculateRSI } from '../bot/indicators/rsi.mjs';
-import { calculateMACD } from '../bot/indicators/macd.mjs';
-import { calculateBollinger } from '../bot/indicators/bollinger.mjs';
-import { analyzeHybrid } from '../bot/strategies/strategy-hybrid.mjs';
-// ✅ NOVA IMPORTAÇÃO: Lista fixa de ativos (140 ativos oficiais)
-import { getAvailableAssets, resolveAssetById, getAssetName } from '../constants/fixed-assets.mjs';
+import { analyzeAggressive } from './strategies/strategy-aggressive.mjs';
+import { getAvailableAssets, getAssetName } from '../constants/fixed-assets.mjs';
+import ssidManager from '../services/ssid-manager.mjs';
 
-const SSID = "128a3cf5b3857595e14391d79230a42s";
 const TIMEFRAMES = [10, 30, 60, 180, 300]; // ✅ 10s, 30s, 1min, 3min, 5min
-const SCAN_INTERVAL = 10000;
-const MIN_CONSENSUS = 2;
+const SCAN_INTERVAL = 10000; // 10 seconds
+const AVALON_WS_URL = process.env.AVALON_WS_URL || 'wss://ws.trade.avalonbroker.com/echo/websocket';
+const AVALON_API_HOST = process.env.AVALON_API_HOST || 'https://trade.avalonbroker.com';
 
 const supabase = createClient(
   process.env.SUPABASE_URL || 'https://vecofrvxrepogtigmeyj.supabase.co',
@@ -24,69 +21,60 @@ class MarketScanner {
     this.blitz = null;
     this.candlesService = null;
     this.signalsCount = 0;
+    this.systemSSID = null;
   }
 
   async connect() {
-    this.sdk = await ClientSdk.create(
-      'wss://ws.trade.avalonbroker.com/echo/websocket',
-      82,
-      new SsidAuthMethod(SSID),
-      { host: 'https://trade.avalonbroker.com' }
-    );
-    this.blitz = await this.sdk.blitzOptions();
-    this.candlesService = await this.sdk.candles();
-    console.log('✅ Conectado ao Avalon\n');
-  }
+    console.log('🔐 Market Scanner conectando ao Avalon...');
 
-  analyzeBalanced(candlesFormatted) {
-    if (candlesFormatted.length < 35) return null;
+    // ✅ Use system SSID from ssidManager
+    this.systemSSID = ssidManager.getSystemSSID();
 
-    try {
-      const rsi = calculateRSI(candlesFormatted);
-      const macd = calculateMACD(candlesFormatted);
-      const bb = calculateBollinger(candlesFormatted);
-
-      const signals = [];
-      if (rsi.signal !== 'NEUTRO') signals.push(rsi.signal);
-      if (macd.trend !== 'NEUTRO') signals.push(macd.trend);
-      if (bb.signal !== 'NEUTRO' && bb.signal !== 'SQUEEZE') signals.push(bb.signal);
-
-      const callCount = signals.filter(s => s === 'CALL').length;
-      const putCount = signals.filter(s => s === 'PUT').length;
-
-      if (callCount >= MIN_CONSENSUS) {
-        return { consensus: 'CALL', strength: callCount * 25 };
-      } else if (putCount >= MIN_CONSENSUS) {
-        return { consensus: 'PUT', strength: putCount * 25 };
-      }
-    } catch (err) {
-      return null;
+    if (!this.systemSSID) {
+      console.log('⏳ Aguardando System SSID...');
+      // Wait for system SSID to be initialized
+      await new Promise(resolve => setTimeout(resolve, 5000));
+      this.systemSSID = ssidManager.getSystemSSID();
     }
 
-    return null;
+    if (!this.systemSSID) {
+      throw new Error('System SSID not available. Cannot connect to Avalon.');
+    }
+
+    console.log(`✅ Using System SSID: ${this.systemSSID.substring(0, 15)}...`);
+
+    this.sdk = await ClientSdk.create(
+      AVALON_WS_URL,
+      parseInt(ssidManager.AVALON_SYSTEM_USER_ID),
+      new SsidAuthMethod(this.systemSSID),
+      { host: AVALON_API_HOST }
+    );
+
+    this.blitz = await this.sdk.blitzOptions();
+    this.candlesService = await this.sdk.candles();
+    console.log('✅ Market Scanner conectado ao Avalon\n');
   }
 
   async scanLoop() {
     console.log('🔄 Scanner tempo real iniciado (scan a cada 10s)\n');
-    console.log('📊 Monitorando: 140 ativos × 5 timeframes = 700 combinações (Estratégia Híbrida)\n');
+    console.log('📊 Monitorando: 49 ativos × 5 timeframes = 245 combinações (Estratégia Híbrida Agressiva)\n');
 
     setInterval(async () => {
       const startTime = Date.now();
       let analyzed = 0;
       let signalsFound = 0;
 
-      // ✅ MUDANÇA: Usar lista fixa ao invés de blitz.getActives()
+      // ✅ Get fixed assets list
       const fixedAssets = getAvailableAssets();
 
-      // ✅ Obter ativos disponíveis do SDK apenas para validação
+      // ✅ Get available assets from SDK for validation
       const availableFromSDK = this.blitz.getActives();
       const availableIds = new Set(availableFromSDK.map(a => a.id));
 
-      // ✅ Filtrar apenas ativos que estão disponíveis no SDK agora
+      // ✅ Filter only assets that are currently available
       const actives = fixedAssets
         .filter(fixedAsset => availableIds.has(fixedAsset.id))
         .map(fixedAsset => {
-          // Encontrar o objeto SDK correspondente para ter acesso aos métodos
           return availableFromSDK.find(sdkActive => sdkActive.id === fixedAsset.id);
         })
         .filter(active => active !== undefined);
@@ -107,20 +95,21 @@ class MarketScanner {
               timestamp: c.from
             }));
 
-            // ✅ Use ONLY hybrid strategy (combines all 4 signals with weighted voting)
+            // ✅ Use ONLY aggressive hybrid strategy (4 advisors)
             analyzed++;
-            const result = analyzeHybrid(candlesFormatted);
+            const result = analyzeAggressive(candlesFormatted);
 
+            // Aggressive strategy ALWAYS returns a signal
             if (result?.consensus && result.consensus !== 'NEUTRAL') {
               signalsFound++;
-              await this.registrarSinalSimulado(active, timeframe, result.consensus, candles[candles.length - 1]);
+              await this.registrarSinalSimulado(active, timeframe, result.consensus, candles[candles.length - 1], result);
 
-              console.log(`✅ ${active.ticker || active.id} | ${timeframe}s | Híbrida → ${result.consensus} (${result.confidence}%)`);
+              console.log(`✅ ${active.ticker || active.id} | ${timeframe}s | ${result.consensus} (${result.confidence}%)`);
             }
 
-            await new Promise(r => setTimeout(r, 50));
+            await new Promise(r => setTimeout(r, 50)); // Rate limiting
           } catch (err) {
-            // Silencioso
+            // Silent - too many assets to log every error
           }
         }
       }
@@ -137,14 +126,12 @@ class MarketScanner {
     }, SCAN_INTERVAL);
   }
 
-  async registrarSinalSimulado(active, timeframe, direction, lastCandle) {
+  async registrarSinalSimulado(active, timeframe, direction, lastCandle, strategyResult) {
     const signalTime = new Date();
     const signalPrice = parseFloat(lastCandle.close);
-
-    // ✅ MUDANÇA: Usar getAssetName da lista fixa para nome consistente
     const ativoNome = getAssetName(active.id);
 
-    // ✅ Get the inserted record ID for reliable UPDATE
+    // ✅ Save detailed strategy information
     const { data, error } = await supabase.from('strategy_trades').insert({
       active_id: active.id.toString(),
       ativo_nome: ativoNome,
@@ -152,7 +139,11 @@ class MarketScanner {
       signal_timestamp: signalTime.toISOString(),
       signal_direction: direction,
       signal_price: signalPrice,
-      result: 'PENDING'
+      result: 'PENDING',
+      strategy_name: 'aggressive-hybrid',
+      confidence: strategyResult.confidence,
+      advisor_scores: JSON.stringify(strategyResult.scores || {}),
+      advisor_details: JSON.stringify(strategyResult.advisors || [])
     }).select('id').single();
 
     if (error || !data) {
@@ -164,9 +155,7 @@ class MarketScanner {
     const delay = timeframe * 1000 + 2000;
 
     // ✅ Schedule verification using unique ID
-    console.log(`⏰ Agendando verificação do trade ${tradeId.substring(0, 8)} em ${delay}ms`);
     setTimeout(async () => {
-      console.log(`🔍 Verificando resultado do trade ${tradeId.substring(0, 8)}...`);
       await this.verificarResultado(tradeId, active.id, timeframe, signalPrice, direction);
     }, delay);
   }
@@ -183,7 +172,7 @@ class MarketScanner {
       const isWin = (direction === 'CALL' && resultPrice > signalPrice) ||
                     (direction === 'PUT' && resultPrice < signalPrice);
 
-      // ✅ Update by unique ID - much more reliable
+      // ✅ Update by unique ID
       const { error } = await supabase
         .from('strategy_trades')
         .update({
@@ -206,12 +195,11 @@ class MarketScanner {
 
   async recuperarTradesPendentes() {
     try {
-      // ✅ Find PENDING trades older than their timeframe + grace period
       const { data: pendingTrades, error } = await supabase
         .from('strategy_trades')
         .select('*')
         .eq('result', 'PENDING')
-        .lt('signal_timestamp', new Date(Date.now() - 15 * 1000).toISOString()) // Older than 15 seconds
+        .lt('signal_timestamp', new Date(Date.now() - 15 * 1000).toISOString())
         .limit(50);
 
       if (error || !pendingTrades || pendingTrades.length === 0) return;
@@ -221,7 +209,6 @@ class MarketScanner {
       for (const trade of pendingTrades) {
         const timeSinceSignal = Date.now() - new Date(trade.signal_timestamp).getTime();
 
-        // Only process if enough time has passed for this timeframe
         if (timeSinceSignal >= (trade.timeframe * 1000 + 2000)) {
           await this.verificarResultado(
             trade.id,
