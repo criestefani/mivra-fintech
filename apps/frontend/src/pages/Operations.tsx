@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
-import { supabase } from "@/shared/services/supabase/client";
+import { supabase } from "@/integrations/supabase/client";
 import { User } from "@supabase/supabase-js";
 import { DashboardHeader, Sidebar } from "@/features/dashboard";
 import { useBotStatus } from "@/features/bot-control";

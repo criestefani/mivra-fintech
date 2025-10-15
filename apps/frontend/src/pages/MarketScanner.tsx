@@ -3,7 +3,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { supabase } from '@/shared/services/supabase/client';
+import { supabase } from '@/integrations/supabase/client';
 import { User } from '@supabase/supabase-js';
 import { DashboardHeader, Sidebar } from '@/features/dashboard';
 import { useScannerSubscription, HeatmapGrid, ScannerFilters } from '@/features/market-scanner';

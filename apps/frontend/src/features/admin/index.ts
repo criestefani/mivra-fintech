@@ -1,6 +1,7 @@
 // Admin feature exports
 
 // Components
+export { AdminLayout } from './components/AdminLayout'
 export { AdminDashboard } from './components/AdminDashboard'
 export { AdminUsers } from './components/AdminUsers'
 export { AdminTrades } from './components/AdminTrades'

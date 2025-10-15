@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react'
 import { scannerAPI } from '@/shared/services/api/client'
-import { supabase } from '@/shared/services/supabase/client'
+import { supabase } from '@/integrations/supabase/client'
 import type { ScannerAsset } from '../types/scanner.types'
 
 interface UseScannerSubscriptionResult {
