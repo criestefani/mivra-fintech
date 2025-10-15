@@ -1,0 +1,8 @@
+{
+  "devDependencies": {
+    "shadcn": "^3.4.1"
+  },
+  "dependencies": {
+    "pg": "^8.16.3"
+  }
+}

@@ -1,0 +1,44 @@
+{
+	"info": {
+		"_postman_id": "f45f2ee2-e334-4bd2-a54a-45bff8c0f9db",
+		"name": "API QC - Share (Dúvidas API) - V1",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"_exporter_id": "25360631",
+		"_collection_link": "https://devplacebr.postman.co/workspace/Avalon~6762d290-cdd5-4de4-a0e9-c232e83ebc84/collection/25360631-f45f2ee2-e334-4bd2-a54a-45bff8c0f9db?action=share&source=collection_link&creator=25360631"
+	},
+	"item": [
+		{
+			"name": "/session",
+			"item": [
+				{
+					"name": "/session/:user_id",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [],
+						"url": {
+							"raw": "{{api_url}}/session/{{user_id}}",
+							"host": [
+								"{{api_url}}"
+							],
+							"path": [
+								"session",
+								"{{user_id}}"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		}
+	]
+}

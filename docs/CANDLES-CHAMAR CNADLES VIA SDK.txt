@@ -1,0 +1,78 @@
+export async function fetchInitialCandles(count = 200, activeId = 2270, candleSize = 60): Promise<Candle[]> {
+  if (!SDK_INSTANCE) return []
+
+  const maxCount = Math.min(Math.max(count, 1), 1000)
+
+  const instance = await SDK_INSTANCE.realTimeChartDataLayer(activeId, candleSize)
+  const nowSec = Math.floor(Date.now() / 1000)
+  const from = nowSec - maxCount * candleSize
+
+  const candles = await instance.fetchAllCandles(from)
+
+  const sorted = [...candles].sort((a, b) => a.to - b.to)
+
+  return sorted.slice(-maxCount)
+}
+
+export type Unsubscribe = () => void
+
+export const subscribeOnRealTimeChartDataLayer = async (
+  callback: (val: Candle) => void,
+  activeId = 2270,
+  candleSize = 60 // 1 minuto
+): Promise<Unsubscribe> => {
+  if (!SDK_INSTANCE) return () => {}
+
+  const instance = await SDK_INSTANCE.realTimeChartDataLayer(activeId, candleSize)
+
+  const handler = (lastCandle: Candle) => callback(lastCandle)
+
+  instance.subscribeOnLastCandleChanged(handler)
+
+  return () => {
+    try {
+      instance.unsubscribeOnLastCandleChanged(handler)
+    } catch {
+      //
+    }
+  }
+}
+
+
+fetchInitialCandles = Caso vá montar um gráfico, você carrega dados iniciais
+
+subscribeOnRealTimeChartDataLayer = Aqui, você se "inscreve" para receber as atualizações dos candles
+
+
+useEffect(() => {
+    let disposed = false
+    let unsubscribe: Unsubscribe | undefined
+    ;(async () => {
+      setCandles([])
+
+      const initial = await fetchInitialCandles(LOOKBACK, activeId, candleSize)
+      if (!disposed) setCandles(initial.slice(-MAX_BUFFER))
+
+      unsubscribe = await subscribeOnRealTimeChartDataLayer(
+        (c) => setCandles((prev) => upsert(prev, c)),
+        activeId,
+        candleSize
+      )
+
+      if (disposed && unsubscribe) unsubscribe()
+    })()
+
+    return () => {
+      disposed = true
+      unsubscribe?.()
+    }
+  }, [activeId, candleSize, upsert, avalonBroker?.session])
+
+
+ai aqui, é um exemplo de uma busca simples de alguns candles (pouco usado)
+
+  const candles = await SDK_INSTANCE.candles()
+    const candlesArr = await candles.getCandles(active, candleSize, {
+      count: 4,
+    })
+

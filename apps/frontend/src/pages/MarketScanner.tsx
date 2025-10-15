@@ -1,0 +1,188 @@
+// MarketScanner Component - Main scanner page with real-time heatmap
+// Displays market performance across assets and strategies with live updates
+
+import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { supabase } from '@/shared/services/supabase/client';
+import { User } from '@supabase/supabase-js';
+import { DashboardHeader, Sidebar } from '@/features/dashboard';
+import { useScannerSubscription, HeatmapGrid, ScannerFilters } from '@/features/market-scanner';
+import type { ScannerConfig, ScannerFilters as Filters } from '@/features/market-scanner';
+import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/shared/components/ui/card';
+import { Button } from '@/shared/components/ui/button';
+import { Loader2, RefreshCw, Activity, Zap } from 'lucide-react';
+
+export const MarketScanner: React.FC = () => {
+  const navigate = useNavigate();
+  const [user, setUser] = useState<User | null>(null);
+  const [authLoading, setAuthLoading] = useState(true);
+  const { assets, loading, error, lastUpdate, refresh } = useScannerSubscription();
+  const [filters, setFilters] = useState<Filters>({});
+  const [isRefreshing, setIsRefreshing] = useState(false);
+
+  // Auth check
+  useEffect(() => {
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((event, session) => {
+      setUser(session?.user ?? null);
+      if (!session) {
+        navigate('/auth');
+      }
+    });
+
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setUser(session?.user ?? null);
+      setAuthLoading(false);
+      if (!session) {
+        navigate('/auth');
+      }
+    });
+
+    return () => subscription.unsubscribe();
+  }, [navigate]);
+
+  const handleAssetClick = (config: ScannerConfig) => {
+    // Navigate to Operations with preset config
+    navigate('/', {
+      state: {
+        presetConfig: config,
+      },
+    });
+  };
+
+  const handleRefresh = async () => {
+    setIsRefreshing(true);
+    await refresh();
+    setTimeout(() => setIsRefreshing(false), 500);
+  };
+
+  // Auth loading state
+  if (authLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <div className="text-center space-y-4">
+          <div className="w-16 h-16 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto" />
+          <p className="text-muted-foreground">Loading...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!user) return null;
+
+  // Initial loading state
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-background pt-16">
+        <DashboardHeader user={user} />
+        <Sidebar />
+        <div className="lg:ml-64 container mx-auto px-4 py-6">
+          <div className="flex flex-col items-center justify-center min-h-[60vh] space-y-4">
+            <Loader2 className="w-12 h-12 animate-spin text-primary" />
+            <p className="text-muted-foreground text-lg">Loading Market Scanner...</p>
+            <p className="text-sm text-muted-foreground/60">
+              Establishing real-time connection
+            </p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Error state
+  if (error) {
+    return (
+      <div className="min-h-screen bg-background pt-16">
+        <DashboardHeader user={user} />
+        <Sidebar />
+        <div className="lg:ml-64 container mx-auto px-4 py-6">
+          <Card className="glass border-destructive">
+            <CardHeader>
+              <CardTitle className="text-destructive flex items-center gap-2">
+                <Activity className="w-5 h-5" />
+                Error Loading Scanner
+              </CardTitle>
+              <CardDescription className="text-destructive/80">{error}</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <Button onClick={handleRefresh} variant="outline" className="gap-2">
+                <RefreshCw className="w-4 h-4" />
+                Retry
+              </Button>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen bg-background pt-16">
+      <DashboardHeader user={user} />
+      <Sidebar />
+      <div className="lg:ml-64 container mx-auto px-4 py-6 space-y-6 pb-20">
+        {/* Header Card */}
+        <Card className="glass border-border shadow-card">
+          <CardHeader>
+            <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+              <div>
+                <CardTitle className="text-2xl md:text-3xl flex items-center gap-2">
+                  <Zap className="w-6 h-6 md:w-7 md:h-7 text-primary" />
+                  Market Scanner
+                </CardTitle>
+                <CardDescription className="mt-2">
+                  Real-time performance heatmap with hybrid strategy analysis
+                </CardDescription>
+                {lastUpdate && (
+                  <div className="text-xs text-muted-foreground/60 mt-1">
+                    Last update: {lastUpdate.toLocaleTimeString()}
+                  </div>
+                )}
+              </div>
+
+              <div className="flex items-center gap-2">
+                {/* Refresh button */}
+                <Button
+                  onClick={handleRefresh}
+                  variant="outline"
+                  size="sm"
+                  disabled={isRefreshing}
+                  className="gap-2"
+                >
+                  <RefreshCw className={`w-4 h-4 ${isRefreshing ? 'animate-spin' : ''}`} />
+                  <span className="hidden md:inline">Refresh</span>
+                </Button>
+
+                {/* Asset count */}
+                <div className="px-3 py-2 bg-primary/10 text-primary rounded-lg text-sm font-semibold">
+                  {assets.length} {assets.length === 1 ? 'Asset' : 'Assets'}
+                </div>
+              </div>
+            </div>
+          </CardHeader>
+
+          <CardContent>
+            <ScannerFilters filters={filters} onFiltersChange={setFilters} />
+          </CardContent>
+        </Card>
+
+        {/* Help text */}
+        <Card className="glass bg-primary/5 border-primary/20">
+          <CardContent className="pt-4">
+            <p className="text-sm text-muted-foreground">
+              <strong className="text-foreground">Tip:</strong> Click on any asset card to
+              navigate to Operations page with pre-configured settings for that asset and
+              timeframe.
+            </p>
+          </CardContent>
+        </Card>
+
+        {/* Heatmap Grid */}
+        <HeatmapGrid assets={assets} filters={filters} onAssetClick={handleAssetClick} />
+      </div>
+    </div>
+  );
+};
+
+export default MarketScanner;

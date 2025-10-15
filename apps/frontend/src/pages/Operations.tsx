@@ -1,0 +1,782 @@
+import React, { useEffect, useState } from "react";
+import { useNavigate, useLocation } from "react-router-dom";
+import { supabase } from "@/shared/services/supabase/client";
+import { User } from "@supabase/supabase-js";
+import { DashboardHeader, Sidebar } from "@/features/dashboard";
+import { useBotStatus } from "@/features/bot-control";
+import { useToast } from "@/shared/hooks/use-toast";
+import type { ScannerConfig } from "@/features/market-scanner";
+
+// ✅ Trading Components
+import {
+  OperationsHeader,
+  AutoModeConfig,
+  AutoModeRunning,
+  MetricsCards,
+  TradeHistory,
+  TradingChart,
+  type Trade
+} from "@/features/trading";
+
+// ✅ UI Components
+import { Card, CardContent } from "@/shared/components/ui/card";
+import { Button } from "@/shared/components/ui/button";
+import { Input } from "@/shared/components/ui/input";
+import { Label } from "@/shared/components/ui/label";
+import { cn } from "@/shared/utils/cn";
+
+// ✅ New Hook
+import { useBotSocket } from "@/shared/hooks/useBotSocket";
+
+interface TradeMarker {
+  time: number;
+  direction: "CALL" | "PUT";
+  result?: "WIN" | "LOSS";
+  pnl?: number;
+}
+
+interface PnlDataPoint {
+  time: string;
+  value: number;
+}
+
+const Operations = () => {
+  const navigate = useNavigate();
+  const location = useLocation();
+  const { toast } = useToast();
+  const [user, setUser] = useState<User | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+
+  // ✅ Bot Mode (with localStorage persistence)
+  const [botMode, setBotMode] = useState<"auto" | "manual">(() => {
+    const saved = localStorage.getItem('botMode');
+    return (saved === 'auto' || saved === 'manual') ? saved : 'auto';
+  });
+
+  // ✅ Auto Mode Config
+  const [selectedStrategy, setSelectedStrategy] = useState("balanced");
+  const [entryValue, setEntryValue] = useState(10);
+
+  // ✅ Leverage (Martingale) - OFF by default
+  const [leverageEnabled, setLeverageEnabled] = useState(false);
+  const [leverage, setLeverage] = useState(2);
+
+  // ✅ Safety Stop - OFF by default
+  const [safetyStopEnabled, setSafetyStopEnabled] = useState(false);
+  const [safetyStop, setSafetyStop] = useState(3);
+
+  // ✅ Daily Goal - OFF by default
+  const [dailyGoalEnabled, setDailyGoalEnabled] = useState(false);
+  const [dailyGoal, setDailyGoal] = useState(100);
+
+  // ✅ Manual Mode Config (with localStorage persistence)
+  const [category, setCategory] = useState<string>(() => {
+    return localStorage.getItem('selectedCategory') || 'forex';
+  });
+  const [asset, setAsset] = useState<string>(() => {
+    return localStorage.getItem('selectedAsset') || 'EURUSD-OTC'; // ✅ Fixed to match backend ticker format
+  });
+  const [timeframe, setTimeframe] = useState<string>(() => {
+    return localStorage.getItem('selectedTimeframe') || '60';
+  });
+  // ✅ manualStrategy removed - manual mode always uses hybrid strategy
+
+  // ✅ Real-time Data
+  const [pnlData, setPnlData] = useState<PnlDataPoint[]>([]);
+  const [trades, setTrades] = useState<Trade[]>([]);
+  const [tradeMarkers, setTradeMarkers] = useState<TradeMarker[]>([]);
+  const [metrics, setMetrics] = useState({
+    winRate: 0,
+    totalTrades: 0,
+    totalWins: 0,
+    totalLosses: 0,
+    pnl: 0
+  });
+
+  // ✅ WebSocket Hook
+  const { currentStatus, isConnected: wsConnected, onTradeCompleted, onPnlUpdate } = useBotSocket(user?.id);
+
+  // Bot control (multi-user)
+  const { botStatus, isConnected, isRunning, startBotRuntime, stopBotRuntime, loading: botLoading } = useBotStatus(user?.id);
+
+  // ✅ Realtime subscription status
+  const [realtimeStatus, setRealtimeStatus] = useState<'connected' | 'connecting' | 'error'>('connecting');
+  const [lastUpdateTime, setLastUpdateTime] = useState<Date | null>(null);
+
+  // ✅ Persist chart selections to localStorage
+  useEffect(() => {
+    localStorage.setItem('selectedCategory', category);
+    console.log('[Operations] Category saved to localStorage:', category);
+  }, [category]);
+
+  useEffect(() => {
+    localStorage.setItem('selectedAsset', asset);
+    console.log('[Operations] Asset saved to localStorage:', asset);
+  }, [asset]);
+
+  useEffect(() => {
+    localStorage.setItem('selectedTimeframe', timeframe);
+    console.log('[Operations] Timeframe saved to localStorage:', timeframe);
+  }, [timeframe]);
+
+  // ✅ Load today's trades from Supabase
+  const loadTodayTrades = async () => {
+    if (!user?.id) {
+      console.warn("Cannot load trades: user not authenticated");
+      return;
+    }
+
+    try {
+      // Get today's start (midnight)
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      const todayISO = today.toISOString();
+
+      const { data, error } = await supabase
+        .from("trade_history")
+        .select("*")
+        .eq("user_id", user.id)
+        .gte("data_abertura", todayISO) // Only trades from today
+        .order("data_abertura", { ascending: false }); // ✅ Most recent first
+
+      if (error) {
+        console.error("Error loading today's trades:", error);
+        return;
+      }
+
+      if (data && data.length > 0) {
+        console.log(`[Operations] Loaded ${data.length} trades from today`);
+
+        // Convert to Trade format
+        const formattedTrades: Trade[] = data.map(trade => ({
+          id: trade.id,
+          timestamp: trade.data_abertura,
+          asset: trade.ativo_nome || `ID-${trade.active_id}`,
+          direction: trade.direction.toUpperCase() as "CALL" | "PUT",
+          expiration: trade.expiration_seconds,
+          // ✅ Map status to result: 'open' = 'PENDING', otherwise use resultado
+          result: (!trade.resultado && trade.status === 'open') ? "PENDING" : (trade.resultado as "WIN" | "LOSS" | "PENDING"),
+          pnl: trade.pnl || 0
+        }));
+
+        setTrades(formattedTrades);
+
+        // Calculate cumulative PNL data for chart (oldest to newest)
+        let cumulativePnl = 0;
+        const pnlDataPoints: PnlDataPoint[] = [...formattedTrades]
+          .reverse() // ✅ Reverse for cumulative calc (oldest first)
+          .map(trade => {
+            cumulativePnl += trade.pnl;
+            return {
+              time: new Date(trade.timestamp).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }),
+              value: cumulativePnl
+            };
+          });
+
+        setPnlData(pnlDataPoints);
+      } else {
+        console.log('[Operations] No trades found for today');
+        setTrades([]);
+        setPnlData([{ time: new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }), value: 0 }]);
+      }
+    } catch (err) {
+      console.error("Unexpected error loading today's trades:", err);
+    }
+  };
+
+  // ✅ Helper function to determine category from asset name
+  const determineCategoryFromAsset = (assetName: string): string => {
+    const name = assetName.toUpperCase();
+
+    // Crypto patterns
+    if (
+      name.includes('BTC') || name.includes('ETH') || name.includes('COIN') ||
+      name.includes('USDT') || name.includes('DOGE') || name.includes('XRP') ||
+      name.includes('SOL') || name.includes('ADA') || name.includes('SHIB') ||
+      name.includes('TRON') || name.includes('LINK') || name.includes('PEPE')
+    ) {
+      return 'crypto';
+    }
+
+    // Stocks patterns
+    if (
+      name.includes('APPLE') || name.includes('AAPL') || name.includes('TESLA') ||
+      name.includes('MSFT') || name.includes('MICROSOFT') || name.includes('GOOGL') ||
+      name.includes('GOOGLE') || name.includes('AMZN') || name.includes('AMAZON') ||
+      name.includes('META') || name.includes('NVIDIA') || name.includes('INTEL') ||
+      name.includes('ALIBABA') || name.includes('NIKE') || name.includes('MCDON')
+    ) {
+      return 'stocks';
+    }
+
+    // Indices patterns
+    if (
+      name.includes('INDEX') || name.includes('DOW') || name.includes('NASDAQ') ||
+      name.includes('S&P') || name.includes('FTSE') || name.includes('DAX') ||
+      name.includes('NIKKEI') || name.includes('CAC') || name.includes('IBEX') ||
+      name.includes('HANG SENG') || name.includes('RUSSELL')
+    ) {
+      return 'indices';
+    }
+
+    // Commodities patterns
+    if (
+      name.includes('GOLD') || name.includes('XAU') || name.includes('SILVER') ||
+      name.includes('XAG') || name.includes('OIL') || name.includes('USO') ||
+      name.includes('UKO') || name.includes('NATURAL GAS')
+    ) {
+      return 'commodities';
+    }
+
+    // Default to forex if contains currency pairs
+    if (
+      name.includes('USD') || name.includes('EUR') || name.includes('GBP') ||
+      name.includes('JPY') || name.includes('CHF') || name.includes('AUD') ||
+      name.includes('CAD') || name.includes('NZD')
+    ) {
+      return 'forex';
+    }
+
+    // Final fallback
+    return 'forex';
+  };
+
+  // Handle preset config from Market Scanner
+  useEffect(() => {
+    const presetConfig = location.state?.presetConfig as ScannerConfig | undefined;
+
+    if (presetConfig) {
+      console.log('✅ [Operations] Applying preset config from Market Scanner:', presetConfig);
+
+      // ✅ Determine category from asset name
+      const determinedCategory = determineCategoryFromAsset(presetConfig.asset);
+
+      // ✅ Set MANUAL mode with scanner configuration
+      setBotMode('manual');
+      setCategory(determinedCategory);
+      setAsset(presetConfig.asset);
+      setTimeframe(presetConfig.timeframe.toString());
+
+      toast({
+        title: "Configuração do Scanner Aplicada",
+        description: `${presetConfig.asset} • ${presetConfig.timeframe}s • Modo Manual`,
+        duration: 5000,
+      });
+
+      console.log(`✅ [Operations] Manual mode configured: ${determinedCategory} → ${presetConfig.asset} → ${presetConfig.timeframe}s`);
+
+      // Clear location state
+      window.history.replaceState({}, document.title);
+    }
+  }, [location.state, toast]);
+
+  // Auth state management
+  useEffect(() => {
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((event, session) => {
+      setUser(session?.user ?? null);
+      if (!session) {
+        navigate("/auth");
+      }
+    });
+
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setUser(session?.user ?? null);
+      setIsLoading(false);
+      if (!session) {
+        navigate("/auth");
+      }
+    });
+
+    return () => subscription.unsubscribe();
+  }, [navigate]);
+
+  // ✅ Load trades from Supabase (same as History.tsx)
+  useEffect(() => {
+    if (!user?.id) return;
+
+    loadTodayTrades();
+  }, [user?.id]);
+
+  // ✅ Real-time subscription for trades (EXACTLY like History.tsx)
+  useEffect(() => {
+    if (!user?.id) return;
+
+    console.log('[Operations] Setting up real-time subscription for user:', user.id);
+    setRealtimeStatus('connecting');
+
+    const channel = supabase
+      .channel('operations-trade-realtime')
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'trade_history',
+          filter: `user_id=eq.${user.id}`
+        },
+        (payload) => {
+          console.log('[Operations] ✅ NEW TRADE via real-time:', payload);
+          setLastUpdateTime(new Date()); // ✅ Track update time
+          const newTrade = payload.new as any;
+
+          // Check if trade is from today
+          const tradeDate = new Date(newTrade.data_abertura);
+          const today = new Date();
+          const isToday = tradeDate.toDateString() === today.toDateString();
+
+          if (!isToday) {
+            console.log('[Operations] Trade not from today, ignoring');
+            return;
+          }
+
+          // Add to trades array (INSERT always means new trade with PENDING or null result)
+          const formattedTrade: Trade = {
+            id: newTrade.id,
+            timestamp: newTrade.data_abertura,
+            asset: newTrade.ativo_nome || `ID-${newTrade.active_id}`,
+            direction: newTrade.direction.toUpperCase() as "CALL" | "PUT",
+            expiration: newTrade.expiration_seconds,
+            result: "PENDING", // ✅ INSERTs are always PENDING initially
+            pnl: 0
+          };
+
+          console.log('[Operations] Adding new PENDING trade:', formattedTrade);
+          setTrades(prev => [formattedTrade, ...prev]);
+
+          // Initialize PNL data if empty
+          if (botMode === "auto" && pnlData.length === 1 && pnlData[0].value === 0) {
+            setPnlData([{
+              time: new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }),
+              value: 0
+            }]);
+          }
+        }
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'trade_history',
+          filter: `user_id=eq.${user.id}`
+        },
+        (payload) => {
+          console.log('[Operations] ✅ TRADE UPDATED via real-time:', payload);
+          setLastUpdateTime(new Date()); // ✅ Track update time
+          const updatedTrade = payload.new as any;
+
+          // Update trade in list
+          setTrades(prev =>
+            prev.map(trade =>
+              trade.id === updatedTrade.id
+                ? {
+                    ...trade,
+                    result: (updatedTrade.resultado || "PENDING") as "WIN" | "LOSS" | "PENDING",
+                    pnl: updatedTrade.pnl || 0
+                  }
+                : trade
+            )
+          );
+
+          // Update PNL chart if trade has result
+          if (botMode === "auto" && updatedTrade.resultado && updatedTrade.pnl !== null) {
+            setPnlData(prev => {
+              const lastValue = prev.length > 0 ? prev[prev.length - 1].value : 0;
+              const newValue = lastValue + (updatedTrade.pnl || 0);
+              return [...prev, {
+                time: new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }),
+                value: newValue
+              }];
+            });
+          }
+
+          // Add trade marker for manual mode chart
+          if (botMode === "manual" && updatedTrade.resultado) {
+            setTradeMarkers(prev => [...prev, {
+              time: Math.floor(new Date(updatedTrade.data_abertura).getTime() / 1000),
+              direction: updatedTrade.direction.toUpperCase() as "CALL" | "PUT",
+              result: updatedTrade.resultado as "WIN" | "LOSS",
+              pnl: updatedTrade.pnl || 0
+            }]);
+          }
+        }
+      )
+      .subscribe((status) => {
+        console.log('[Operations] Subscription status:', status);
+
+        // ✅ Update status state based on subscription result
+        if (status === 'SUBSCRIBED') {
+          setRealtimeStatus('connected');
+          console.log('✅ [Operations] Real-time subscription ACTIVE');
+        } else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT' || status === 'CLOSED') {
+          setRealtimeStatus('error');
+          console.error('❌ [Operations] Real-time subscription FAILED:', status);
+        }
+      });
+
+    return () => {
+      console.log('[Operations] Cleaning up real-time subscription');
+      supabase.removeChannel(channel);
+    };
+  }, [user?.id]); // ✅ Remove botMode dependency to prevent subscription recreation
+
+  // ✅ Polling backup mechanism - only when bot is running and realtime fails
+  useEffect(() => {
+    if (!user?.id || !isRunning || realtimeStatus === 'connected') return;
+
+    console.log('[Operations] 🔄 Activating polling backup (realtime not connected)');
+
+    const pollingInterval = setInterval(() => {
+      console.log('[Operations] 📡 Polling for trade updates...');
+      loadTodayTrades();
+    }, 5000); // Poll every 5 seconds when bot is running
+
+    return () => {
+      console.log('[Operations] Stopping polling backup');
+      clearInterval(pollingInterval);
+    };
+  }, [user?.id, isRunning, realtimeStatus]);
+
+  // ✅ Calculate metrics from trades (same as History.tsx)
+  useEffect(() => {
+    if (trades.length === 0) {
+      setMetrics({
+        winRate: 0,
+        totalTrades: 0,
+        totalWins: 0,
+        totalLosses: 0,
+        pnl: 0
+      });
+      return;
+    }
+
+    const wins = trades.filter(t => t.result === "WIN").length;
+    const losses = trades.filter(t => t.result === "LOSS").length;
+    const totalTrades = wins + losses;
+    const totalPnl = trades.reduce((sum, t) => sum + (t.pnl || 0), 0);
+    const winRate = totalTrades > 0 ? (wins / totalTrades) * 100 : 0;
+
+    setMetrics({
+      winRate: Number(winRate.toFixed(1)),
+      totalTrades,
+      totalWins: wins,
+      totalLosses: losses,
+      pnl: Number(totalPnl.toFixed(2))
+    });
+  }, [trades]);
+
+  // START BOT handler
+  const handleStartBot = async () => {
+    if (!isConnected) {
+      toast({
+        title: "Not Connected",
+        description: "Please connect to broker in Settings first",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Validations
+    if (entryValue <= 0) {
+      toast({
+        title: "Invalid Entry Value",
+        description: "Entry value must be greater than 0",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (botMode === "manual" && !asset) {
+      toast({
+        title: "No Asset Selected",
+        description: "Please select an asset for manual trading",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // ✅ Construct userConfig based on bot mode
+    let userConfig;
+
+    if (botMode === "manual") {
+      // Manual Mode: User controls specific asset + timeframe (always uses hybrid strategy)
+      userConfig = {
+        mode: 'manual',
+        asset: asset,
+        timeframe: parseInt(timeframe),
+        strategy: 'hybrid', // ✅ Manual mode ALWAYS uses hybrid strategy
+        amount: entryValue
+      };
+
+      console.log('🎮 [Operations] Starting MANUAL mode:', userConfig);
+    } else {
+      // Auto Mode: Bot chooses assets, user controls strategy
+      userConfig = {
+        mode: 'auto',
+        strategy: selectedStrategy,
+        maxTimeframe: 60, // Auto mode can use up to 60s timeframes
+        amount: entryValue,
+        // Optional: Pass other auto mode settings
+        leverage: leverage,
+        safetyStop: safetyStop,
+        dailyGoalEnabled: dailyGoalEnabled,
+        dailyGoal: dailyGoal
+      };
+
+      console.log('🤖 [Operations] Starting AUTO mode:', userConfig);
+    }
+
+    try {
+      // ✅ Pass userConfig to startBotRuntime
+      await startBotRuntime(user!.id, userConfig);
+
+      // Reset data when starting
+      if (botMode === "auto") {
+        setPnlData([{ time: new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }), value: 0 }]);
+      } else {
+        setTradeMarkers([]);
+      }
+    } catch (error) {
+      console.error("Failed to start bot:", error);
+      toast({
+        title: "Failed to Start Bot",
+        description: "An error occurred while starting the bot",
+        variant: "destructive",
+      });
+    }
+  };
+
+  // STOP BOT handler
+  const handleStopBot = async () => {
+    try {
+      await stopBotRuntime(user!.id);
+      toast({
+        title: "Bot Stopped",
+        description: "Trading bot has been stopped",
+      });
+    } catch (error) {
+      console.error("Failed to stop bot:", error);
+      toast({
+        title: "Failed to Stop Bot",
+        description: "An error occurred while stopping the bot",
+        variant: "destructive",
+      });
+    }
+  };
+
+  // Handle mode change (with localStorage persistence)
+  const handleModeChange = (mode: "auto" | "manual") => {
+    if (isRunning) {
+      toast({
+        title: "Bot is Running",
+        description: "Stop the bot before changing modes",
+        variant: "destructive",
+      });
+      return;
+    }
+    setBotMode(mode);
+    localStorage.setItem('botMode', mode); // ✅ Save to localStorage
+    console.log(`✅ [Operations] Mode changed to ${mode.toUpperCase()} and saved to localStorage`);
+  };
+
+  // Reset history
+  const handleResetHistory = async () => {
+    if (!user?.id) return;
+
+    try {
+      // ✅ Delete today's trades from Supabase
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      const todayISO = today.toISOString();
+
+      const { error } = await supabase
+        .from('trade_history')
+        .delete()
+        .eq('user_id', user.id)
+        .gte('data_abertura', todayISO);
+
+      if (error) {
+        console.error('[Operations] Error deleting trades:', error);
+        toast({
+          title: "Error",
+          description: "Failed to clear history",
+          variant: "destructive"
+        });
+        return;
+      }
+
+      // Clear local state
+      setTrades([]);
+      setPnlData([{ time: new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }), value: 0 }]);
+      setTradeMarkers([]);
+      setMetrics({
+        winRate: 0,
+        totalTrades: 0,
+        totalWins: 0,
+        totalLosses: 0,
+        pnl: 0
+      });
+
+      toast({
+        title: "History Reset",
+        description: "All trading history has been cleared",
+      });
+    } catch (err) {
+      console.error('[Operations] Unexpected error clearing history:', err);
+      toast({
+        title: "Error",
+        description: "Failed to clear history",
+        variant: "destructive"
+      });
+    }
+  };
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <div className="text-center space-y-4">
+          <div className="w-16 h-16 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto" />
+          <p className="text-muted-foreground">Carregando...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!user) return null;
+
+  return (
+    <div className="min-h-screen bg-background pt-16">
+      <DashboardHeader user={user} />
+      <Sidebar />
+
+      {/* Mobile-First Layout */}
+      <main className="lg:ml-64 container mx-auto px-4 py-6 space-y-6 animate-fade-in pb-20">
+
+        {/* ✅ NEW HEADER */}
+        <OperationsHeader
+          botMode={botMode}
+          onBotModeChange={handleModeChange}
+          isRunning={isRunning}
+          isConnected={isConnected}
+          isLoading={botLoading}
+          onStart={handleStartBot}
+          onStop={handleStopBot}
+        />
+
+        {/* ✅ MODE-SPECIFIC CONTENT */}
+        {botMode === "auto" ? (
+          // AUTO MODE
+          isRunning ? (
+            <AutoModeRunning
+              pnlData={pnlData}
+              currentStatus={currentStatus}
+              currentAsset={trades[0]?.asset}
+              currentAmount={trades[0]?.pnl ? Math.abs(trades[0].pnl) : undefined}
+            />
+          ) : (
+            <AutoModeConfig
+              selectedStrategy={selectedStrategy}
+              onStrategyChange={setSelectedStrategy}
+              entryValue={entryValue}
+              onEntryValueChange={setEntryValue}
+              // ✅ Leverage with toggle
+              leverageEnabled={leverageEnabled}
+              onLeverageEnabledChange={setLeverageEnabled}
+              leverage={leverage}
+              onLeverageChange={setLeverage}
+              // ✅ Safety Stop with toggle
+              safetyStopEnabled={safetyStopEnabled}
+              onSafetyStopEnabledChange={setSafetyStopEnabled}
+              safetyStop={safetyStop}
+              onSafetyStopChange={setSafetyStop}
+              // ✅ Daily Goal with toggle
+              dailyGoalEnabled={dailyGoalEnabled}
+              onDailyGoalEnabledChange={setDailyGoalEnabled}
+              dailyGoal={dailyGoal}
+              onDailyGoalChange={setDailyGoal}
+            />
+          )
+        ) : (
+          // MANUAL MODE
+          <>
+            <TradingChart
+              category={category}
+              asset={asset}
+              timeframe={timeframe}
+              onCategoryChange={setCategory}
+              onAssetChange={setAsset}
+              onTimeframeChange={setTimeframe}
+              tradeMarkers={tradeMarkers}
+              currentStatus={currentStatus}
+            />
+
+            {/* ✅ MANUAL MODE: Entry Value */}
+            <Card className="glass border-border">
+              <CardContent className="p-6">
+                <div className="space-y-4">
+                  <div>
+                    <Label htmlFor="manual-entry-value" className="text-base font-semibold">
+                      Valor de Entrada
+                    </Label>
+                    <p className="text-sm text-muted-foreground mt-1">
+                      Valor que será usado para cada operação manual
+                    </p>
+                  </div>
+
+                  {/* Preset Buttons */}
+                  <div className="grid grid-cols-4 gap-2">
+                    {[10, 20, 50, 100].map((value) => (
+                      <Button
+                        key={value}
+                        variant={entryValue === value ? "default" : "outline"}
+                        onClick={() => setEntryValue(value)}
+                        className={cn(
+                          "transition-all",
+                          entryValue === value && "bg-accent hover:bg-accent/90"
+                        )}
+                      >
+                        R$ {value}
+                      </Button>
+                    ))}
+                  </div>
+
+                  {/* Custom Input */}
+                  <div className="space-y-2">
+                    <Label htmlFor="manual-entry-value">Valor personalizado (R$)</Label>
+                    <Input
+                      id="manual-entry-value"
+                      type="number"
+                      min="1"
+                      max="1000"
+                      step="0.01"
+                      value={entryValue}
+                      onChange={(e) => setEntryValue(Number(e.target.value))}
+                      placeholder="Ex: 10.00"
+                      className="bg-card text-center font-mono text-lg"
+                    />
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </>
+        )}
+
+        {/* ✅ METRICS CARDS - Always visible */}
+        <MetricsCards {...metrics} />
+
+        {/* ✅ TRADE HISTORY - Always visible */}
+        <TradeHistory
+          trades={trades}
+          onReset={handleResetHistory}
+          onRefresh={loadTodayTrades} // ✅ Manual refresh button
+          realtimeStatus={realtimeStatus} // ✅ Show connection status
+        />
+
+      </main>
+    </div>
+  );
+};
+
+export default Operations;
