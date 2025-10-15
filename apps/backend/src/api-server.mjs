@@ -1,3 +1,7 @@
+// Load environment variables
+import dotenv from 'dotenv';
+dotenv.config();
+
 import express from 'express';
 import cors from 'cors';
 import { spawn } from 'child_process';
