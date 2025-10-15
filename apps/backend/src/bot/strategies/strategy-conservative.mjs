@@ -1,9 +1,14 @@
-// src/bot/strategies/strategy-conservative.mjs
 import { calculateRSI } from '../indicators/rsi.mjs';
 import { calculateMACD } from '../indicators/macd.mjs';
+import { calculateBollinger } from '../indicators/bollinger.mjs';
 
+/**
+ * Conservative Strategy (formerly Balanced)
+ * Threshold: 60% - Waits for strong confirmation from multiple indicators
+ * Uses RSI, MACD and Bollinger Bands for conservative entry points
+ */
 export function analyzeConservative(candles) {
-  if (candles.length < 35) return null; // ✅ Era 50, agora 35
+  if (candles.length < 26) return null;
 
   // ✅ NORMALIZA high/low
   candles = candles.map(c => ({
@@ -15,29 +20,27 @@ export function analyzeConservative(candles) {
   try {
     const candlesForIndicators = candles.map(c => ({ close: c.close }));
     const rsiResult = calculateRSI(candlesForIndicators, 14);
-    const macdResult = calculateMACD(candlesForIndicators);
+    const macd = calculateMACD(candlesForIndicators);
+    const bb = calculateBollinger(candlesForIndicators, 20, 2);
 
-    if (!rsiResult || !macdResult || macdResult.length < 2) return null; // ✅ Era 3, agora 2
+    if (!rsiResult || !macd || !bb || bb.length === 0) return null;
 
     const lastRsi = rsiResult.value;
-    const lastMacd = macdResult[macdResult.length - 1];
-    const prevMacd = macdResult[macdResult.length - 2];
+    const lastMacd = macd[macd.length - 1];
+    const lastBB = bb[bb.length - 1];
+    const lastPrice = candles[candles.length - 1].close;
 
-    // ✅ SIMPLIFICADO: Apenas 2 condições (não 3)
-    const macdTrend = lastMacd.histogram > prevMacd.histogram;
-    const macdFall = lastMacd.histogram < prevMacd.histogram;
+    if (!lastBB || typeof lastBB.lower === 'undefined') return null;
 
-    // ✅ THRESHOLDS MAIS PERMISSIVOS
-    // CALL: RSI < 55 (era 50) + MACD positivo + tendência
-    if (lastRsi < 55 && lastMacd.histogram > 0 && macdTrend) {
-      return { consensus: 'CALL', strength: 70 };
+    // Conservative CALL signal - Strong oversold + bullish momentum
+    if ((lastRsi < 40 || lastPrice < lastBB.lower * 1.005) && lastMacd?.histogram > 0) {
+      return { consensus: 'CALL', strength: 60, confidence: 60 };
     }
 
-    // PUT: RSI > 45 (era 50) + MACD negativo + queda
-    if (lastRsi > 45 && lastMacd.histogram < 0 && macdFall) {
-      return { consensus: 'PUT', strength: 70 };
+    // Conservative PUT signal - Strong overbought + bearish momentum
+    if ((lastRsi > 60 || lastPrice > lastBB.upper * 0.995) && lastMacd?.histogram < 0) {
+      return { consensus: 'PUT', strength: 60, confidence: 60 };
     }
-
   } catch (err) {
     return null;
   }

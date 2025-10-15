@@ -8,7 +8,7 @@ import { calculateMACD } from './indicators/macd.mjs';
 import { calculateBollinger } from './indicators/bollinger.mjs';
 import { analyzeAggressive } from './strategies/strategy-aggressive.mjs';
 import { analyzeConservative } from './strategies/strategy-conservative.mjs';
-import { analyzeWithSupportResistance } from './strategies/strategy-support-resistance.mjs';
+import { analyzeBalanced } from './strategies/strategy-balanced.mjs';
 
 
 // ✅ IMPORTS DO @mivratec/shared
@@ -369,8 +369,8 @@ class MivraTecBot {
         analysis = analyzeAggressive(candlesFormatted);
       } else if (STRATEGY === 'conservative') {
         analysis = analyzeConservative(candlesFormatted);
-      } else if (STRATEGY === 'support-resistance') {
-        analysis = analyzeWithSupportResistance(candlesFormatted);
+      } else if (STRATEGY === 'balanced') {
+        analysis = analyzeBalanced(candlesFormatted);
       } else {
         const rsi = calculateRSI(candlesFormatted);
         const macd = calculateMACD(candlesFormatted);
