@@ -2,7 +2,7 @@
 // Aggregates data from strategy_trades and populates scanner_performance table
 // Used by Market Scanner UI to display high-confidence asset/timeframe combinations
 
-import { supabase } from '../config/supabase.mjs';
+import { supabase } from '../../config/supabase.mjs';
 
 export const scannerAggregator = {
   /**

@@ -2,7 +2,7 @@
 // Creates scanner_performance table if it doesn't exist
 // This table aggregates performance data from strategy_trades for the Market Scanner UI
 
-import { supabase } from '../config/supabase.mjs';
+import { supabase } from '../../config/supabase.mjs';
 
 export const initScannerPerformanceTable = async () => {
   try {
