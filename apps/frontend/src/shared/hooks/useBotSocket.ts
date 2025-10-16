@@ -8,6 +8,7 @@ interface BotSocketData {
   isConnected: boolean
   onTradeCompleted: (callback: (trade: any) => void) => void
   onPnlUpdate: (callback: (pnl: any) => void) => void
+  onPositionClosed: (callback: (position: any) => void) => void
 }
 
 export const useBotSocket = (userId?: string): BotSocketData => {
@@ -37,8 +38,15 @@ export const useBotSocket = (userId?: string): BotSocketData => {
       setIsConnected(false)
     })
 
+    // ✅ Listen to bot status updates from API server
+    socketInstance.on('bot:status-update', (data: any) => {
+      console.log('[useBotSocket] 📊 Bot Status Update:', data)
+      setCurrentStatus(data.status)
+    })
+
+    // Backward compatibility with old bot_status event
     socketInstance.on('bot_status', (data: any) => {
-      console.log('[useBotSocket] Bot Status:', data)
+      console.log('[useBotSocket] Bot Status (legacy):', data)
       setCurrentStatus(data.status)
     })
 
@@ -48,6 +56,12 @@ export const useBotSocket = (userId?: string): BotSocketData => {
 
     socketInstance.on('pnl_update', (data: any) => {
       console.log('[useBotSocket] PnL Update:', data)
+    })
+
+    // ✅ Listen for position closed events (triggers auto-refresh)
+    socketInstance.on('position:closed', (data: any) => {
+      console.log('[useBotSocket] 🔔 Position Closed:', data)
+      // This event can be used to trigger data refresh in components
     })
 
     socketInstance.on('error', (error: any) => {
@@ -80,10 +94,20 @@ export const useBotSocket = (userId?: string): BotSocketData => {
     [socket]
   )
 
+  const onPositionClosed = useCallback(
+    (callback: (position: any) => void) => {
+      if (socket) {
+        socket.on('position:closed', callback)
+      }
+    },
+    [socket]
+  )
+
   return {
     currentStatus,
     isConnected,
     onTradeCompleted,
     onPnlUpdate,
+    onPositionClosed,
   }
 }

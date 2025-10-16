@@ -104,7 +104,7 @@ const AVALON_API_HOST = 'https://trade.avalonbroker.com';
 // ✅ Estado global do bot
 let botStatus = {
   running: false,
-  connected: false,
+  isConnected: false,
   lastUpdate: new Date().toISOString(),
   ssid: null
 };
@@ -192,6 +192,35 @@ async function initializeAssetMap() {
   const assetCount = Object.keys(FIXED_ASSETS).length;
   const totalCount = getTotalAssetsCount();
   console.log(`✅ ${assetCount} aliases carregados (${totalCount} ativos únicos)`);
+}
+
+// ✅ Helper function to extract JSON from bot output
+function extractJsonFromOutput(output) {
+  const jsonStart = output.indexOf('{');
+  if (jsonStart === -1) return null;
+
+  let braceCount = 0;
+  let jsonEnd = -1;
+
+  for (let i = jsonStart; i < output.length; i++) {
+    if (output[i] === '{') braceCount++;
+    else if (output[i] === '}') {
+      braceCount--;
+      if (braceCount === 0) {
+        jsonEnd = i + 1;
+        break;
+      }
+    }
+  }
+
+  if (jsonEnd === -1) return null;
+
+  try {
+    const jsonStr = output.substring(jsonStart, jsonEnd);
+    return JSON.parse(jsonStr);
+  } catch {
+    return null;
+  }
 }
 
 // ✅ CANDLES PROXY: Track active subscriptions
@@ -488,7 +517,7 @@ app.post('/api/bot/connect', async (req, res) => {
     // Update bot status
     botStatus = {
       running: false, // ✅ Bot runtime is NOT running - only broker is connected
-      connected: true,
+      isConnected: true,
       lastUpdate: new Date().toISOString(),
       ssid: userSSID.substring(0, 15) + '...'  // ✅ SSID individual do usuário
     };
@@ -543,7 +572,7 @@ app.post('/api/bot/connect', async (req, res) => {
 
   } catch (error) {
     console.error('❌ Erro ao conectar:', error.message);
-    botStatus.connected = false;
+    botStatus.isConnected = false;
     sdkInstance = null; // Reset SDK instance on error
 
     res.status(500).json({
@@ -979,6 +1008,11 @@ app.post('/api/bot/disconnect', async (req, res) => {
       sdkInstance = null;
     }
 
+    // Update global botStatus
+    botStatus.isConnected = false;
+    botStatus.ssid = null;
+    botStatus.lastUpdate = new Date().toISOString();
+
     // Update Supabase bot_status
     const { error: updateError } = await supabase
       .from('bot_status')
@@ -1069,7 +1103,7 @@ app.post('/api/bot/account-type', async (req, res) => {
 
 // ✅ Endpoint: Start bot runtime (spawn bot-live.mjs process)
 app.post('/api/bot/start-runtime', async (req, res) => {
-  const { userId } = req.body;
+  const { userId, config } = req.body;
 
   if (!userId) {
     return res.status(400).json({
@@ -1097,9 +1131,51 @@ app.post('/api/bot/start-runtime', async (req, res) => {
     }
 
     console.log('🚀 Starting bot-live.mjs process...');
+    console.log('📋 Bot config:', JSON.stringify(config, null, 2));
+
+    // ✅ Get user's broker_user_id (SSID) from profiles
+    const { data: profile, error: profileError } = await supabase
+      .from('profiles')
+      .select('broker_user_id')
+      .eq('user_id', userId)
+      .single();
+
+    if (profileError || !profile?.broker_user_id) {
+      console.error('❌ Failed to get user SSID:', profileError);
+      return res.status(400).json({
+        success: false,
+        error: 'User SSID not found. Please configure your broker user ID in Settings.'
+      });
+    }
+
+    const userSSID = profile.broker_user_id;
+    console.log(`🔑 User SSID: ${userSSID.substring(0, 15)}...`);
+
+    // ✅ Create bot_control entry with status='ACTIVE' so bot-live.mjs can detect it
+    const { data: controlEntry, error: controlError } = await supabase
+      .from('bot_control')
+      .insert({
+        user_id: userId,
+        command: 'start',
+        status: 'ACTIVE',
+        config: config || {},
+        ssid: userSSID
+      })
+      .select()
+      .single();
+
+    if (controlError) {
+      console.error('❌ Failed to create bot_control entry:', controlError);
+      return res.status(500).json({
+        success: false,
+        error: 'Failed to create bot control entry'
+      });
+    }
+
+    console.log(`✅ Bot control entry created with ID: ${controlEntry.id}`);
 
     // Spawn bot-live.mjs process
-    botProcess = spawn('node', ['src/bot/bot-live.mjs'], {
+    botProcess = spawn('node', ['bot/bot-live.mjs'], {
       cwd: process.cwd(),
       stdio: ['ignore', 'pipe', 'pipe'],
       detached: false,
@@ -1112,7 +1188,45 @@ app.post('/api/bot/start-runtime', async (req, res) => {
 
     // Listen to stdout
     botProcess.stdout.on('data', (data) => {
-      console.log(`[BOT] ${data.toString()}`);
+      const output = data.toString();
+      console.log(`[BOT] ${output}`);
+
+      // ✅ PARSE BOT STATUS UPDATES
+      if (output.includes('[BOT-STATUS]')) {
+        const statusData = extractJsonFromOutput(output);
+        if (statusData) {
+          // Broadcast to all connected clients via Socket.io
+          io.emit('bot:status-update', {
+            status: statusData.status,
+            currentAsset: statusData.currentAsset,
+            timestamp: statusData.timestamp,
+            userId: userId
+          });
+
+          console.log(`📡 Bot status broadcasted: ${statusData.status}`);
+        } else {
+          console.error('❌ Failed to parse BOT-STATUS JSON');
+        }
+      }
+
+      // ✅ PARSE POSITION CLOSED EVENTS for auto-refresh
+      if (output.includes('[BOT-POSITION-CLOSED]')) {
+        const positionData = extractJsonFromOutput(output);
+        if (positionData) {
+          // Broadcast to all connected clients via Socket.io
+          io.emit('position:closed', {
+            positionId: positionData.positionId,
+            resultado: positionData.resultado,
+            pnl: positionData.pnl,
+            timestamp: positionData.timestamp,
+            userId: userId
+          });
+
+          console.log(`✅ Position closed event broadcasted: ${positionData.resultado} | PnL: ${positionData.pnl}`);
+        } else {
+          console.error('❌ Failed to parse BOT-POSITION-CLOSED JSON');
+        }
+      }
     });
 
     // Listen to stderr
@@ -1129,6 +1243,14 @@ app.post('/api/bot/start-runtime', async (req, res) => {
       botStatus.running = false;
       botStatus.lastUpdate = new Date().toISOString();
 
+      // ✅ Broadcast Bot Stopped status via Socket.io
+      io.emit('bot:status-update', {
+        status: 'Bot Stopped',
+        currentAsset: 'None',
+        timestamp: new Date().toISOString(),
+        userId: userId
+      });
+      console.log('📡 Bot Stopped status broadcasted');
 
       // Update bot_status
       supabase
@@ -1136,6 +1258,14 @@ app.post('/api/bot/start-runtime', async (req, res) => {
         .update({ bot_running: false, bot_pid: null })
         .eq('user_id', userId)
         .then(() => console.log('✅ Bot status updated: stopped'));
+
+      // Mark bot_control entry as processed
+      supabase
+        .from('bot_control')
+        .update({ status: 'processed', processed_at: new Date().toISOString() })
+        .eq('user_id', userId)
+        .eq('status', 'ACTIVE')
+        .then(() => console.log('✅ Bot control entry marked as processed'));
     });
 
     // Update bot_status in Supabase
@@ -1257,7 +1387,7 @@ app.post('/api/bot/stop-runtime', async (req, res) => {
 app.get('/api/bot/runtime-status', (req, res) => {
   res.json({
     success: true,
-    running: botProcess && !botProcess.killed,
+    isRunning: botProcess && !botProcess.killed,
     pid: botProcessPID
   });
 });
@@ -1352,6 +1482,127 @@ app.post('/api/bot/reconnect', async (req, res) => {
     console.error('❌ Reconnection failed:', error.message);
     sdkInstance = null;
 
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
+// ✅ Endpoint: Sync pending positions from broker to database
+app.post('/api/sync-pending-positions', async (req, res) => {
+  const { userId, ssid } = req.body;
+
+  if (!userId || !ssid) {
+    return res.status(400).json({
+      success: false,
+      error: 'userId and ssid are required'
+    });
+  }
+
+  try {
+    console.log(`🔄 Syncing pending positions for user: ${userId}`);
+
+    // 1. Buscar positions pendentes no Supabase
+    const { data: pendingTrades, error } = await supabase
+      .from('trade_history')
+      .select('*')
+      .eq('user_id', userId)
+      .or('status.eq.open,resultado.is.null')
+      .order('data_abertura', { ascending: false })
+      .limit(50);
+
+    if (error) {
+      console.error('❌ Error fetching pending trades:', error.message);
+      return res.status(500).json({ success: false, error: error.message });
+    }
+
+    if (!pendingTrades || pendingTrades.length === 0) {
+      console.log('✅ No pending positions to sync');
+      return res.json({ success: true, updated: 0, message: 'No pending positions' });
+    }
+
+    console.log(`📍 Found ${pendingTrades.length} pending positions`);
+
+    // 2. Conectar SDK Quadcode
+    let sdk = null;
+    try {
+      sdk = await ClientSdk.create(
+        'wss://ws.trade.avalonbroker.com/echo/websocket',
+        82,
+        new SsidAuthMethod(ssid),
+        { host: 'https://trade.avalonbroker.com' }
+      );
+      console.log('✅ Connected to broker');
+    } catch (sdkError) {
+      console.error('❌ Failed to connect to broker:', sdkError.message);
+      return res.status(500).json({
+        success: false,
+        error: 'Failed to connect to broker',
+        details: sdkError.message
+      });
+    }
+
+    // 3. Get all positions (open + history)
+    let allPositions = [];
+    try {
+      const positionsData = await sdk.positions();
+      allPositions.push(...Array.from(positionsData.positions.values()));
+
+      const positionsHistory = positionsData.getPositionsHistory();
+      await positionsHistory.fetchPrevPage();
+      const historyPositions = positionsHistory.getPositions();
+      allPositions.push(...historyPositions);
+
+      console.log(`📊 Retrieved ${allPositions.length} positions from broker`);
+    } catch (posError) {
+      console.error('❌ Error fetching positions:', posError.message);
+      return res.status(500).json({
+        success: false,
+        error: 'Failed to fetch positions from broker'
+      });
+    }
+
+    // 4. Atualizar cada position pendente
+    let updated = 0;
+    for (const trade of pendingTrades) {
+      const position = allPositions.find(p => p.externalId === trade.external_id);
+
+      if (position && position.status !== 'open') {
+        let resultado = null;
+        if (position.pnl > 0) resultado = 'WIN';
+        else if (position.pnl < 0) resultado = 'LOSS';
+        else resultado = 'TIE';
+
+        console.log(`✅ Updating ${trade.external_id}: ${resultado} | PnL: ${position.pnl}`);
+
+        const { error: updateError } = await supabase
+          .from('trade_history')
+          .update({
+            resultado: resultado,
+            pnl: position.pnl,
+            status: position.status
+          })
+          .eq('external_id', trade.external_id);
+
+        if (!updateError) {
+          updated++;
+        } else {
+          console.warn(`⚠️ Failed to update ${trade.external_id}:`, updateError.message);
+        }
+      }
+    }
+
+    console.log(`✅ Sync complete: ${updated}/${pendingTrades.length} positions updated`);
+
+    res.json({
+      success: true,
+      updated,
+      total: pendingTrades.length,
+      message: `Synced ${updated} out of ${pendingTrades.length} positions`
+    });
+  } catch (error) {
+    console.error('❌ Sync error:', error.message);
     res.status(500).json({
       success: false,
       error: error.message

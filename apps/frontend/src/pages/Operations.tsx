@@ -19,11 +19,12 @@ import {
 } from "@/features/trading";
 
 // ✅ UI Components
-import { Card, CardContent } from "@/shared/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/shared/components/ui/card";
 import { Button } from "@/shared/components/ui/button";
 import { Input } from "@/shared/components/ui/input";
 import { Label } from "@/shared/components/ui/label";
 import { cn } from "@/shared/utils/cn";
+import { ChevronDown, TrendingUp } from "lucide-react";
 
 // ✅ New Hook
 import { useBotSocket } from "@/shared/hooks/useBotSocket";
@@ -55,7 +56,7 @@ const Operations = () => {
 
   // ✅ Auto Mode Config
   const [selectedStrategy, setSelectedStrategy] = useState("balanced");
-  const [entryValue, setEntryValue] = useState(10);
+  const [entryValue, setEntryValue] = useState(20);
 
   // ✅ Leverage (Martingale) - OFF by default
   const [leverageEnabled, setLeverageEnabled] = useState(false);
@@ -79,6 +80,12 @@ const Operations = () => {
   const [timeframe, setTimeframe] = useState<string>(() => {
     return localStorage.getItem('selectedTimeframe') || '60';
   });
+  const [showManualAdvanced, setShowManualAdvanced] = useState(false);
+  useEffect(() => {
+    if (typeof window !== "undefined" && window.innerWidth >= 768) {
+      setShowManualAdvanced(true);
+    }
+  }, []);
   // ✅ manualStrategy removed - manual mode always uses hybrid strategy
 
   // ✅ Real-time Data
@@ -94,7 +101,7 @@ const Operations = () => {
   });
 
   // ✅ WebSocket Hook
-  const { currentStatus } = useBotSocket(user?.id);
+  const { currentStatus, onPositionClosed } = useBotSocket(user?.id);
 
   // Bot control (multi-user)
   const { isConnected, isRunning, startBotRuntime, stopBotRuntime, loading: botLoading } = useBotStatus(user?.id);
@@ -298,6 +305,51 @@ const Operations = () => {
     loadTodayTrades();
   }, [user?.id]);
 
+  // ✅ Sync pending positions on component mount (runs once when page loads)
+  useEffect(() => {
+    const syncPendingPositions = async () => {
+      if (!user?.id || !isConnected) {
+        console.log('[Operations] Not ready to sync pending positions');
+        return;
+      }
+
+      // Get SSID from bot_status
+      const { data: botStatus } = await supabase
+        .from('bot_status')
+        .select('ssid')
+        .eq('user_id', user.id)
+        .maybeSingle();
+
+      if (!botStatus?.ssid) {
+        console.log('[Operations] No SSID found, skipping pending sync');
+        return;
+      }
+
+      console.log('[Operations] 🔄 Syncing pending positions...');
+
+      try {
+        const response = await fetch('/api/sync-pending-positions', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            userId: user.id,
+            ssid: botStatus.ssid
+          })
+        });
+
+        const result = await response.json();
+        if (result.success && result.updated > 0) {
+          console.log(`[Operations] ✅ Synced ${result.updated} pending positions`);
+          loadTodayTrades(); // Reload trades to reflect updates
+        }
+      } catch (error) {
+        console.error('[Operations] Error syncing pending positions:', error);
+      }
+    };
+
+    syncPendingPositions();
+  }, [user?.id, isConnected]);
+
   // ✅ Real-time subscription for trades (EXACTLY like History.tsx)
   useEffect(() => {
     if (!user?.id) return;
@@ -343,8 +395,8 @@ const Operations = () => {
           console.log('[Operations] Adding new PENDING trade:', formattedTrade);
           setTrades(prev => [formattedTrade, ...prev]);
 
-          // Initialize PNL data if empty
-          if (botMode === "auto" && pnlData.length === 1 && pnlData[0].value === 0) {
+          // ✅ Initialize PNL data if empty (works for auto mode - that's where it's displayed)
+          if (pnlData.length === 1 && pnlData[0].value === 0) {
             setPnlData([{
               time: new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }),
               value: 0
@@ -377,8 +429,8 @@ const Operations = () => {
             )
           );
 
-          // Update PNL chart if trade has result
-          if (botMode === "auto" && updatedTrade.resultado && updatedTrade.pnl !== null) {
+          // ✅ Update PNL chart if trade has result (always update - displayed only in auto mode)
+          if (updatedTrade.resultado && updatedTrade.pnl !== null) {
             setPnlData(prev => {
               const lastValue = prev.length > 0 ? prev[prev.length - 1].value : 0;
               const newValue = lastValue + (updatedTrade.pnl || 0);
@@ -435,6 +487,19 @@ const Operations = () => {
       clearInterval(pollingInterval);
     };
   }, [user?.id, isRunning, realtimeStatus]);
+
+  // ✅ AUTO-REFRESH on position close via Socket.io
+  useEffect(() => {
+    if (!user?.id) return;
+
+    onPositionClosed((position) => {
+      console.log('[Operations] 🔔 Position closed detected via Socket.io, auto-refreshing data...');
+      console.log('[Operations] Position:', position);
+
+      // Refresh trades data
+      loadTodayTrades();
+    });
+  }, [user?.id, onPositionClosed]);
 
   // ✅ Calculate metrics from trades (same as History.tsx)
   useEffect(() => {
@@ -665,36 +730,40 @@ const Operations = () => {
         {/* ✅ MODE-SPECIFIC CONTENT */}
         {botMode === "auto" ? (
           // AUTO MODE
-          isRunning ? (
+          <>
+            {/* ✅ P&L Chart: Always visible (bot running or not) */}
             <AutoModeRunning
               pnlData={pnlData}
               currentStatus={currentStatus}
               currentAsset={trades[0]?.asset}
               currentAmount={trades[0]?.pnl ? Math.abs(trades[0].pnl) : undefined}
             />
-          ) : (
-            <AutoModeConfig
-              selectedStrategy={selectedStrategy}
-              onStrategyChange={setSelectedStrategy}
-              entryValue={entryValue}
-              onEntryValueChange={setEntryValue}
-              // ✅ Leverage with toggle
-              leverageEnabled={leverageEnabled}
-              onLeverageEnabledChange={setLeverageEnabled}
-              leverage={leverage}
-              onLeverageChange={setLeverage}
-              // ✅ Safety Stop with toggle
-              safetyStopEnabled={safetyStopEnabled}
-              onSafetyStopEnabledChange={setSafetyStopEnabled}
-              safetyStop={safetyStop}
-              onSafetyStopChange={setSafetyStop}
-              // ✅ Daily Goal with toggle
-              dailyGoalEnabled={dailyGoalEnabled}
-              onDailyGoalEnabledChange={setDailyGoalEnabled}
-              dailyGoal={dailyGoal}
-              onDailyGoalChange={setDailyGoal}
-            />
-          )
+
+            {/* ✅ Configuration Panel: Only show when bot is NOT running */}
+            {!isRunning && (
+              <AutoModeConfig
+                selectedStrategy={selectedStrategy}
+                onStrategyChange={setSelectedStrategy}
+                entryValue={entryValue}
+                onEntryValueChange={setEntryValue}
+                // ✅ Leverage with toggle
+                leverageEnabled={leverageEnabled}
+                onLeverageEnabledChange={setLeverageEnabled}
+                leverage={leverage}
+                onLeverageChange={setLeverage}
+                // ✅ Safety Stop with toggle
+                safetyStopEnabled={safetyStopEnabled}
+                onSafetyStopEnabledChange={setSafetyStopEnabled}
+                safetyStop={safetyStop}
+                onSafetyStopChange={setSafetyStop}
+                // ✅ Daily Goal with toggle
+                dailyGoalEnabled={dailyGoalEnabled}
+                onDailyGoalEnabledChange={setDailyGoalEnabled}
+                dailyGoal={dailyGoal}
+                onDailyGoalChange={setDailyGoal}
+              />
+            )}
+          </>
         ) : (
           // MANUAL MODE
           <>
@@ -715,10 +784,10 @@ const Operations = () => {
                 <div className="space-y-4">
                   <div>
                     <Label htmlFor="manual-entry-value" className="text-base font-semibold">
-                      Valor de Entrada
+                      Entry Value
                     </Label>
                     <p className="text-sm text-muted-foreground mt-1">
-                      Valor que será usado para cada operação manual
+                      Amount used for each manual trade
                     </p>
                   </div>
 
@@ -741,7 +810,7 @@ const Operations = () => {
 
                   {/* Custom Input */}
                   <div className="space-y-2">
-                    <Label htmlFor="manual-entry-value">Valor personalizado (R$)</Label>
+                    <Label htmlFor="manual-entry-value">Custom amount (R$)</Label>
                     <Input
                       id="manual-entry-value"
                       type="number"
@@ -750,12 +819,132 @@ const Operations = () => {
                       step="0.01"
                       value={entryValue}
                       onChange={(e) => setEntryValue(Number(e.target.value))}
-                      placeholder="Ex: 10.00"
+                      placeholder="e.g., 20.00"
                       className="bg-card text-center font-mono text-lg"
                     />
                   </div>
                 </div>
               </CardContent>
+            </Card>
+
+            <Card className="glass border-border">
+              <CardHeader className="p-0">
+                <button
+                  type="button"
+                  onClick={() => setShowManualAdvanced((prev) => !prev)}
+                  aria-expanded={showManualAdvanced}
+                  aria-controls="manual-advanced-options"
+                  className="w-full flex items-center justify-between gap-3 px-4 py-4 md:px-6 md:py-5 text-left"
+                >
+                  <div>
+                    <CardTitle className="text-lg">Advanced Options</CardTitle>
+                    <CardDescription>Optional risk management settings</CardDescription>
+                  </div>
+                  <ChevronDown
+                    className={cn(
+                      "w-5 h-5 text-muted-foreground transition-transform duration-200",
+                      showManualAdvanced ? "rotate-180" : "rotate-0"
+                    )}
+                  />
+                </button>
+              </CardHeader>
+              {showManualAdvanced && (
+                <CardContent id="manual-advanced-options" className="space-y-6 pt-0">
+                  {/* Leverage (Martingale) */}
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <Label className="text-base font-semibold">Leverage (Martingale)</Label>
+                        <p className="text-xs text-muted-foreground mt-1">
+                          Multiply entry after loss
+                        </p>
+                      </div>
+                      <Button
+                        variant={leverageEnabled ? "default" : "outline"}
+                        size="sm"
+                        onClick={() => setLeverageEnabled((prev) => !prev)}
+                      >
+                        {leverageEnabled ? "ON" : "OFF"}
+                      </Button>
+                    </div>
+                    {leverageEnabled && (
+                      <Input
+                        type="number"
+                        min="1.5"
+                        max="5"
+                        step="0.5"
+                        value={leverage}
+                        onChange={(e) => setLeverage(Number(e.target.value))}
+                        className="bg-card"
+                      />
+                    )}
+                  </div>
+
+                  {/* Safety Stop */}
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <Label className="text-base font-semibold">Safety Stop</Label>
+                        <p className="text-xs text-muted-foreground mt-1">
+                          Stop after consecutive losses
+                        </p>
+                      </div>
+                      <Button
+                        variant={safetyStopEnabled ? "default" : "outline"}
+                        size="sm"
+                        onClick={() => setSafetyStopEnabled((prev) => !prev)}
+                      >
+                        {safetyStopEnabled ? "ON" : "OFF"}
+                      </Button>
+                    </div>
+                    {safetyStopEnabled && (
+                      <Input
+                        type="number"
+                        min="1"
+                        max="10"
+                        step="1"
+                        value={safetyStop}
+                        onChange={(e) => setSafetyStop(Number(e.target.value))}
+                        className="bg-card"
+                      />
+                    )}
+                  </div>
+
+                  {/* Daily Goal */}
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <Label className="text-base font-semibold flex items-center gap-2">
+                          <TrendingUp className="w-4 h-4 text-positive" />
+                          Daily Goal
+                        </Label>
+                        <p className="text-xs text-muted-foreground mt-1">
+                          Stop when profit reaches target
+                        </p>
+                      </div>
+                      <Button
+                        variant={dailyGoalEnabled ? "default" : "outline"}
+                        size="sm"
+                        onClick={() => setDailyGoalEnabled((prev) => !prev)}
+                      >
+                        {dailyGoalEnabled ? "ON" : "OFF"}
+                      </Button>
+                    </div>
+                    {dailyGoalEnabled && (
+                      <Input
+                        type="number"
+                        min="10"
+                        max="10000"
+                        step="10"
+                        value={dailyGoal}
+                        onChange={(e) => setDailyGoal(Number(e.target.value))}
+                        placeholder="e.g., 100"
+                        className="bg-card"
+                      />
+                    )}
+                  </div>
+                </CardContent>
+              )}
             </Card>
           </>
         )}
