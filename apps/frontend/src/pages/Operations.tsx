@@ -254,22 +254,29 @@ const Operations = () => {
     if (presetConfig) {
       console.log('✅ [Operations] Applying preset config from Market Scanner:', presetConfig);
 
-      // ✅ Determine category from asset name
-      const determinedCategory = determineCategoryFromAsset(presetConfig.asset);
+      const assetKey = presetConfig.assetKey ?? presetConfig.assetName ?? presetConfig.assetId;
+      const assetLabel = presetConfig.assetName ?? presetConfig.assetKey ?? presetConfig.assetId;
+
+      // ✅ Determine category from asset label or key
+      const determinedCategory = determineCategoryFromAsset(assetLabel || assetKey);
 
       // ✅ Set MANUAL mode with scanner configuration
       setBotMode('manual');
       setCategory(determinedCategory);
-      setAsset(presetConfig.asset);
-      setTimeframe(presetConfig.timeframe.toString());
+      if (assetKey) {
+        setAsset(assetKey);
+      }
+      if (presetConfig.timeframe) {
+        setTimeframe(presetConfig.timeframe.toString());
+      }
 
       toast({
         title: "Configuração do Scanner Aplicada",
-        description: `${presetConfig.asset} • ${presetConfig.timeframe}s • Modo Manual`,
+        description: `${assetLabel} • ${(presetConfig.timeframeLabel ?? `${presetConfig.timeframe}s`)} • Manual Mode`,
         duration: 5000,
       });
 
-      console.log(`✅ [Operations] Manual mode configured: ${determinedCategory} → ${presetConfig.asset} → ${presetConfig.timeframe}s`);
+      console.log(`✅ [Operations] Manual mode configured: ${determinedCategory} → ${assetKey} (${assetLabel}) → ${presetConfig.timeframe}s`);
 
       // Clear location state
       window.history.replaceState({}, document.title);

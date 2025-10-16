@@ -1,16 +1,29 @@
 // MarketScanner Component - Main scanner page with real-time heatmap
 // Displays market performance across assets and strategies with live updates
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { User } from '@supabase/supabase-js';
 import { DashboardHeader, Sidebar } from '@/features/dashboard';
 import { useScannerSubscription, HeatmapGrid } from '@/features/market-scanner';
-import type { ScannerConfig } from '@/features/market-scanner';
+import type { ScannerAsset, ScannerConfig } from '@/features/market-scanner';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/shared/components/ui/card';
 import { Button } from '@/shared/components/ui/button';
 import { Loader2, RefreshCw, Activity, Zap } from 'lucide-react';
+import axios from 'axios';
+
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:4001';
+
+type AssetLookupEntry = {
+  key: string;
+  name: string;
+};
+
+type AssetLookup = {
+  byId: Record<number, AssetLookupEntry>;
+  byName: Record<string, AssetLookupEntry>;
+};
 
 export const MarketScanner: React.FC = () => {
   const navigate = useNavigate();
@@ -18,6 +31,7 @@ export const MarketScanner: React.FC = () => {
   const [authLoading, setAuthLoading] = useState(true);
   const { assets, loading, error, lastUpdate, refresh } = useScannerSubscription();
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [assetLookup, setAssetLookup] = useState<AssetLookup>({ byId: {}, byName: {} });
 
   // Auth check
   useEffect(() => {
@@ -41,12 +55,94 @@ export const MarketScanner: React.FC = () => {
     return () => subscription.unsubscribe();
   }, [navigate]);
 
-  const handleAssetClick = (config: ScannerConfig) => {
-    // Navigate to Operations with preset config
+  // Fetch asset metadata (id -> key) from backend
+  useEffect(() => {
+    const fetchAssetMetadata = async () => {
+      try {
+        const response = await axios.get(`${API_URL}/api/assets`);
+        const assetsData = response.data?.assets;
+        if (!assetsData) return;
+
+        const byId: Record<number, AssetLookupEntry> = {};
+        const byName: Record<string, AssetLookupEntry> = {};
+
+        Object.values(assetsData).forEach((categoryAssets: any) => {
+          if (!Array.isArray(categoryAssets)) return;
+          categoryAssets.forEach((asset: any) => {
+            if (!asset?.key) return;
+
+            const entry: AssetLookupEntry = {
+              key: asset.key,
+              name: asset.name
+            };
+
+            if (asset.id !== undefined && asset.id !== null) {
+              byId[Number(asset.id)] = entry;
+            }
+
+            if (asset.name) {
+              byName[String(asset.name).toUpperCase()] = entry;
+            }
+          });
+        });
+
+        setAssetLookup({ byId, byName });
+      } catch (err) {
+        console.error('[MarketScanner] Error loading asset metadata:', err);
+      }
+    };
+
+    fetchAssetMetadata();
+  }, []);
+
+  const resolveTimeframeLabel = useMemo(() => {
+    const map = new Map<number, string>([
+      [10, '10s'],
+      [30, '30s'],
+      [60, '1m'],
+      [300, '5m']
+    ]);
+
+    return (value: number) => map.get(value) ?? `${value}s`;
+  }, []);
+
+  const buildPresetConfig = (asset: ScannerAsset): ScannerConfig => {
+    const assetId = Number(asset.active_id);
+    const lookupById = Number.isFinite(assetId) ? assetLookup.byId[assetId] : undefined;
+    const lookupByName = assetLookup.byName[asset.ativo_nome?.toUpperCase() || ''];
+
+    const resolvedEntry = lookupById ?? lookupByName;
+
+    const fallbackKey = (() => {
+      const name = asset.ativo_nome || '';
+      const hasOtc = /OTC$/i.test(name);
+      const cleaned = name
+        .replace(/OTC/i, '')
+        .replace(/\//g, '')
+        .replace(/\s+/g, '')
+        .replace(/[^A-Za-z0-9]/g, '')
+        .toUpperCase();
+      return hasOtc ? `${cleaned}-OTC` : cleaned;
+    })();
+
+    return {
+      assetKey: resolvedEntry?.key ?? fallbackKey,
+      assetName: resolvedEntry?.name ?? asset.ativo_nome,
+      assetId: String(asset.active_id),
+      timeframe: asset.timeframe
+    };
+  };
+
+  const handleAssetClick = (asset: ScannerAsset) => {
+    const presetConfig = buildPresetConfig(asset);
+
     navigate('/', {
       state: {
-        presetConfig: config,
-      },
+        presetConfig: {
+          ...presetConfig,
+          timeframeLabel: resolveTimeframeLabel(presetConfig.timeframe)
+        }
+      }
     });
   };
 

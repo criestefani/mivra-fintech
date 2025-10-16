@@ -695,21 +695,30 @@ class MivraTecBot {
       this.currentOpenPosition = positionId; // ✅ Mark position as open
       console.log(`✅ Posição ${positionId} aberta\n`);
 
-      // ✅ SET STATUS: Tracking results (without asset name - already in Current Asset)
-      this.setStatus(`Tracking results...`, signal.activeName, signal.activeId);
+      // ✅ SET STATUS: Opening position - broadcast immediately
+      this.setStatus(`Opening position on ${signal.activeName}...`, signal.activeName, signal.activeId);
 
-
-      await new Promise(r => setTimeout(r, 3000));
-
-
+      // ✅ SAVE TO DATABASE IMMEDIATELY (no delay!)
+      // This ensures frontend receives INSERT event right away
       const signalForSave = {
         active: activeObj,
         consensus: signal.direction,
         strategyType: signal.strategyType
       };
 
-
       await this.salvarNoSupabase(positionId, signalForSave, order);
+
+      // ✅ UPDATE STATUS: Now tracking (after database is updated)
+      this.setStatus(`Tracking results...`, signal.activeName, signal.activeId);
+
+      // ✅ EMIT POSITION OPENED EVENT for frontend refresh
+      console.log(`[BOT-POSITION-OPENED] ${JSON.stringify({
+        positionId: positionId,
+        activeName: signal.activeName,
+        activeId: signal.activeId,
+        direction: signal.direction,
+        timestamp: new Date().toISOString()
+      })}`);
 
       // ✅ Position result will be handled automatically by subscribe (set up in init())
       console.log(`✅ Position ${positionId} criada. Aguardando resultado via subscribe...\n`);

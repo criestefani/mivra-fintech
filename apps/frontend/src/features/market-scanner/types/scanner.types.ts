@@ -13,9 +13,11 @@ export interface ScannerAsset {
 }
 
 export interface ScannerConfig {
-  asset: string
+  assetKey: string
+  assetName: string
   assetId: string
   timeframe: number
+  timeframeLabel?: string
 }
 
 export interface ScannerFilters {

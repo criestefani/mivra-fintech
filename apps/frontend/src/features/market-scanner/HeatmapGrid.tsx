@@ -3,11 +3,11 @@
 
 import React, { useMemo } from 'react';
 import { AssetCard } from './AssetCard';
-import type { ScannerAsset, ScannerConfig } from './types/scanner.types';
+import type { ScannerAsset } from './types/scanner.types';
 
 interface HeatmapGridProps {
   assets: ScannerAsset[];
-  onAssetClick: (config: ScannerConfig) => void;
+  onAssetClick: (asset: ScannerAsset) => void;
 }
 
 export const HeatmapGrid: React.FC<HeatmapGridProps> = ({
@@ -20,11 +20,7 @@ export const HeatmapGrid: React.FC<HeatmapGridProps> = ({
   }, [assets]);
 
   const handleAssetClick = (asset: ScannerAsset) => {
-    onAssetClick({
-      asset: asset.ativo_nome,
-      assetId: asset.active_id,
-      timeframe: asset.timeframe,
-    });
+    onAssetClick(asset);
   };
 
   // Show empty state

@@ -1209,6 +1209,26 @@ app.post('/api/bot/start-runtime', async (req, res) => {
         }
       }
 
+      // ✅ PARSE POSITION OPENED EVENTS for immediate frontend update
+      if (output.includes('[BOT-POSITION-OPENED]')) {
+        const positionData = extractJsonFromOutput(output);
+        if (positionData) {
+          // Broadcast to all connected clients via Socket.io
+          io.emit('position:opened', {
+            positionId: positionData.positionId,
+            activeName: positionData.activeName,
+            activeId: positionData.activeId,
+            direction: positionData.direction,
+            timestamp: positionData.timestamp,
+            userId: userId
+          });
+
+          console.log(`✅ Position opened event broadcasted: ${positionData.activeName} → ${positionData.direction}`);
+        } else {
+          console.error('❌ Failed to parse BOT-POSITION-OPENED JSON');
+        }
+      }
+
       // ✅ PARSE POSITION CLOSED EVENTS for auto-refresh
       if (output.includes('[BOT-POSITION-CLOSED]')) {
         const positionData = extractJsonFromOutput(output);
