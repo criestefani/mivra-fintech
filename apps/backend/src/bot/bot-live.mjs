@@ -463,14 +463,6 @@ class MivraTecBot {
     const resultIcon = resultado === 'WIN' ? '✅' : resultado === 'LOSS' ? '❌' : '⚪';
     this.setStatus(`Position closed - ${resultIcon} ${resultado}`);
 
-    // ✅ EMIT POSITION CLOSED EVENT for auto-refresh
-    console.log(`[BOT-POSITION-CLOSED] ${JSON.stringify({
-      positionId: positionId,
-      resultado: resultado,
-      pnl: position.pnl,
-      timestamp: new Date().toISOString()
-    })}`);
-
     const { data: tradeData } = await supabase
       .from('trade_history')
       .select('active_id, ativo_nome, strategy_id, data_abertura')
@@ -494,6 +486,7 @@ class MivraTecBot {
     }
 
 
+    // ✅ UPDATE DATABASE FIRST, then emit event for auto-refresh
     const { error } = await supabase
       .from('trade_history')
       .update({
@@ -506,9 +499,19 @@ class MivraTecBot {
 
     if (error) {
       console.error('❌ Erro ao atualizar trade:', error.message);
+      return false;
     } else {
       console.log(`✅ Trade atualizado!\n`);
     }
+
+    // ✅ EMIT POSITION CLOSED EVENT AFTER UPDATE COMPLETES
+    // This ensures the trade is already updated in Supabase when frontend fetches
+    console.log(`[BOT-POSITION-CLOSED] ${JSON.stringify({
+      positionId: positionId,
+      resultado: resultado,
+      pnl: position.pnl,
+      timestamp: new Date().toISOString()
+    })}`);
 
 
     return true;
