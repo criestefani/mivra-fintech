@@ -576,7 +576,14 @@ const Operations = () => {
         asset: asset,
         timeframe: parseInt(timeframe),
         strategy: 'hybrid', // ✅ Manual mode ALWAYS uses hybrid strategy
-        amount: entryValue
+        amount: entryValue,
+        // Optional: Pass advanced settings for manual mode too
+        leverageEnabled: leverageEnabled,
+        leverage: leverage,
+        safetyStopEnabled: safetyStopEnabled,
+        safetyStop: safetyStop,
+        dailyGoalEnabled: dailyGoalEnabled,
+        dailyGoal: dailyGoal
       };
 
       console.log('🎮 [Operations] Starting MANUAL mode:', userConfig);
@@ -588,7 +595,9 @@ const Operations = () => {
         maxTimeframe: 60, // Auto mode can use up to 60s timeframes
         amount: entryValue,
         // Optional: Pass other auto mode settings
+        leverageEnabled: leverageEnabled,
         leverage: leverage,
+        safetyStopEnabled: safetyStopEnabled,
         safetyStop: safetyStop,
         dailyGoalEnabled: dailyGoalEnabled,
         dailyGoal: dailyGoal
