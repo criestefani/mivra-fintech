@@ -47,6 +47,12 @@ import ssidManager from './services/ssid-manager.mjs';
 // ✅ NOVA IMPORTAÇÃO: Lista fixa de ativos (140 ativos oficiais)
 import { FIXED_ASSETS, ASSETS_BY_CATEGORY, resolveAssetById, resolveAssetByName, getTotalAssetsCount } from './constants/fixed-assets.mjs';
 
+// ✅ PHASE 3: Connection Pool Manager (Database optimization)
+import { initializeConnectionPool, getConnectionPool } from './db/connection-pool.mjs';
+
+// ✅ Scanner Aggregator - Populates scanner_performance table from strategy_trades
+import scannerAggregator from './services/scanner-aggregator.mjs';
+
 const app = express();
 const httpServer = createServer(app);
 
@@ -672,6 +678,26 @@ app.get('/api/strategy-performance', async (req, res) => {
   }
 });
 
+// ✅ Scanner Aggregation - Aggregate strategy_trades into scanner_performance
+app.post('/api/scanner/aggregate', async (req, res) => {
+  try {
+    console.log('📊 [API] POST /api/scanner/aggregate - Starting aggregation...');
+    const result = await scannerAggregator.aggregatePerformance();
+
+    res.json({
+      success: true,
+      message: 'Scanner data aggregated successfully',
+      result
+    });
+  } catch (error) {
+    console.error('❌ [API] Error aggregating scanner data:', error.message);
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
 // ✅ Scanner Top 20 - Best performing asset/timeframe combinations
 app.get('/api/scanner/top20', async (req, res) => {
   try {
@@ -1186,7 +1212,33 @@ app.post('/api/bot/start-runtime', async (req, res) => {
 
     console.log(`✅ Bot process started with PID: ${botProcessPID}`);
 
-    // Listen to stdout
+    // ✅ SEND RESPONSE IMMEDIATELY (fire-and-forget pattern)
+    // This fixes the 30-second timeout issue
+    res.json({
+      success: true,
+      message: 'Bot runtime starting...',
+      pid: botProcessPID,
+      status: 'initializing'
+    });
+
+    // ✅ All operations below run asynchronously (non-blocking)
+
+    // Update bot_status in Supabase (async, don't block response)
+    supabase
+      .from('bot_status')
+      .update({
+        bot_running: true,
+        bot_pid: botProcessPID
+      })
+      .eq('user_id', userId)
+      .then(() => console.log(`✅ Bot status updated: running with PID ${botProcessPID}`))
+      .catch((error) => console.warn('⚠️ Failed to update bot_status:', error.message));
+
+    // ✅ Update global botStatus to reflect bot is running
+    botStatus.running = true;
+    botStatus.lastUpdate = new Date().toISOString();
+
+    // Listen to stdout (async, no blocking)
     botProcess.stdout.on('data', (data) => {
       const output = data.toString();
       console.log(`[BOT] ${output}`);
@@ -1249,12 +1301,12 @@ app.post('/api/bot/start-runtime', async (req, res) => {
       }
     });
 
-    // Listen to stderr
+    // Listen to stderr (async, no blocking)
     botProcess.stderr.on('data', (data) => {
       console.error(`[BOT ERROR] ${data.toString()}`);
     });
 
-    // Handle process exit
+    // Handle process exit (async, no blocking)
     botProcess.on('exit', (code, signal) => {
       console.log(`🛑 Bot process exited with code ${code}, signal ${signal}`);
       botProcess = null;
@@ -1272,43 +1324,22 @@ app.post('/api/bot/start-runtime', async (req, res) => {
       });
       console.log('📡 Bot Stopped status broadcasted');
 
-      // Update bot_status
+      // Update bot_status (async, non-blocking)
       supabase
         .from('bot_status')
         .update({ bot_running: false, bot_pid: null })
         .eq('user_id', userId)
-        .then(() => console.log('✅ Bot status updated: stopped'));
+        .then(() => console.log('✅ Bot status updated: stopped'))
+        .catch((err) => console.error('❌ Error updating bot_status:', err.message));
 
-      // Mark bot_control entry as processed
+      // Mark bot_control entry as processed (async, non-blocking)
       supabase
         .from('bot_control')
         .update({ status: 'processed', processed_at: new Date().toISOString() })
         .eq('user_id', userId)
         .eq('status', 'ACTIVE')
-        .then(() => console.log('✅ Bot control entry marked as processed'));
-    });
-
-    // Update bot_status in Supabase
-    const { error } = await supabase
-      .from('bot_status')
-      .update({
-        bot_running: true,
-        bot_pid: botProcessPID
-      })
-      .eq('user_id', userId);
-
-    if (error) {
-      console.warn('⚠️ Failed to update bot_status:', error.message);
-    }
-
-    // ✅ Update global botStatus to reflect bot is running
-    botStatus.running = true;
-    botStatus.lastUpdate = new Date().toISOString();
-
-    res.json({
-      success: true,
-      message: 'Bot runtime started successfully',
-      pid: botProcessPID
+        .then(() => console.log('✅ Bot control entry marked as processed'))
+        .catch((err) => console.error('❌ Error updating bot_control:', err.message));
     });
   } catch (error) {
     console.error('❌ Error starting bot:', error.message);
@@ -1583,8 +1614,10 @@ app.post('/api/sync-pending-positions', async (req, res) => {
       });
     }
 
-    // 4. Atualizar cada position pendente
+    // 4. ✅ PARALLEL UPDATES: Batch pending positions instead of sequential
+    const updatePromises = [];
     let updated = 0;
+
     for (const trade of pendingTrades) {
       const position = allPositions.find(p => p.externalId === trade.external_id);
 
@@ -1596,21 +1629,32 @@ app.post('/api/sync-pending-positions', async (req, res) => {
 
         console.log(`✅ Updating ${trade.external_id}: ${resultado} | PnL: ${position.pnl}`);
 
-        const { error: updateError } = await supabase
+        // ✅ Add promise to array instead of awaiting immediately (parallel execution)
+        const updatePromise = supabase
           .from('trade_history')
           .update({
             resultado: resultado,
             pnl: position.pnl,
             status: position.status
           })
-          .eq('external_id', trade.external_id);
+          .eq('external_id', trade.external_id)
+          .then(() => {
+            updated++;
+            return true;
+          })
+          .catch((error) => {
+            console.warn(`⚠️ Failed to update ${trade.external_id}:`, error.message);
+            return false;
+          });
 
-        if (!updateError) {
-          updated++;
-        } else {
-          console.warn(`⚠️ Failed to update ${trade.external_id}:`, updateError.message);
-        }
+        updatePromises.push(updatePromise);
       }
+    }
+
+    // ✅ Wait for ALL updates to complete in parallel (instead of sequential)
+    if (updatePromises.length > 0) {
+      console.log(`🔄 Executing ${updatePromises.length} parallel updates...`);
+      await Promise.all(updatePromises);
     }
 
     console.log(`✅ Sync complete: ${updated}/${pendingTrades.length} positions updated`);
@@ -2164,6 +2208,26 @@ app.get('/api/admin/health', async (req, res) => {
       status: 'down',
       timestamp: new Date().toISOString(),
       error: error.message
+    });
+  }
+});
+
+// ✅ PHASE 3: GET /api/admin/health/db-pool - Database connection pool health
+app.get('/api/admin/health/db-pool', async (req, res) => {
+  try {
+    const pool = getConnectionPool();
+    res.json({
+      status: pool.isHealthy ? 'healthy' : 'unhealthy',
+      health: pool.getHealth(),
+      stats: pool.getStats(),
+      timestamp: new Date().toISOString()
+    });
+  } catch (error) {
+    console.error('Error in DB pool health check:', error);
+    res.status(500).json({
+      status: 'error',
+      error: error.message,
+      timestamp: new Date().toISOString()
     });
   }
 });
@@ -3022,6 +3086,15 @@ app.use('/api/crm/integrations', integrationsRouter);
       console.warn('⚠️ [Startup] Cleanup falhou:', cleanupErr.message);
     }
 
+    // ✅ PHASE 3: Initialize Connection Pool Manager (Database optimization)
+    try {
+      initializeConnectionPool(supabase);
+      const pool = getConnectionPool();
+      console.log('📊 Connection Pool initialized:', pool.getStats());
+    } catch (error) {
+      console.warn('⚠️ Failed to initialize connection pool:', error.message);
+    }
+
     // 5️⃣ Iniciar servidor HTTP
     const PORT = 4001;
     const server = httpServer.listen(PORT, () => {
@@ -3066,6 +3139,16 @@ app.use('/api/crm/integrations', integrationsRouter);
       console.log(`   POST /api/admin/users/:id/reset-password (Reset password)`);
       console.log(`\n   WebSocket: /admin namespace - Authenticated real-time updates`);
       console.log(`   Events: metrics:update, health:change, trade:completed, alert:new, log:new`);
+
+      // ✅ Initial scanner data aggregation
+      console.log(`\n🔧 Starting initial scanner data aggregation...`);
+      scannerAggregator.aggregatePerformance()
+        .then((result) => {
+          console.log(`✅ Initial aggregation complete: ${result.upserted} records`);
+        })
+        .catch((error) => {
+          console.error(`⚠️  Initial aggregation failed: ${error.message}`);
+        });
     });
 
   } catch (error) {
@@ -3076,6 +3159,13 @@ app.use('/api/crm/integrations', integrationsRouter);
 })();
 
 // Keep-alive: prevent process from exiting on Windows MINGW64
-setInterval(() => {
+setInterval(async () => {
   // Heartbeat every 30 seconds - keeps event loop active
+
+  // ✅ Also aggregate scanner data every 30 seconds (in background)
+  try {
+    await scannerAggregator.aggregatePerformance();
+  } catch (error) {
+    console.error('[Heartbeat] Error aggregating scanner data:', error.message);
+  }
 }, 30000);
