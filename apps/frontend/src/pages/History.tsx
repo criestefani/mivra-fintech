@@ -17,6 +17,7 @@ interface Trade {
   data_abertura: string
   data_expiracao: string
   expiration_seconds: number
+  account_type?: string | null
 }
 
 export default function History() {
@@ -64,6 +65,16 @@ export default function History() {
   }, [trades])
 
   const formattedTrades = useMemo(() => {
+    const mapAccountType = (type: string | null | undefined) => {
+      if (!type) return 'Unknown'
+      const normalized = type.toString().toLowerCase()
+
+      if (['real', 'live', 'real_account', 'live_account'].includes(normalized)) return 'Real'
+      if (['demo', 'practice', 'virtual', 'demo_account'].includes(normalized)) return 'Demo'
+
+      return type
+    }
+
     return trades.map((trade) => ({
       ...trade,
       directionVariant: (trade.direction === 'call' || trade.direction === 'CALL' ? 'success' : 'destructive') as 'success' | 'destructive',
@@ -78,6 +89,7 @@ export default function History() {
         hour: '2-digit',
         minute: '2-digit',
       }),
+      accountLabel: mapAccountType(trade.account_type),
     }))
   }, [trades])
 
@@ -153,10 +165,11 @@ export default function History() {
           </CardHeader>
           <CardContent>
             <div className="rounded-md border overflow-x-auto">
-              <Table className="min-w-[720px]">
+              <Table className="min-w-[840px]">
                 <TableHeader>
                   <TableRow>
                     <TableHead>Asset</TableHead>
+                    <TableHead>Account</TableHead>
                     <TableHead>Direction</TableHead>
                     <TableHead>Amount</TableHead>
                     <TableHead>Duration</TableHead>
@@ -168,7 +181,7 @@ export default function History() {
                 <TableBody>
                   {loading ? (
                     <TableRow>
-                      <TableCell colSpan={7} className="text-center py-8">
+                      <TableCell colSpan={8} className="text-center py-8">
                         <div className="flex items-center justify-center gap-2">
                           <div className="skeleton w-4 h-4 rounded-full" />
                           <span className="text-muted-foreground">Loading trades...</span>
@@ -177,7 +190,7 @@ export default function History() {
                     </TableRow>
                   ) : formattedTrades.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={7} className="text-center py-8">
+                      <TableCell colSpan={8} className="text-center py-8">
                         <div className="flex flex-col items-center gap-2">
                           <Activity className="w-8 h-8 text-muted-foreground" />
                           <p className="text-muted-foreground">No trades found</p>
@@ -189,6 +202,9 @@ export default function History() {
                     formattedTrades.map((trade) => (
                       <TableRow key={trade.id}>
                         <TableCell className="font-medium">{trade.ativo_nome}</TableCell>
+                        <TableCell>
+                          <Badge variant="outline">{trade.accountLabel}</Badge>
+                        </TableCell>
                         <TableCell>
                           <Badge variant={trade.directionVariant}>
                             {trade.directionVariant === 'success' ? (

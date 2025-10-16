@@ -8,7 +8,7 @@ import { Input } from '@/shared/components/ui/input'
 import { Label } from '@/shared/components/ui/label'
 import { Badge } from '@/shared/components/ui/badge'
 import { cn } from '@/shared/utils/cn'
-import { Shield, Zap, Target, TrendingUp } from 'lucide-react'
+import { Shield, Zap, Target, TrendingUp, ChevronDown } from 'lucide-react'
 
 interface AutoModeConfigProps {
   selectedStrategy: string
@@ -71,6 +71,14 @@ export const AutoModeConfig: React.FC<AutoModeConfigProps> = ({
   dailyGoal,
   onDailyGoalChange
 }) => {
+  const [showAdvancedOptions, setShowAdvancedOptions] = React.useState(false)
+
+  React.useEffect(() => {
+    if (typeof window !== 'undefined' && window.innerWidth >= 768) {
+      setShowAdvancedOptions(true)
+    }
+  }, [])
+
   return (
     <div className="space-y-4">
       {/* Strategy Selection */}
@@ -158,7 +166,7 @@ export const AutoModeConfig: React.FC<AutoModeConfigProps> = ({
                 step="0.01"
                 value={entryValue}
                 onChange={(e) => onEntryValueChange(Number(e.target.value))}
-                placeholder="e.g., 10.00"
+                placeholder="e.g., 20.00"
                 className="bg-card text-center font-mono text-lg"
               />
             </div>
@@ -168,105 +176,123 @@ export const AutoModeConfig: React.FC<AutoModeConfigProps> = ({
 
       {/* Advanced Options */}
       <Card className="glass border-border">
-        <CardHeader>
-          <CardTitle className="text-lg">Advanced Options</CardTitle>
-          <CardDescription>Optional risk management settings</CardDescription>
+        <CardHeader className="p-0">
+          <button
+            type="button"
+            onClick={() => setShowAdvancedOptions((prev) => !prev)}
+            aria-expanded={showAdvancedOptions}
+            aria-controls="auto-advanced-options"
+            className="w-full flex items-center justify-between gap-3 px-4 py-4 md:px-6 md:py-5 text-left"
+          >
+            <div>
+              <CardTitle className="text-lg">Advanced Options</CardTitle>
+              <CardDescription>Optional risk management settings</CardDescription>
+            </div>
+            <ChevronDown
+              className={cn(
+                'w-5 h-5 text-muted-foreground transition-transform duration-200',
+                showAdvancedOptions ? 'rotate-180' : 'rotate-0'
+              )}
+            />
+          </button>
         </CardHeader>
-        <CardContent className="space-y-6">
-          {/* Leverage (Martingale) */}
-          <div className="space-y-3">
-            <div className="flex items-center justify-between">
-              <div>
-                <Label className="text-base font-semibold">Leverage (Martingale)</Label>
-                <p className="text-xs text-muted-foreground mt-1">
-                  Multiply entry after loss
-                </p>
+        {showAdvancedOptions && (
+          <CardContent id="auto-advanced-options" className="space-y-6 pt-0">
+            {/* Leverage (Martingale) */}
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <div>
+                  <Label className="text-base font-semibold">Leverage (Martingale)</Label>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Multiply entry after loss
+                  </p>
+                </div>
+                <Button
+                  variant={leverageEnabled ? 'default' : 'outline'}
+                  size="sm"
+                  onClick={() => onLeverageEnabledChange(!leverageEnabled)}
+                >
+                  {leverageEnabled ? 'ON' : 'OFF'}
+                </Button>
               </div>
-              <Button
-                variant={leverageEnabled ? 'default' : 'outline'}
-                size="sm"
-                onClick={() => onLeverageEnabledChange(!leverageEnabled)}
-              >
-                {leverageEnabled ? 'ON' : 'OFF'}
-              </Button>
+              {leverageEnabled && (
+                <Input
+                  type="number"
+                  min="1.5"
+                  max="5"
+                  step="0.5"
+                  value={leverage}
+                  onChange={(e) => onLeverageChange(Number(e.target.value))}
+                  className="bg-card"
+                />
+              )}
             </div>
-            {leverageEnabled && (
-              <Input
-                type="number"
-                min="1.5"
-                max="5"
-                step="0.5"
-                value={leverage}
-                onChange={(e) => onLeverageChange(Number(e.target.value))}
-                className="bg-card"
-              />
-            )}
-          </div>
 
-          {/* Safety Stop */}
-          <div className="space-y-3">
-            <div className="flex items-center justify-between">
-              <div>
-                <Label className="text-base font-semibold">Safety Stop</Label>
-                <p className="text-xs text-muted-foreground mt-1">
-                  Stop after consecutive losses
-                </p>
+            {/* Safety Stop */}
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <div>
+                  <Label className="text-base font-semibold">Safety Stop</Label>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Stop after consecutive losses
+                  </p>
+                </div>
+                <Button
+                  variant={safetyStopEnabled ? 'default' : 'outline'}
+                  size="sm"
+                  onClick={() => onSafetyStopEnabledChange(!safetyStopEnabled)}
+                >
+                  {safetyStopEnabled ? 'ON' : 'OFF'}
+                </Button>
               </div>
-              <Button
-                variant={safetyStopEnabled ? 'default' : 'outline'}
-                size="sm"
-                onClick={() => onSafetyStopEnabledChange(!safetyStopEnabled)}
-              >
-                {safetyStopEnabled ? 'ON' : 'OFF'}
-              </Button>
+              {safetyStopEnabled && (
+                <Input
+                  type="number"
+                  min="1"
+                  max="10"
+                  step="1"
+                  value={safetyStop}
+                  onChange={(e) => onSafetyStopChange(Number(e.target.value))}
+                  className="bg-card"
+                />
+              )}
             </div>
-            {safetyStopEnabled && (
-              <Input
-                type="number"
-                min="1"
-                max="10"
-                step="1"
-                value={safetyStop}
-                onChange={(e) => onSafetyStopChange(Number(e.target.value))}
-                className="bg-card"
-              />
-            )}
-          </div>
 
-          {/* Daily Goal */}
-          <div className="space-y-3">
-            <div className="flex items-center justify-between">
-              <div>
-                <Label className="text-base font-semibold flex items-center gap-2">
-                  <TrendingUp className="w-4 h-4 text-positive" />
-                  Daily Goal
-                </Label>
-                <p className="text-xs text-muted-foreground mt-1">
-                  Stop when profit reaches target
-                </p>
+            {/* Daily Goal */}
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <div>
+                  <Label className="text-base font-semibold flex items-center gap-2">
+                    <TrendingUp className="w-4 h-4 text-positive" />
+                    Daily Goal
+                  </Label>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Stop when profit reaches target
+                  </p>
+                </div>
+                <Button
+                  variant={dailyGoalEnabled ? 'default' : 'outline'}
+                  size="sm"
+                  onClick={() => onDailyGoalEnabledChange(!dailyGoalEnabled)}
+                >
+                  {dailyGoalEnabled ? 'ON' : 'OFF'}
+                </Button>
               </div>
-              <Button
-                variant={dailyGoalEnabled ? 'default' : 'outline'}
-                size="sm"
-                onClick={() => onDailyGoalEnabledChange(!dailyGoalEnabled)}
-              >
-                {dailyGoalEnabled ? 'ON' : 'OFF'}
-              </Button>
+              {dailyGoalEnabled && (
+                <Input
+                  type="number"
+                  min="10"
+                  max="10000"
+                  step="10"
+                  value={dailyGoal}
+                  onChange={(e) => onDailyGoalChange(Number(e.target.value))}
+                  placeholder="e.g., 100"
+                  className="bg-card"
+                />
+              )}
             </div>
-            {dailyGoalEnabled && (
-              <Input
-                type="number"
-                min="10"
-                max="10000"
-                step="10"
-                value={dailyGoal}
-                onChange={(e) => onDailyGoalChange(Number(e.target.value))}
-                placeholder="e.g., 100"
-                className="bg-card"
-              />
-            )}
-          </div>
-        </CardContent>
+          </CardContent>
+        )}
       </Card>
     </div>
   )

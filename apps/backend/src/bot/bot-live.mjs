@@ -52,9 +52,21 @@ class MivraTecBot {
     // ✅ Armazena user_id, SSID, estratégia e modo do comando START
     this.currentUserId = null;
     this.userSSID = null;
-    this.strategy = 'balanced'; // Default: balanced
+    this.strategy = 'aggressive'; // Default: aggressive
     this.botMode = 'auto'; // Default: auto
 
+    // ✅ ENTRY VALUE AND ADVANCED CONFIG
+    this.tradeAmount = 1; // Default entry value
+    this.leverageEnabled = false;
+    this.leverage = 2; // Martingale multiplier
+    this.currentLeverageAmount = null; // Current leverage-adjusted amount
+    this.consecutiveLosses = 0; // Track losses for martingale
+    this.totalConsecutiveLosses = 0; // Track total losses for safety stop
+    this.safetyStopEnabled = false;
+    this.safetyStop = 3; // Stop after X consecutive losses
+    this.dailyGoalEnabled = false;
+    this.dailyGoal = 100; // Stop when profit reaches this
+    this.shouldStop = false; // Flag to stop bot
 
     // Sistema de HOLD
     this.assetLosses = new Map();
@@ -245,11 +257,29 @@ class MivraTecBot {
     // ✅ ARMAZENA user_id
     this.currentUserId = cmd.user_id;
 
-    // ✅ LER ESTRATÉGIA E MODO DO CONFIG (novo!)
+    // ✅ LER ESTRATÉGIA, MODO E CONFIGURAÇÕES AVANÇADAS DO CONFIG
     if (cmd.config) {
-      this.strategy = cmd.config.strategy || 'balanced';
+      this.strategy = cmd.config.strategy || 'aggressive';
       this.botMode = cmd.config.mode || 'auto';
+      this.tradeAmount = cmd.config.amount || 1;
+      this.leverage = cmd.config.leverage || 2;
+      this.safetyStop = cmd.config.safetyStop || 3;
+      this.dailyGoal = cmd.config.dailyGoal || 100;
+
+      // ✅ Read advanced settings state
+      if (cmd.config.leverageEnabled !== undefined) {
+        this.leverageEnabled = cmd.config.leverageEnabled;
+      }
+      if (cmd.config.safetyStopEnabled !== undefined) {
+        this.safetyStopEnabled = cmd.config.safetyStopEnabled;
+      }
+      if (cmd.config.dailyGoalEnabled !== undefined) {
+        this.dailyGoalEnabled = cmd.config.dailyGoalEnabled;
+      }
+
       console.log(`📋 Config: Strategy=${this.strategy}, Mode=${this.botMode}`);
+      console.log(`💰 Entry Value: ${this.tradeAmount} | Leverage: ${this.leverageEnabled ? this.leverage + 'x' : 'OFF'}`);
+      console.log(`🛑 Safety Stop: ${this.safetyStopEnabled ? this.safetyStop : 'OFF'} | Daily Goal: ${this.dailyGoalEnabled ? this.dailyGoal : 'OFF'}`);
     }
 
     // ✅ BUSCAR SSID VÁLIDO DE bot_status (que foi salvo quando conectou em POST /api/bot/connect)
@@ -395,7 +425,7 @@ class MivraTecBot {
         active_id: signal.active.id,
         ativo_nome: ativoNome,
         direction: signal.consensus.toLowerCase(),
-        valor: TRADE_AMOUNT,
+        valor: this.tradeAmount,
         profit_esperado: order.expectedProfit || 0.85,
         expiration_seconds: expirationSeconds,
         strategy_id: strategyInfo.id,
@@ -471,10 +501,46 @@ class MivraTecBot {
 
 
     if (tradeData) {
+      // ✅ HOLD SYSTEM
       if (resultado === 'LOSS') {
         this.blockAssetAfterLoss(tradeData.active_id, tradeData.ativo_nome);
       } else if (resultado === 'WIN') {
         this.resetAssetLosses(tradeData.active_id, tradeData.ativo_nome);
+      }
+
+      // ✅ MARTINGALE (Leverage) SYSTEM
+      if (resultado === 'LOSS') {
+        this.consecutiveLosses++;
+        this.totalConsecutiveLosses++;
+
+        if (this.leverageEnabled) {
+          // Apply leverage multiplier for next trade
+          this.currentLeverageAmount = this.tradeAmount * Math.pow(this.leverage, this.consecutiveLosses);
+          console.log(`📈 [MARTINGALE] Loss #${this.consecutiveLosses} → Next entry: ${this.currentLeverageAmount.toFixed(2)}`);
+        } else {
+          this.currentLeverageAmount = null;
+          console.log(`📊 [MARTINGALE] OFF - Using default entry`);
+        }
+      } else if (resultado === 'WIN') {
+        if (this.leverageEnabled && this.consecutiveLosses > 0) {
+          console.log(`✅ [MARTINGALE] WIN after ${this.consecutiveLosses} loss(es) → Resetting leverage`);
+        }
+        this.consecutiveLosses = 0;
+        this.currentLeverageAmount = null;
+      }
+
+      // ✅ SAFETY STOP (Stop Loss) SYSTEM
+      if (this.safetyStopEnabled && this.totalConsecutiveLosses >= this.safetyStop) {
+        console.log(`🛑 [SAFETY STOP] ${this.totalConsecutiveLosses} consecutive losses reached! Stopping bot...`);
+        this.shouldStop = true;
+        this.setStatus(`Bot stopped - Safety Stop triggered (${this.totalConsecutiveLosses} losses)`);
+      }
+
+      // ✅ DAILY GOAL (Take Profit) SYSTEM
+      if (this.dailyGoalEnabled && this.lucroHoje >= this.dailyGoal) {
+        console.log(`🎯 [DAILY GOAL] Profit target reached: R$ ${this.lucroHoje.toFixed(2)} >= R$ ${this.dailyGoal}`);
+        this.shouldStop = true;
+        this.setStatus(`Bot stopped - Daily Goal reached: R$ ${this.lucroHoje.toFixed(2)}`);
       }
 
 
@@ -630,6 +696,12 @@ class MivraTecBot {
     try {
       console.log('🔄 === NOVO CICLO ===\n');
 
+      // ✅ CHECK SAFETY STOP AND DAILY GOAL BEFORE EXECUTING
+      if (this.shouldStop) {
+        console.log('⛔ Bot is flagged to stop. Not executing trade cycle.\n');
+        return;
+      }
+
       // ✅ ONE-AT-A-TIME: Check if position is already open
       if (this.currentOpenPosition) {
         console.log(`⏸️ Aguardando posição ${this.currentOpenPosition} fechar...\n`);
@@ -688,7 +760,12 @@ class MivraTecBot {
 
       // ✅ SELECT DYNAMIC TIMEFRAME BASED ON SIGNAL CONFIDENCE
       const expirationTime = this.selectBestTimeframe(activeObj, signal.confidence);
-      const order = await this.blitz.buy(activeObj, direction, expirationTime, TRADE_AMOUNT, this.balance);
+
+      // ✅ USE MARTINGALE AMOUNT IF APPLICABLE, OTHERWISE USE DEFAULT ENTRY VALUE
+      const tradeValue = this.currentLeverageAmount || this.tradeAmount;
+      console.log(`💰 Executing trade with amount: R$ ${tradeValue}`);
+
+      const order = await this.blitz.buy(activeObj, direction, expirationTime, tradeValue, this.balance);
 
 
       const positionId = order.id;

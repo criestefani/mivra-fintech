@@ -55,7 +55,7 @@ const Operations = () => {
   });
 
   // ✅ Auto Mode Config
-  const [selectedStrategy, setSelectedStrategy] = useState("balanced");
+  const [selectedStrategy, setSelectedStrategy] = useState("aggressive");
   const [entryValue, setEntryValue] = useState(20);
 
   // ✅ Leverage (Martingale) - OFF by default

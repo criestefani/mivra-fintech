@@ -23,7 +23,7 @@ export const MetricsCards: React.FC<MetricsCardsProps> = ({
   const isProfitable = pnl >= 0
 
   return (
-    <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4">
+    <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 md:gap-4">
       {/* Win Rate Card */}
       <Card className="glass border-border">
         <CardContent className="p-4 md:p-6">
@@ -56,21 +56,6 @@ export const MetricsCards: React.FC<MetricsCardsProps> = ({
             </div>
             <div className="text-xs text-muted-foreground">
               {totalWins}W / {totalLosses}L
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Wins Card */}
-      <Card className="glass border-border">
-        <CardContent className="p-4 md:p-6">
-          <div className="space-y-2">
-            <div className="flex items-center justify-between">
-              <span className="text-xs md:text-sm text-muted-foreground">Wins</span>
-              <TrendingUp className="w-4 h-4 text-positive" />
-            </div>
-            <div className="text-2xl md:text-3xl font-bold font-mono text-positive">
-              {totalWins}
             </div>
           </div>
         </CardContent>

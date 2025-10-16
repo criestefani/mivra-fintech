@@ -32,13 +32,17 @@ export const AssetCard = React.memo<AssetCardProps>(({ asset, onClick }) => {
   const totalLosses = asset.total_losses ?? 0;
   const isProfitable = winRate >= 50;
 
-  // Format timeframe for display (e.g., 5 -> M5, 15 -> M15)
-  const formatTimeframe = (tf: number): string => {
-    if (tf < 60) return `M${tf}`;
-    if (tf === 60) return 'H1';
-    if (tf === 240) return 'H4';
-    if (tf === 1440) return 'D1';
-    return `M${tf}`;
+  // Format timeframe using known scanner values from Supabase view
+  const timeframeLabels: Record<number, string> = {
+    10: '10s',
+    30: '30s',
+    60: '1m',
+    300: '5m'
+  };
+
+  const formatTimeframe = (tf?: number | null): string => {
+    if (!tf) return 'N/A';
+    return timeframeLabels[tf] ?? `${tf}s`;
   };
 
   return (
