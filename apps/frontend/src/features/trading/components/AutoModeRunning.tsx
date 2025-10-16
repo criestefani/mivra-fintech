@@ -3,7 +3,6 @@
 
 import React from 'react'
 import { Card, CardHeader, CardTitle, CardContent } from '@/shared/components/ui/card'
-import { Badge } from '@/shared/components/ui/badge'
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, ReferenceLine } from 'recharts'
 import { Activity, TrendingUp, TrendingDown } from 'lucide-react'
 
@@ -22,8 +21,7 @@ interface AutoModeRunningProps {
 export const AutoModeRunning: React.FC<AutoModeRunningProps> = ({
   pnlData,
   currentStatus,
-  currentAsset,
-  currentAmount
+  currentAsset
 }) => {
   const currentPnl = pnlData.length > 0 ? pnlData[pnlData.length - 1].value : 0
   const isProfitable = currentPnl >= 0
@@ -35,7 +33,7 @@ export const AutoModeRunning: React.FC<AutoModeRunningProps> = ({
         <CardContent className="p-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <div className="w-3 h-3 bg-green-500 rounded-full animate-pulse" />
+              <div className="w-3 h-3 bg-positive rounded-full animate-pulse" />
               <div>
                 <p className="text-sm text-muted-foreground">Bot Status</p>
                 <p className="font-semibold text-foreground">
@@ -64,13 +62,15 @@ export const AutoModeRunning: React.FC<AutoModeRunningProps> = ({
             </CardTitle>
             <div className="flex items-center gap-2">
               {isProfitable ? (
-                <TrendingUp className="w-5 h-5 text-green-500" />
+                <TrendingUp className="w-5 h-5 text-positive" />
               ) : (
-                <TrendingDown className="w-5 h-5 text-red-500" />
+                <TrendingDown className="w-5 h-5 text-negative" />
               )}
-              <span className={`text-xl font-bold font-mono ${
-                isProfitable ? 'text-green-500' : 'text-red-500'
-              }`}>
+              <span
+                className={`text-xl font-bold font-mono ${
+                  isProfitable ? 'text-positive' : 'text-negative'
+                }`}
+              >
                 {isProfitable ? '+' : ''}R$ {currentPnl.toFixed(2)}
               </span>
             </div>
@@ -108,7 +108,7 @@ export const AutoModeRunning: React.FC<AutoModeRunningProps> = ({
                 <Line
                   type="monotone"
                   dataKey="value"
-                  stroke={isProfitable ? '#10B981' : '#EF4444'}
+                  stroke={isProfitable ? 'hsl(var(--positive))' : 'hsl(var(--negative))'}
                   strokeWidth={2}
                   dot={false}
                   animationDuration={300}

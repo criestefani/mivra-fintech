@@ -1,6 +1,5 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { AvalonService } from "@/services/avalon";
 
 export interface Asset {
   id: string;
@@ -37,44 +36,30 @@ export const useAvailableAssets = (category?: string) => {
           }
         }
 
-        // Fetch from Avalon API via Edge Function
-        const avalonAssets = await AvalonService.getAssets();
-
-        // Fetch metadata from Supabase
-        const { data: dbAssets, error } = await supabase
+        // Fetch from Supabase (AvalonService.getAssets() method doesn't exist)
+        let query = supabase
           .from("available_assets")
           .select("*")
-          .eq("is_active", true);
+          .eq("is_active", true)
+          .order("asset_name");
+
+        if (category) {
+          query = query.eq("category", category);
+        }
+
+        const { data, error } = await query;
 
         if (error) throw error;
 
-        // Combine Avalon data with Supabase metadata
-        const combined = avalonAssets.map(avalonAsset => {
-          const dbAsset = (dbAssets || []).find(
-            db => db.asset_id === avalonAsset.id.toString()
-          );
-
-          return {
-            id: avalonAsset.id.toString(),
-            asset_id: avalonAsset.id.toString(),
-            asset_name: avalonAsset.name,
-            category: (dbAsset?.category || "crypto") as "crypto" | "forex" | "commodities" | "indices",
-            ticker: dbAsset?.ticker || avalonAsset.name,
-            is_active: avalonAsset.is_enabled && !avalonAsset.is_suspended,
-          };
-        });
-
         // Cache the results
-        localStorage.setItem(CACHE_KEY, JSON.stringify({
-          data: combined,
-          timestamp: Date.now()
-        }));
+        if (data) {
+          localStorage.setItem(CACHE_KEY, JSON.stringify({
+            data,
+            timestamp: Date.now()
+          }));
+        }
 
-        const filtered = category 
-          ? combined.filter(a => a.category === category)
-          : combined;
-
-        setAssets(filtered);
+        setAssets((data || []) as Asset[]);
       } catch (error) {
         console.error("Error fetching assets:", error);
         

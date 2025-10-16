@@ -5,7 +5,11 @@
   "main": "index.js",
   "scripts": {
     "test": "node test-bot.mjs",
-    "start": "node src/bot/bot-live.mjs"
+    "start": "node src/bot/bot-live.mjs",
+    "server": "node src/api-server.mjs",
+    "scanner": "node start-market-scanner.mjs",
+    "dev": "concurrently \"npm run server\" \"npm run scanner\"",
+    "start:all": "npm run dev"
   },
   "keywords": [],
   "author": "",

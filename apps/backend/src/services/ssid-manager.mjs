@@ -8,8 +8,8 @@ class SSIDManager {
 
     // Configuration from environment variables
     this.AVALON_SESSION_URL = process.env.AVALON_SESSION_URL || 'http://api-qc.avalonbots.com:3000/session';
-    this.AVALON_API_TOKEN = process.env.AVALON_API_TOKEN || 'dfc29735b5450651d5c03f4fb6508ed9';
-    this.AVALON_SYSTEM_USER_ID = process.env.AVALON_SYSTEM_USER_ID || '183588600';
+    this.AVALON_API_TOKEN = process.env.AVALON_API_TOKEN || process.env.AVALON_API_KEY || 'dfc29735b5450651d5c03f4fb6508ed9';
+    this.AVALON_SYSTEM_USER_ID = process.env.AVALON_SYSTEM_USER_ID || process.env.AVALON_USER_ID || '183588600';
     this.RENEWAL_INTERVAL = 23 * 60 * 60 * 1000; // 23 hours in milliseconds
 
     console.log('✅ SSID Manager initialized');

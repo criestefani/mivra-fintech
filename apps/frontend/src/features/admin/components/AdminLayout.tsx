@@ -71,7 +71,7 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
   return (
     <div className="min-h-screen bg-background">
       {/* Admin Header */}
-      <header className="fixed top-0 left-0 right-0 z-50 h-16 glass border-b border-border/50">
+      <header className="fixed top-0 left-0 right-0 z-50 h-16 glass border-b border-border/50 shadow-card">
         <div className="container mx-auto h-full px-4 flex items-center justify-between">
           {/* Logo & Back Button */}
           <div className="flex items-center gap-4">
@@ -80,14 +80,15 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
               size="icon"
               onClick={() => navigate('/operations')}
               title="Back to Operations"
+              className="border border-transparent text-muted-foreground hover:border-border/60 hover:bg-muted/20 hover:text-foreground"
             >
               <ArrowLeft className="w-5 h-5" />
             </Button>
             <div className="flex items-center gap-2">
-              <div className="w-8 h-8 bg-destructive rounded-lg flex items-center justify-center">
-                <span className="text-destructive-foreground font-bold text-sm">A</span>
+              <div className="w-9 h-9 bg-destructive rounded-lg flex items-center justify-center shadow-md shadow-destructive/40">
+                <span className="text-destructive-foreground font-semibold text-sm tracking-wide">A</span>
               </div>
-              <span className="font-bold text-lg hidden sm:inline">Admin Panel</span>
+              <span className="font-semibold text-lg hidden sm:inline text-foreground/90">Admin Panel</span>
             </div>
           </div>
 
@@ -95,11 +96,11 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
           {adminUser && (
             <div className="flex items-center gap-4">
               <div className="hidden md:flex flex-col items-end">
-                <span className="text-sm font-medium">{adminUser.email}</span>
-                <span className="text-xs text-muted-foreground capitalize">{adminUser.role}</span>
+                <span className="text-sm font-medium text-foreground/90">{adminUser.email}</span>
+                <span className="text-xs text-muted-foreground/80 capitalize">{adminUser.role}</span>
               </div>
 
-              <Avatar className="w-10 h-10">
+              <Avatar className="w-10 h-10 border border-border/40 shadow-sm shadow-destructive/20">
                 <AvatarFallback className="bg-destructive text-destructive-foreground">
                   {getInitials(adminUser.email)}
                 </AvatarFallback>
@@ -109,7 +110,7 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
                 variant="ghost"
                 size="icon"
                 onClick={handleSignOut}
-                className="text-muted-foreground hover:text-foreground"
+                className="text-muted-foreground hover:text-destructive hover:bg-destructive/10"
                 title="Sign Out"
               >
                 <LogOut className="w-5 h-5" />
@@ -120,18 +121,17 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
       </header>
 
       {/* Admin Sidebar */}
-      <aside className="hidden lg:fixed lg:left-0 lg:top-16 lg:bottom-0 lg:flex lg:w-64 lg:flex-col glass border-r border-border/50 z-40">
+      <aside className="hidden lg:fixed lg:left-0 lg:top-16 lg:bottom-0 lg:flex lg:w-64 lg:flex-col bg-sidebar/90 backdrop-blur-2xl border-r border-sidebar-border/60 shadow-card z-40 text-sidebar-foreground">
         <nav className="flex-1 overflow-y-auto p-4 space-y-1">
           {adminLinks.map((link) => (
             <Link
               key={link.to}
               to={link.to}
               className={cn(
-                'flex items-center gap-3 px-4 py-3 rounded-lg transition-colors',
-                'hover:bg-accent hover:text-accent-foreground',
+                'flex items-center gap-3 px-4 py-3 rounded-lg border transition-all duration-200 text-sm font-medium',
                 isActive(link.to)
-                  ? 'bg-destructive text-destructive-foreground'
-                  : 'text-muted-foreground'
+                  ? 'border-destructive/60 bg-destructive text-destructive-foreground shadow-card'
+                  : 'border-transparent text-sidebar-foreground/70 hover:border-sidebar-accent/40 hover:bg-sidebar-accent/10 hover:text-sidebar-foreground'
               )}
             >
               {link.icon}
@@ -141,8 +141,8 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
         </nav>
 
         {/* Admin Footer */}
-        <div className="p-4 border-t border-border/50">
-          <div className="text-xs text-muted-foreground">
+        <div className="p-4 border-t border-sidebar-border/60">
+          <div className="text-xs text-sidebar-foreground/60">
             <p className="font-semibold">Admin Panel v1.0</p>
             <p className="mt-1">© 2025 Mivra Fintech</p>
           </div>
@@ -150,18 +150,17 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
       </aside>
 
       {/* Mobile Bottom Nav */}
-      <nav className="lg:hidden fixed bottom-0 left-0 right-0 z-50 glass border-t border-border/50">
-        <div className="flex items-center justify-around p-2">
+      <nav className="lg:hidden fixed bottom-0 left-0 right-0 z-50 bg-sidebar/95 backdrop-blur-xl border-t border-sidebar-border/60 shadow-card text-sidebar-foreground">
+        <div className="flex items-center justify-around px-2 py-2">
           {adminLinks.slice(0, 4).map((link) => (
             <Link
               key={link.to}
               to={link.to}
               className={cn(
-                'flex flex-col items-center gap-1 px-3 py-2 rounded-lg transition-colors min-w-[64px]',
-                'hover:bg-accent hover:text-accent-foreground',
+                'flex flex-col items-center gap-1 px-3 py-2 rounded-lg min-w-[64px] border transition-all duration-200 text-xs font-medium',
                 isActive(link.to)
-                  ? 'bg-destructive text-destructive-foreground'
-                  : 'text-muted-foreground'
+                  ? 'border-destructive/60 bg-destructive text-destructive-foreground shadow-card'
+                  : 'border-transparent text-sidebar-foreground/70 hover:border-sidebar-accent/40 hover:bg-sidebar-accent/10 hover:text-sidebar-foreground'
               )}
             >
               {link.icon}

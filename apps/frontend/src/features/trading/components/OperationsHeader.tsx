@@ -60,7 +60,7 @@ export const OperationsHeader: React.FC<OperationsHeaderProps> = ({
           <div className="flex items-center gap-3">
             {/* Connection Status */}
             <div className="hidden md:flex items-center gap-2">
-              <div className={`w-2 h-2 rounded-full ${isConnected ? 'bg-green-500 animate-pulse' : 'bg-red-500'}`} />
+              <div className={`w-2 h-2 rounded-full ${isConnected ? 'bg-positive animate-pulse' : 'bg-negative'}`} />
               <span className="text-sm text-muted-foreground">
                 {isConnected ? 'Connected' : 'Disconnected'}
               </span>
@@ -86,7 +86,7 @@ export const OperationsHeader: React.FC<OperationsHeaderProps> = ({
                 variant="default"
                 onClick={onStart}
                 disabled={!isConnected || isLoading}
-                className="gap-2 min-w-[120px] bg-green-600 hover:bg-green-700"
+                className="gap-2 min-w-[120px] bg-positive text-positive-foreground hover:bg-positive/90"
               >
                 {isLoading ? (
                   <Loader2 className="w-4 h-4 animate-spin" />
@@ -101,7 +101,7 @@ export const OperationsHeader: React.FC<OperationsHeaderProps> = ({
 
         {/* Mobile Connection Status */}
         <div className="md:hidden flex items-center gap-2 mt-4 pt-4 border-t border-border">
-          <div className={`w-2 h-2 rounded-full ${isConnected ? 'bg-green-500 animate-pulse' : 'bg-red-500'}`} />
+          <div className={`w-2 h-2 rounded-full ${isConnected ? 'bg-positive animate-pulse' : 'bg-negative'}`} />
           <span className="text-sm text-muted-foreground">
             {isConnected ? 'Connected to broker' : 'Not connected to broker'}
           </span>

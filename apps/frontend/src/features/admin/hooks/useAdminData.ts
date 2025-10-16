@@ -235,3 +235,25 @@ export function useDailyVolume(
     staleTime: 1000 * 60 * 10, // 10 minutes
   });
 }
+/**
+ * Combined hook for all admin data - for backward compatibility
+ */
+export function useAdminData() {
+  return {
+    dashboard: useAdminDashboard,
+    revenueData: useRevenueData,
+    userGrowthData: useUserGrowthData,
+    topUsersByPnL: useTopUsersByPnL,
+    topUsersByVolume: useTopUsersByVolume,
+    assetPerformance: useAssetPerformance,
+    adminUsers: useAdminUsers,
+    userDetails: useUserDetails,
+    userTrades: useUserTrades,
+    userSessions: useUserSessions,
+    adminTrades: useAdminTrades,
+    tradeDetails: useTradeDetails,
+    tradeStats: useTradeStats,
+    assetStats: useAssetStats,
+    dailyVolume: useDailyVolume,
+  };
+}

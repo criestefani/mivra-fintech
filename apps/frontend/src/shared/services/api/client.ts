@@ -40,8 +40,8 @@ apiClient.interceptors.response.use(
 
 // Bot API
 export const botAPI = {
-  connect: () => apiClient.post('/api/bot/connect'),
-  disconnect: () => apiClient.post('/api/bot/disconnect'),
+  connect: (userId: string) => apiClient.post('/api/bot/connect', { userId }),
+  disconnect: (userId: string) => apiClient.post('/api/bot/disconnect', { userId }),
   getBalance: (accountType: 'demo' | 'real') =>
     apiClient.get(`/api/bot/balance?accountType=${accountType}`),
   switchAccountType: (accountType: 'demo' | 'real') =>

@@ -1,4 +1,14 @@
 // Market Scanner - Real-time market analysis using Aggressive Hybrid Strategy
+
+// Load environment variables first
+import dotenv from 'dotenv';
+import path from 'path';
+import { fileURLToPath } from 'url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+dotenv.config({ path: path.resolve(__dirname, '../../.env') });
+
 import { ClientSdk, SsidAuthMethod } from '@quadcode-tech/client-sdk-js';
 import { createClient } from '@supabase/supabase-js';
 import { analyzeAggressive } from './strategies/strategy-aggressive.mjs';
@@ -12,7 +22,7 @@ const AVALON_API_HOST = process.env.AVALON_API_HOST || 'https://trade.avalonbrok
 
 const supabase = createClient(
   process.env.SUPABASE_URL || 'https://vecofrvxrepogtigmeyj.supabase.co',
-  process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SERVICE_KEY
+  process.env.SUPABASE_SERVICE_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY
 );
 
 class MarketScanner {
@@ -27,14 +37,17 @@ class MarketScanner {
   async connect() {
     console.log('🔐 Market Scanner conectando ao Avalon...');
 
-    // ✅ Use system SSID from ssidManager
+    // ✅ Initialize system SSID if not available
     this.systemSSID = ssidManager.getSystemSSID();
 
     if (!this.systemSSID) {
-      console.log('⏳ Aguardando System SSID...');
-      // Wait for system SSID to be initialized
-      await new Promise(resolve => setTimeout(resolve, 5000));
-      this.systemSSID = ssidManager.getSystemSSID();
+      console.log('⏳ Inicializando System SSID...');
+      try {
+        this.systemSSID = await ssidManager.initializeSystemSSID();
+      } catch (error) {
+        console.error('❌ Failed to initialize System SSID:', error.message);
+        throw new Error('System SSID initialization failed. Cannot connect to Avalon.');
+      }
     }
 
     if (!this.systemSSID) {
@@ -131,7 +144,7 @@ class MarketScanner {
     const signalPrice = parseFloat(lastCandle.close);
     const ativoNome = getAssetName(active.id);
 
-    // ✅ Save detailed strategy information
+    // ✅ Save signal to strategy_trades (only columns that exist)
     const { data, error } = await supabase.from('strategy_trades').insert({
       active_id: active.id.toString(),
       ativo_nome: ativoNome,
@@ -139,11 +152,7 @@ class MarketScanner {
       signal_timestamp: signalTime.toISOString(),
       signal_direction: direction,
       signal_price: signalPrice,
-      result: 'PENDING',
-      strategy_name: 'aggressive-hybrid',
-      confidence: strategyResult.confidence,
-      advisor_scores: JSON.stringify(strategyResult.scores || {}),
-      advisor_details: JSON.stringify(strategyResult.advisors || [])
+      result: 'PENDING'
     }).select('id').single();
 
     if (error || !data) {

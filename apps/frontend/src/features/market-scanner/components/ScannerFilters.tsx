@@ -21,9 +21,6 @@ export const ScannerFilters: React.FC<ScannerFiltersProps> = ({
     onFiltersChange({ ...filters, timeframe })
   }
 
-  const handleStrategyChange = (strategy: string | undefined) => {
-    onFiltersChange({ ...filters, strategy })
-  }
 
   const handleMinWinRateChange = (value: string) => {
     const minWinRate = value ? parseFloat(value) : undefined
@@ -60,7 +57,7 @@ export const ScannerFilters: React.FC<ScannerFiltersProps> = ({
         )}
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         {/* Timeframe Filter */}
         <div className="space-y-2">
           <Label className="text-xs">Timeframe</Label>
@@ -76,30 +73,6 @@ export const ScannerFilters: React.FC<ScannerFiltersProps> = ({
                 className="h-8 text-xs"
               >
                 {tf < 60 ? `M${tf}` : 'H1'}
-              </Button>
-            ))}
-          </div>
-        </div>
-
-        {/* Strategy Filter */}
-        <div className="space-y-2">
-          <Label className="text-xs">Strategy</Label>
-          <div className="flex flex-wrap gap-2">
-            {['conservative', 'aggressive', 'balanced'].map((strat) => (
-              <Button
-                key={strat}
-                variant={
-                  filters.strategy?.toLowerCase() === strat ? 'default' : 'outline'
-                }
-                size="sm"
-                onClick={() =>
-                  handleStrategyChange(
-                    filters.strategy?.toLowerCase() === strat ? undefined : strat
-                  )
-                }
-                className="h-8 text-xs capitalize"
-              >
-                {strat}
               </Button>
             ))}
           </div>
@@ -149,17 +122,6 @@ export const ScannerFilters: React.FC<ScannerFiltersProps> = ({
               Timeframe: {filters.timeframe < 60 ? `M${filters.timeframe}` : 'H1'}
               <button
                 onClick={() => handleTimeframeChange(undefined)}
-                className="hover:bg-primary/20 rounded-full p-0.5"
-              >
-                <X className="w-3 h-3" />
-              </button>
-            </div>
-          )}
-          {filters.strategy && (
-            <div className="px-2 py-1 bg-primary/10 text-primary rounded text-xs flex items-center gap-1 capitalize">
-              Strategy: {filters.strategy}
-              <button
-                onClick={() => handleStrategyChange(undefined)}
                 className="hover:bg-primary/20 rounded-full p-0.5"
               >
                 <X className="w-3 h-3" />

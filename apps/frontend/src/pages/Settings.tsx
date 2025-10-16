@@ -1,14 +1,14 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { User } from '@supabase/supabase-js';
 import { DashboardHeader, Sidebar } from '@/features/dashboard';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/shared/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/shared/components/ui/card';
 import { Button } from '@/shared/components/ui/button';
 import { Input } from '@/shared/components/ui/input';
 import { Label } from '@/shared/components/ui/label';
 import { Badge } from '@/shared/components/ui/badge';
-import { useAvalon } from '@/features/broker/hooks/useAvalon'; // âœ… Hook correto
+import { useBrokerContext } from '@/shared/context/BrokerContext'; // âœ… Hook correto
 import {
   Dialog,
   DialogContent,
@@ -26,7 +26,7 @@ const Settings = () => {
   const [isLoading, setIsLoading] = useState(true);
   
   // âœ… Usar hook correto useAvalon
-  const { isConnected, isLoading: avalonLoading, connect, disconnect } = useAvalon();
+  const { isConnected, isLoading: avalonLoading, connect, disconnect, checkStatus } = useBrokerContext();
   
   const [brokerId, setBrokerId] = useState('');
   const [firstName, setFirstName] = useState('');
@@ -75,6 +75,13 @@ const Settings = () => {
   useEffect(() => {
     getUser();
   }, []);
+
+  // Check broker connection status when user is loaded
+  useEffect(() => {
+    if (user?.id) {
+      checkStatus(user.id);
+    }
+  }, [user?.id, checkStatus]);
 
   // Handle profile data save
   const handleSaveProfile = async () => {
@@ -215,188 +222,172 @@ const Settings = () => {
 
   if (isLoading) {
     return (
-      <div className="flex h-screen">
+      <div className="min-h-screen bg-background pt-16">
         <Sidebar />
-        <div className="flex-1 flex flex-col overflow-hidden">
-          {/* âœ… RENDERIZAÃ‡ÃƒO CONDICIONAL PARA LOADING */}
-          <div className="h-16 bg-white dark:bg-gray-800 border-b flex items-center justify-center">
-            <div className="text-sm text-gray-500">Loading...</div>
+        <main className="lg:ml-64 container mx-auto px-4 py-20 pb-24 flex items-center justify-center">
+          <div className="flex items-center gap-3 text-muted-foreground">
+            <Loader2 className="h-6 w-6 animate-spin text-primary" />
+            <span>Carregando configurações...</span>
           </div>
-          <main className="flex-1 overflow-x-hidden overflow-y-auto bg-gray-100 dark:bg-gray-900">
-            <div className="container mx-auto px-6 py-8">
-              <div className="flex items-center justify-center h-64">
-                <Loader2 className="h-8 w-8 animate-spin" />
-              </div>
-            </div>
-          </main>
-        </div>
+        </main>
       </div>
     );
   }
 
   return (
-    <div className="flex h-screen">
+    <div className="min-h-screen bg-background pt-16">
+      {user ? (
+        <DashboardHeader user={user} />
+      ) : (
+        <div className="fixed top-0 left-0 right-0 h-16 glass border-b border-border/50" />
+      )}
       <Sidebar />
-      <div className="flex-1 flex flex-col overflow-hidden">
-        {/* âœ… RENDERIZAÃ‡ÃƒO CONDICIONAL PARA USER */}
-        {user ? (
-          <DashboardHeader user={user} />
-        ) : (
-          <div className="h-16 bg-white dark:bg-gray-800 border-b"></div>
-        )}
-        <main className="flex-1 overflow-x-hidden overflow-y-auto bg-gray-100 dark:bg-gray-900">
-          <div className="container mx-auto px-6 py-8">
-            <div className="mb-8">
-              <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Settings</h1>
-              <p className="text-gray-600 dark:text-gray-400">Configure your trading bot parameters</p>
-            </div>
+      <main className="lg:ml-64 container mx-auto px-4 py-6 pb-24">
+        <div className="space-y-6 max-w-3xl mx-auto">
+          <div>
+            <h1 className="text-3xl font-bold text-foreground">Settings</h1>
+            <p className="text-muted-foreground mt-2">
+              Configure your trading bot parameters
+            </p>
+          </div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-              {/* Broker Connection */}
-              <Card>
-                <CardHeader>
-                  <CardTitle>Broker Connection</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
+          <div className="grid grid-cols-1 gap-6">
+            {/* Broker Connection */}
+            <Card>
+              <CardHeader>
+                <CardTitle>Broker Connection</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div>
+                  <Label htmlFor="brokerId">User ID</Label>
+                  <Input
+                    id="brokerId"
+                    type="text"
+                    placeholder="Enter your Avalon Broker User ID"
+                    value={brokerId}
+                    onChange={(e) => setBrokerId(e.target.value)}
+                    className="mt-1"
+                  />
+                </div>
+
+                <Button
+                  onClick={async () => {
+                    if (!user) return;
+
+                    await handleSaveBrokerSettings();
+
+                    if (!isConnected) {
+                      await connect(user.id);
+                    } else {
+                      await disconnect(user.id);
+                    }
+                  }}
+                  disabled={avalonLoading || !brokerId.trim() || !user}
+                  className="bg-primary hover:bg-primary/90 w-full sm:w-auto h-11 md:h-10 text-base md:text-sm"
+                >
+                  {avalonLoading ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Connecting...
+                    </>
+                  ) : (
+                    isConnected ? 'Disconnect' : 'Connect Broker'
+                  )}
+                </Button>
+
+                <div className="flex items-center space-x-2">
+                  <Badge variant={isConnected ? 'default' : 'secondary'}>
+                    {isConnected ? 'CONNECTED' : 'NOT CONNECTED'}
+                  </Badge>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Dados Pessoais */}
+            <Card>
+              <CardHeader>
+                <CardTitle>Dados Pessoais</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
-                    <Label htmlFor="brokerId">User ID</Label>
+                    <Label htmlFor="firstName">Nome</Label>
                     <Input
-                      id="brokerId"
+                      id="firstName"
                       type="text"
-                      placeholder="Enter your Avalon Broker User ID"
-                      value={brokerId}
-                      onChange={(e) => setBrokerId(e.target.value)}
+                      value={firstName}
+                      onChange={(e) => setFirstName(e.target.value)}
                       className="mt-1"
                     />
                   </div>
+                  <div>
+                    <Label htmlFor="lastName">Sobrenome</Label>
+                    <Input
+                      id="lastName"
+                      type="text"
+                      value={lastName}
+                      onChange={(e) => setLastName(e.target.value)}
+                      className="mt-1"
+                    />
+                  </div>
+                </div>
 
-                  {/* âœ… BOTÃƒO ATUALIZADO - Hook correto */}
-                  <Button 
-                    onClick={async () => {
-                      if (!user) return;
-                      
-                      // Primeiro salvar o ID no banco
-                      await handleSaveBrokerSettings();
-                      
-                      // Depois conectar/desconectar
-                      if (!isConnected) {
-                        await connect();
-                      } else {
-                        await disconnect();
-                      }
-                    }}
-                    disabled={avalonLoading || !brokerId.trim() || !user}
-                    className="bg-primary hover:bg-primary/90 w-full sm:w-auto h-11 md:h-10 text-base md:text-sm"
+                <div>
+                  <Label htmlFor="whatsapp">Número WhatsApp</Label>
+                  <Input
+                    id="whatsapp"
+                    type="tel"
+                    placeholder="+55 11 99999-9999"
+                    value={whatsapp}
+                    onChange={(e) => setWhatsapp(e.target.value)}
+                    className="mt-1"
+                  />
+                  <p className="text-sm text-muted-foreground mt-1">Usado para notificações e suporte</p>
+                </div>
+
+                <div>
+                  <Label htmlFor="email">E-mail</Label>
+                  <Input
+                    id="email"
+                    type="email"
+                    value={user?.email || ''}
+                    disabled
+                    className="mt-1 bg-card/80"
+                  />
+                  <p className="text-sm text-muted-foreground mt-1">E-mail vinculado à sua conta</p>
+                </div>
+
+                <div className="flex flex-col sm:flex-row gap-3">
+                  <Button
+                    onClick={handleSaveProfile}
+                    disabled={isSavingProfile}
+                    className="bg-primary hover:bg-primary/90"
                   >
-                    {avalonLoading ? (
+                    {isSavingProfile ? (
                       <>
                         <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                        Connecting...
+                        Salvando...
                       </>
                     ) : (
-                      isConnected ? 'Disconnect' : 'Connect Broker'
+                      'Salvar Dados'
                     )}
                   </Button>
 
-                  <div className="flex items-center space-x-2">
-                    {/* âœ… PROPRIEDADE CORRETA - isConnected */}
-                    <Badge variant={isConnected ? "default" : "secondary"}>
-                      {isConnected ? "CONNECTED" : "NOT CONNECTED"}
-                    </Badge>
-                  </div>
-                </CardContent>
-              </Card>
-
-              {/* Dados Pessoais */}
-              <Card>
-                <CardHeader>
-                  <CardTitle>Dados Pessoais</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  {/* Nome e Sobrenome */}
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <Label htmlFor="firstName">Nome</Label>
-                      <Input
-                        id="firstName"
-                        type="text"
-                        value={firstName}
-                        onChange={(e) => setFirstName(e.target.value)}
-                        className="mt-1"
-                      />
-                    </div>
-                    <div>
-                      <Label htmlFor="lastName">Sobrenome</Label>
-                      <Input
-                        id="lastName"
-                        type="text"
-                        value={lastName}
-                        onChange={(e) => setLastName(e.target.value)}
-                        className="mt-1"
-                      />
-                    </div>
-                  </div>
-
-                  <div>
-                    <Label htmlFor="whatsapp">NÃºmero WhatsApp</Label>
-                    <Input
-                      id="whatsapp"
-                      type="tel"
-                      placeholder="+55 11 99999-9999"
-                      value={whatsapp}
-                      onChange={(e) => setWhatsapp(e.target.value)}
-                      className="mt-1"
-                    />
-                    <p className="text-sm text-gray-500 mt-1">Usado para notificaÃ§Ãµes e suporte</p>
-                  </div>
-
-                  <div>
-                    <Label htmlFor="email">E-mail</Label>
-                    <Input
-                      id="email"
-                      type="email"
-                      value={user?.email || ''}
-                      disabled
-                      className="mt-1 bg-gray-50 dark:bg-gray-800"
-                    />
-                    <p className="text-sm text-gray-500 mt-1">E-mail vinculado Ã  sua conta</p>
-                  </div>
-
-                  <div className="flex space-x-4">
-                    <Button 
-                      onClick={handleSaveProfile}
-                      disabled={isSavingProfile}
-                      className="bg-primary hover:bg-primary/90"
-                    >
-                      {isSavingProfile ? (
-                        <>
-                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                          Salvando...
-                        </>
-                      ) : (
-                        'Salvar Dados'
-                      )}
-                    </Button>
-
-                    <Button 
-                      onClick={() => setShowPasswordDialog(true)}
-                      variant="outline"
-                    >
-                      Alterar Senha
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
-
-            <div className="mt-8 p-4 bg-yellow-50 dark:bg-yellow-900/20 rounded-lg">
-              <p className="text-sm text-yellow-800 dark:text-yellow-200">
-                <strong>Note:</strong> Operation Parameters and Risk Management settings have been moved to the Operations page for easier access during trading.
-              </p>
-            </div>
+                  <Button onClick={() => setShowPasswordDialog(true)} variant="outline">
+                    Alterar Senha
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
           </div>
-        </main>
-      </div>
+
+          <div className="rounded-lg bg-yellow-50 dark:bg-yellow-900/20 p-4">
+            <p className="text-sm text-yellow-800 dark:text-yellow-200">
+              <strong>Note:</strong> Operation Parameters and Risk Management settings have been moved to the Operations page for easier access during trading.
+            </p>
+          </div>
+        </div>
+      </main>
 
       {/* Password Update Dialog */}
       <Dialog open={showPasswordDialog} onOpenChange={setShowPasswordDialog}>
@@ -430,14 +421,14 @@ const Settings = () => {
             </div>
           </div>
           <DialogFooter>
-            <Button 
-              variant="outline" 
+            <Button
+              variant="outline"
               onClick={() => setShowPasswordDialog(false)}
               disabled={isUpdatingPassword}
             >
               Cancelar
             </Button>
-            <Button 
+            <Button
               onClick={handlePasswordUpdate}
               disabled={isUpdatingPassword}
             >

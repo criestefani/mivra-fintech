@@ -10,8 +10,6 @@ import {
   Bell,
   Shield,
   Database,
-  Mail,
-  Webhook,
   Key
 } from 'lucide-react';
 import { AdminLayout } from '../components/AdminLayout';

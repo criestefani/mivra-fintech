@@ -86,7 +86,6 @@ export const AdminTrades = () => {
   const completedTrades = trades || [];
   const totalPL = completedTrades.reduce((sum, t) => sum + t.pnl, 0);
   const winningTrades = completedTrades.filter(t => t.resultado === 'WIN').length;
-  const losingTrades = completedTrades.filter(t => t.resultado === 'LOSS').length;
   const winRate = totalTrades > 0 ? ((winningTrades / totalTrades) * 100).toFixed(1) : '0';
 
   // Loading state

@@ -51,25 +51,43 @@ export default {
           DEFAULT: "hsl(var(--card))",
           foreground: "hsl(var(--card-foreground))",
         },
+        sidebar: {
+          DEFAULT: "hsl(var(--sidebar))",
+          foreground: "hsl(var(--sidebar-foreground))",
+          primary: "hsl(var(--sidebar-primary))",
+          "primary-foreground": "hsl(var(--sidebar-primary-foreground))",
+          accent: "hsl(var(--sidebar-accent))",
+          "accent-foreground": "hsl(var(--sidebar-accent-foreground))",
+          border: "hsl(var(--sidebar-border))",
+          ring: "hsl(var(--sidebar-ring))",
+        },
+        chart: {
+          1: "hsl(var(--chart-1))",
+          2: "hsl(var(--chart-2))",
+          3: "hsl(var(--chart-3))",
+          4: "hsl(var(--chart-4))",
+          5: "hsl(var(--chart-5))",
+        },
         // Mivra Design Guide Custom Colors
         positive: {
-          DEFAULT: "#10B981", // green-500 - WIN, gains
-          foreground: "#ffffff",
+          DEFAULT: "hsl(var(--positive))",
+          foreground: "hsl(var(--positive-foreground))",
         },
         negative: {
-          DEFAULT: "#EF4444", // red-500 - LOSS, losses
-          foreground: "#ffffff",
+          DEFAULT: "hsl(var(--negative))",
+          foreground: "hsl(var(--negative-foreground))",
         },
         warning: {
-          DEFAULT: "#F59E0B", // amber-500
-          foreground: "#ffffff",
+          DEFAULT: "hsl(var(--warning))",
+          foreground: "hsl(var(--warning-foreground))",
         },
         info: {
-          DEFAULT: "#3B82F6", // blue-500
-          foreground: "#ffffff",
+          DEFAULT: "hsl(var(--info))",
+          foreground: "hsl(var(--info-foreground))",
         },
       },
       borderRadius: {
+        xl: "calc(var(--radius) + 4px)",
         lg: "var(--radius)",
         md: "calc(var(--radius) - 2px)",
         sm: "calc(var(--radius) - 4px)",
@@ -93,11 +111,11 @@ export default {
         },
         "pulse-green": {
           "0%, 100%": { opacity: "1" },
-          "50%": { opacity: "0.5", backgroundColor: "#10B981" },
+          "50%": { opacity: "0.5", backgroundColor: "hsl(var(--positive))" },
         },
         "pulse-red": {
           "0%, 100%": { opacity: "1" },
-          "50%": { opacity: "0.5", backgroundColor: "#EF4444" },
+          "50%": { opacity: "0.5", backgroundColor: "hsl(var(--negative))" },
         },
       },
       animation: {
@@ -109,8 +127,9 @@ export default {
         "pulse-red": "pulse-red 1s ease-in-out infinite",
       },
       fontFamily: {
-        sans: ['Inter', 'system-ui', 'sans-serif'],
-        mono: ['JetBrains Mono', 'monospace'],
+        sans: ["var(--font-sans)"],
+        serif: ["var(--font-serif)"],
+        mono: ["var(--font-mono)"],
       },
     },
   },

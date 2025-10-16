@@ -5,19 +5,25 @@ import { toast } from 'sonner'
 interface UseAvalonResult {
   isConnected: boolean
   isLoading: boolean
-  connect: () => Promise<void>
-  disconnect: () => Promise<void>
+  connect: (userId: string | null | undefined) => Promise<void>
+  disconnect: (userId: string | null | undefined) => Promise<void>
 }
 
 export const useAvalon = (): UseAvalonResult => {
   const [isConnected, setIsConnected] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
 
-  const connect = useCallback(async () => {
+  const connect = useCallback(async (userId: string | null | undefined) => {
+    if (!userId) {
+      toast.error('Usuário não identificado. Faça login novamente.');
+      console.error('[useAvalon] Missing userId for connect call');
+      return;
+    }
+
     setIsLoading(true)
     try {
       console.log('[useAvalon] Connecting to broker...')
-      const response = await botAPI.connect()
+      const response = await botAPI.connect(userId)
 
       if (response.data?.success) {
         setIsConnected(true)
@@ -35,11 +41,17 @@ export const useAvalon = (): UseAvalonResult => {
     }
   }, [])
 
-  const disconnect = useCallback(async () => {
+  const disconnect = useCallback(async (userId: string | null | undefined) => {
+    if (!userId) {
+      toast.error('Usuário não identificado. Faça login novamente.');
+      console.error('[useAvalon] Missing userId for disconnect call');
+      return;
+    }
+
     setIsLoading(true)
     try {
       console.log('[useAvalon] Disconnecting from broker...')
-      await botAPI.disconnect()
+      await botAPI.disconnect(userId)
       setIsConnected(false)
       toast.success('Disconnected from broker')
       console.log('[useAvalon] Disconnected successfully')

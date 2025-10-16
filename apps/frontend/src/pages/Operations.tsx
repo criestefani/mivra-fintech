@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { User } from "@supabase/supabase-js";
@@ -94,14 +94,13 @@ const Operations = () => {
   });
 
   // ✅ WebSocket Hook
-  const { currentStatus, isConnected: wsConnected, onTradeCompleted, onPnlUpdate } = useBotSocket(user?.id);
+  const { currentStatus } = useBotSocket(user?.id);
 
   // Bot control (multi-user)
-  const { botStatus, isConnected, isRunning, startBotRuntime, stopBotRuntime, loading: botLoading } = useBotStatus(user?.id);
+  const { isConnected, isRunning, startBotRuntime, stopBotRuntime, loading: botLoading } = useBotStatus(user?.id);
 
   // ✅ Realtime subscription status
   const [realtimeStatus, setRealtimeStatus] = useState<'connected' | 'connecting' | 'error'>('connecting');
-  const [lastUpdateTime, setLastUpdateTime] = useState<Date | null>(null);
 
   // ✅ Persist chart selections to localStorage
   useEffect(() => {
@@ -274,7 +273,7 @@ const Operations = () => {
   useEffect(() => {
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange((event, session) => {
+    } = supabase.auth.onAuthStateChange((_event, session) => {
       setUser(session?.user ?? null);
       if (!session) {
         navigate("/auth");
@@ -318,7 +317,6 @@ const Operations = () => {
         },
         (payload) => {
           console.log('[Operations] ✅ NEW TRADE via real-time:', payload);
-          setLastUpdateTime(new Date()); // ✅ Track update time
           const newTrade = payload.new as any;
 
           // Check if trade is from today
@@ -364,7 +362,6 @@ const Operations = () => {
         },
         (payload) => {
           console.log('[Operations] ✅ TRADE UPDATED via real-time:', payload);
-          setLastUpdateTime(new Date()); // ✅ Track update time
           const updatedTrade = payload.new as any;
 
           // Update trade in list
@@ -635,7 +632,7 @@ const Operations = () => {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-background">
+      <div className="min-h-screen flex items-center justify-center">
         <div className="text-center space-y-4">
           <div className="w-16 h-16 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto" />
           <p className="text-muted-foreground">Carregando...</p>
@@ -647,7 +644,7 @@ const Operations = () => {
   if (!user) return null;
 
   return (
-    <div className="min-h-screen bg-background pt-16">
+    <div className="min-h-screen pt-16">
       <DashboardHeader user={user} />
       <Sidebar />
 

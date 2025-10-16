@@ -39,10 +39,10 @@ export const TradeHistory: React.FC<TradeHistoryProps> = ({
     })
   }
 
-  const getResultBadge = (result: Trade['result'], pnl: number) => {
+  const getResultBadge = (result: Trade['result']) => {
     if (result === 'PENDING') {
       return (
-        <Badge variant="outline" className="gap-1 bg-yellow-500/10 text-yellow-500 border-yellow-500/50">
+        <Badge variant="outline" className="gap-1 bg-warning/10 text-warning border-warning/40">
           <Clock className="w-3 h-3" />
           PENDING
         </Badge>
@@ -51,7 +51,7 @@ export const TradeHistory: React.FC<TradeHistoryProps> = ({
 
     if (result === 'WIN') {
       return (
-        <Badge variant="outline" className="gap-1 bg-green-500/10 text-green-500 border-green-500/50">
+        <Badge variant="outline" className="gap-1 bg-positive/10 text-positive border-positive/50">
           <TrendingUp className="w-3 h-3" />
           WIN
         </Badge>
@@ -59,7 +59,7 @@ export const TradeHistory: React.FC<TradeHistoryProps> = ({
     }
 
     return (
-      <Badge variant="outline" className="gap-1 bg-red-500/10 text-red-500 border-red-500/50">
+      <Badge variant="outline" className="gap-1 bg-negative/10 text-negative border-negative/50">
         <TrendingDown className="w-3 h-3" />
         LOSS
       </Badge>
@@ -69,11 +69,11 @@ export const TradeHistory: React.FC<TradeHistoryProps> = ({
   const getRealtimeStatusIcon = () => {
     switch (realtimeStatus) {
       case 'connected':
-        return <Wifi className="w-4 h-4 text-green-500" title="Real-time connected" />
+        return <span title="Real-time connected"><Wifi className="w-4 h-4 text-positive" /></span>
       case 'connecting':
-        return <Wifi className="w-4 h-4 text-yellow-500 animate-pulse" title="Connecting..." />
+        return <span title="Connecting..."><Wifi className="w-4 h-4 text-warning animate-pulse" /></span>
       case 'error':
-        return <WifiOff className="w-4 h-4 text-red-500" title="Connection error" />
+        return <span title="Connection error"><WifiOff className="w-4 h-4 text-negative" /></span>
     }
   }
 
@@ -138,8 +138,8 @@ export const TradeHistory: React.FC<TradeHistoryProps> = ({
                         variant="outline"
                         className={`${
                           trade.direction === 'CALL'
-                            ? 'bg-green-500/10 text-green-500 border-green-500/50'
-                            : 'bg-red-500/10 text-red-500 border-red-500/50'
+                            ? 'bg-positive/10 text-positive border-positive/50'
+                            : 'bg-negative/10 text-negative border-negative/50'
                         }`}
                       >
                         {trade.direction}
@@ -148,14 +148,16 @@ export const TradeHistory: React.FC<TradeHistoryProps> = ({
                     <td className="py-3 px-2 text-center font-mono text-xs hidden md:table-cell">
                       {trade.expiration}s
                     </td>
-                    <td className="py-3 px-2 text-center">{getResultBadge(trade.result, trade.pnl)}</td>
-                    <td className={`py-3 px-2 text-right font-mono font-bold ${
-                      trade.result === 'PENDING'
-                        ? 'text-muted-foreground'
-                        : trade.pnl >= 0
-                        ? 'text-green-500'
-                        : 'text-red-500'
-                    }`}>
+                    <td className="py-3 px-2 text-center">{getResultBadge(trade.result)}</td>
+                    <td
+                      className={`py-3 px-2 text-right font-mono font-bold ${
+                        trade.result === 'PENDING'
+                          ? 'text-muted-foreground'
+                          : trade.pnl >= 0
+                          ? 'text-positive'
+                          : 'text-negative'
+                      }`}
+                    >
                       {trade.result === 'PENDING' ? '-' : `${trade.pnl >= 0 ? '+' : ''}R$ ${trade.pnl.toFixed(2)}`}
                     </td>
                   </tr>

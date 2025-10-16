@@ -1,5 +1,4 @@
 import { useState, useEffect, useCallback } from 'react'
-import { scannerAPI } from '@/shared/services/api/client'
 import { supabase } from '@/integrations/supabase/client'
 import type { ScannerAsset } from '../types/scanner.types'
 
@@ -21,29 +20,38 @@ export const useScannerSubscription = (): UseScannerSubscriptionResult => {
   const fetchAssets = useCallback(async () => {
     try {
       console.log('[useScannerSubscription] Fetching scanner data...')
-      const response = await scannerAPI.getTop20()
 
-      if (response.data?.success && response.data?.data) {
-        const scannerAssets: ScannerAsset[] = response.data.data.map((asset: any) => ({
-          active_id: asset.active_id,
-          ativo_nome: asset.ativo_nome,
-          timeframe: asset.timeframe,
-          strategy_id: asset.strategy_id,
-          strategy_name: asset.strategy_name,
-          win_rate: asset.win_rate,
-          total_signals: asset.total_signals,
-          total_wins: asset.total_wins,
-          total_losses: asset.total_losses,
-          last_updated: asset.last_updated
-        }))
+      const { data, error } = await supabase
+        .from('scanner_performance')
+        .select(
+          'active_id, ativo_nome, timeframe, win_rate, total_signals, total_wins, total_losses, last_updated'
+        )
+        .order('win_rate', { ascending: false })
+        .limit(100)
 
-        setAssets(scannerAssets)
-        setLastUpdate(new Date())
-        setError(null)
-        console.log(`[useScannerSubscription] Loaded ${scannerAssets.length} assets`)
-      } else {
-        throw new Error('Invalid response format')
+      if (error) {
+        throw error
       }
+
+      const filtered = (data ?? [])
+        .filter((asset) => (asset.total_signals ?? 0) >= 15)
+        .slice(0, 20)
+
+      const scannerAssets: ScannerAsset[] = filtered.map((asset) => ({
+        active_id: asset.active_id,
+        ativo_nome: asset.ativo_nome,
+        timeframe: asset.timeframe,
+        win_rate: asset.win_rate,
+        total_signals: asset.total_signals,
+        total_wins: asset.total_wins,
+        total_losses: asset.total_losses,
+        last_updated: asset.last_updated,
+      }))
+
+      setAssets(scannerAssets)
+      setLastUpdate(new Date())
+      setError(null)
+      console.log(`[useScannerSubscription] Loaded ${scannerAssets.length} assets (>=15 signals)`)
     } catch (err: any) {
       console.error('[useScannerSubscription] Error fetching scanner data:', err)
       setError(err.message || 'Failed to load scanner data')

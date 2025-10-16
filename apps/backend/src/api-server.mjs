@@ -1,12 +1,17 @@
 // Load environment variables
 import dotenv from 'dotenv';
-dotenv.config();
+import path from 'path';
+import { fileURLToPath } from 'url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+dotenv.config({ path: path.resolve(__dirname, '../.env') });
 
 import express from 'express';
 import cors from 'cors';
 import { spawn } from 'child_process';
 import { ClientSdk, SsidAuthMethod } from '@quadcode-tech/client-sdk-js'; // ✅ WebSocket SDK
-import { createClient } from '@supabase/supabase-js';
+import { supabase } from '../config/supabase.mjs';
 import { createServer } from 'http';
 import { Server } from 'socket.io';
 
@@ -89,16 +94,12 @@ app.get('/api/debug/discover-assets', async (req, res) => {
   }
 })
 
-// ✅ Configurações
-const SUPABASE_URL = process.env.SUPABASE_URL || 'https://vecofrvxrepogtigmeyj.supabase.co';
-const SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SERVICE_KEY;
-
 // ✅ Avalon WebSocket Configuration (replaces REST API)
 const AVALON_WS_URL = 'wss://ws.trade.avalonbroker.com/echo/websocket';
 const AVALON_API_HOST = 'https://trade.avalonbroker.com';
 // ✅ SSID agora é gerenciado pelo ssidManager - removidas constantes hardcoded
 
-const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
+
 
 // ✅ Estado global do bot
 let botStatus = {
@@ -115,7 +116,7 @@ let sdkInstance = null;
 let botProcess = null;
 let botProcessPID = null;
 
-// ✅ Função para inicializar SDK Avalon com SSID Manager
+// ✅ Função para inicializar SDK Avalon com SSID Manager (NON-BLOCKING)
 async function initializeAvalonSDK() {
   try {
     console.log('\n' + '='.repeat(80));
@@ -126,7 +127,9 @@ async function initializeAvalonSDK() {
     const systemSSID = await ssidManager.initializeSystemSSID();
 
     if (!systemSSID) {
-      throw new Error('Failed to initialize system SSID');
+      console.warn('⚠️ Failed to initialize system SSID - Avalon features will be unavailable');
+      console.warn('⚠️ Server will start without Avalon connection\n');
+      return null;
     }
 
     console.log(`🔑 System SSID: ${systemSSID.substring(0, 15)}...`);
@@ -146,8 +149,8 @@ async function initializeAvalonSDK() {
     return sdkInstance;
   } catch (error) {
     console.error('❌ Erro ao inicializar SDK:', error.message);
-    console.error('Stack:', error.stack);
-    throw error;
+    console.warn('⚠️ Server will start without Avalon connection\n');
+    return null;
   }
 }
 
@@ -393,11 +396,12 @@ app.get('/api/bot/status', (req, res) => {
 
 // ✅ Endpoint: Conectar ao Avalon usando WebSocket SDK
 app.post('/api/bot/connect', async (req, res) => {
-  const { userId } = req.body;
+  try {
+    const { userId } = req.body;
 
-  console.log('🔗 Conectando via WebSocket SDK...');
-  console.log(`📡 URL: ${AVALON_WS_URL}`);
-  console.log(`🆔 User ID: ${userId}`);
+    console.log('🔗 Conectando via WebSocket SDK...');
+    console.log(`📡 URL: ${AVALON_WS_URL}`);
+    console.log(`🆔 User ID: ${userId}`);
 
     // ✅ PASSO 1: Buscar broker_user_id do usuário
     console.log('🔍 Buscando ID da corretora no banco...');
@@ -426,7 +430,6 @@ app.post('/api/bot/connect', async (req, res) => {
     const avalonUserId = parseInt(profile.broker_user_id);
     console.log(`🎯 ID da Avalon encontrado: ${avalonUserId}`);
 
-  try {
     // ✅ PASSO 2: Gerar SSID individual para este usuário
     console.log(`🔐 Gerando SSID individual para usuário Avalon ${avalonUserId}...`);
     const userSSID = await ssidManager.getSSID(avalonUserId.toString());
@@ -451,7 +454,9 @@ app.post('/api/bot/connect', async (req, res) => {
     }
 
     // Verify connection by retrieving balances
+    console.log('🔍 Verificando saldo...');
     const balancesData = await sdkInstance.balances();
+    console.log('✅ Saldo verificado com sucesso');
     let demoBalance = null;
     let realBalance = null;
 
@@ -549,6 +554,63 @@ app.post('/api/bot/connect', async (req, res) => {
   }
 });
 
+// ✅ Endpoint: Check broker connection status
+app.get('/api/bot/connection-status', async (req, res) => {
+  try {
+    const { userId } = req.query;
+
+    if (!userId) {
+      return res.status(400).json({
+        success: false,
+        error: 'userId is required'
+      });
+    }
+
+    console.log(`🔍 Checking connection status for user ${userId}`);
+
+    // Query bot_status table
+    const { data, error } = await supabase
+      .from('bot_status')
+      .select('is_connected, broker_balance, ssid, connection_type, updated_at')
+      .eq('user_id', userId)
+      .maybeSingle();
+
+    if (error) {
+      console.error('❌ Error querying bot_status:', error);
+      return res.status(500).json({
+        success: false,
+        error: 'Database error'
+      });
+    }
+
+    if (!data) {
+      console.log('ℹ️ No bot_status record found for user');
+      return res.json({
+        success: true,
+        connected: false,
+        message: 'No connection record found'
+      });
+    }
+
+    console.log(`✅ Connection status: ${data.is_connected ? 'Connected' : 'Disconnected'}`);
+
+    res.json({
+      success: true,
+      connected: data.is_connected || false,
+      balance: data.broker_balance || 0,
+      ssid: data.ssid ? data.ssid.substring(0, 15) + '...' : null,
+      connectionType: data.connection_type || 'unknown',
+      lastUpdate: data.updated_at
+    });
+  } catch (error) {
+    console.error('❌ Unexpected error:', error.message);
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
 // ✅ Market Scanner
 app.get('/api/market-scanner', async (req, res) => {
   try {
@@ -581,10 +643,55 @@ app.get('/api/strategy-performance', async (req, res) => {
   }
 });
 
-// ✅ Endpoint: Get all available assets (140 assets from fixed list)
+// ✅ Scanner Top 20 - Best performing asset/timeframe combinations
+app.get('/api/scanner/top20', async (req, res) => {
+  try {
+    const { data, error } = await supabase
+      .from('scanner_performance')
+      .select('*')
+      .not('total_signals', 'is', null) // Filter out null signals
+      .gte('total_signals', 15) // Only assets with 15+ signals for statistical relevance
+      .order('win_rate', { ascending: false })
+      .limit(20);
+
+    if (error) throw error;
+
+    // Return data as-is (no strategy fields needed)
+    res.json({
+      success: true,
+      data: data || [],
+      timestamp: new Date().toISOString(),
+      count: (data || []).length
+    });
+  } catch (error) {
+    console.error('❌ Error fetching scanner top20:', error.message);
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
+// ✅ Endpoint: Get all available assets (141 assets from fixed list)
 app.get('/api/assets', (req, res) => {
   try {
     const { category } = req.query;
+
+    // Helper function to add keys to asset objects
+    const enrichAssetsWithKeys = (assets) => {
+      const enriched = {};
+      Object.keys(assets).forEach(categoryKey => {
+        enriched[categoryKey] = Object.entries(FIXED_ASSETS)
+          .filter(([_, asset]) => asset.category === categoryKey)
+          .map(([key, asset]) => ({
+            key,           // ← Asset key (e.g., "EURUSD-OTC", "INDU")
+            id: asset.id,
+            name: asset.name,
+            category: asset.category
+          }));
+      });
+      return enriched;
+    };
 
     // If category filter is provided, return only that category
     if (category) {
@@ -596,23 +703,112 @@ app.get('/api/assets', (req, res) => {
         });
       }
 
+      const enrichedAssets = Object.entries(FIXED_ASSETS)
+        .filter(([_, asset]) => asset.category === category)
+        .map(([key, asset]) => ({
+          key,
+          id: asset.id,
+          name: asset.name,
+          category: asset.category
+        }));
+
       return res.json({
         success: true,
         category,
-        count: categoryAssets.length,
-        assets: categoryAssets
+        count: enrichedAssets.length,
+        assets: enrichedAssets
       });
     }
 
-    // Return all assets organized by category
+    // Return all assets organized by category with keys
+    const assetsWithKeys = enrichAssetsWithKeys(ASSETS_BY_CATEGORY);
+
     return res.json({
       success: true,
       total: getTotalAssetsCount(),
       categories: Object.keys(ASSETS_BY_CATEGORY),
-      assets: ASSETS_BY_CATEGORY
+      assets: assetsWithKeys
     });
   } catch (error) {
     console.error('❌ Error fetching assets:', error.message);
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
+// ✅ Endpoint: Get candles for asset/timeframe (REST fallback for WebSocket)
+app.get('/api/candles', async (req, res) => {
+  try {
+    const { asset, timeframe, limit = 200 } = req.query;
+
+    if (!asset || !timeframe) {
+      return res.status(400).json({
+        success: false,
+        error: 'asset and timeframe are required query parameters'
+      });
+    }
+
+    if (!sdkInstance) {
+      return res.status(503).json({
+        success: false,
+        error: 'SDK not initialized. Server may be starting up.'
+      });
+    }
+
+    console.log(`📊 [API] Fetching candles: ${asset} ${timeframe}s (limit: ${limit})`);
+
+    // Map asset name to ID using centralized module
+    const resolvedAsset = resolveAssetByName(asset);
+
+    if (!resolvedAsset) {
+      console.error(`❌ [API] Asset ${asset} not found in fixed assets list`);
+      return res.status(404).json({
+        success: false,
+        error: `Asset '${asset}' not found. Check available assets at /api/assets`
+      });
+    }
+
+    const activeId = resolvedAsset.id;
+    console.log(`🆔 [API] Asset ${asset} → ${resolvedAsset.name} (ID: ${activeId})`);
+
+    // Create chart data layer
+    const chartLayer = await sdkInstance.realTimeChartDataLayer(
+      activeId,
+      parseInt(timeframe),
+      { useOTC: true }
+    );
+
+    // Fetch historical candles
+    const nowSec = Math.floor(Date.now() / 1000);
+    const from = nowSec - (parseInt(limit) * parseInt(timeframe));
+    const candles = await chartLayer.fetchAllCandles(from);
+
+    // Format candles
+    const formattedCandles = candles
+      .sort((a, b) => a.to - b.to)
+      .slice(-parseInt(limit))
+      .map(c => ({
+        time: c.to,
+        open: c.open,
+        high: c.max || c.high,
+        low: c.min || c.low,
+        close: c.close,
+        volume: c.volume || 0
+      }));
+
+    console.log(`✅ [API] Sending ${formattedCandles.length} candles`);
+
+    res.json({
+      success: true,
+      asset,
+      timeframe: parseInt(timeframe),
+      count: formattedCandles.length,
+      candles: formattedCandles
+    });
+  } catch (error) {
+    console.error('❌ [API] Error fetching candles:', error.message);
     res.status(500).json({
       success: false,
       error: error.message

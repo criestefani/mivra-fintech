@@ -35,21 +35,21 @@ const strategies = [
     name: 'Conservative',
     description: 'Lower risk, higher win rate',
     icon: Shield,
-    color: 'text-blue-500'
+    color: 'text-info'
   },
   {
     id: 'aggressive',
     name: 'Aggressive',
     description: 'Higher risk, higher reward',
     icon: Zap,
-    color: 'text-orange-500'
+    color: 'text-warning'
   },
   {
     id: 'balanced',
     name: 'Balanced',
     description: 'Balanced risk/reward',
     icon: Target,
-    color: 'text-green-500'
+    color: 'text-positive'
   }
 ]
 
@@ -238,7 +238,7 @@ export const AutoModeConfig: React.FC<AutoModeConfigProps> = ({
             <div className="flex items-center justify-between">
               <div>
                 <Label className="text-base font-semibold flex items-center gap-2">
-                  <TrendingUp className="w-4 h-4 text-green-500" />
+                  <TrendingUp className="w-4 h-4 text-positive" />
                   Daily Goal
                 </Label>
                 <p className="text-xs text-muted-foreground mt-1">

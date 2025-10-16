@@ -1,7 +1,7 @@
 // Market Scanner Feature Exports
 
 // Types
-export type { ScannerAsset, ScannerConfig, ScannerFilters } from './types/scanner.types'
+export type { ScannerAsset, ScannerConfig, ScannerFilters as ScannerFiltersType } from './types/scanner.types'
 
 // Hooks
 export { useScannerSubscription } from './hooks/useScannerSubscription'

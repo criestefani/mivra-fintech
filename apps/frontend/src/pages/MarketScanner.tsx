@@ -6,8 +6,8 @@ import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { User } from '@supabase/supabase-js';
 import { DashboardHeader, Sidebar } from '@/features/dashboard';
-import { useScannerSubscription, HeatmapGrid, ScannerFilters } from '@/features/market-scanner';
-import type { ScannerConfig, ScannerFilters as Filters } from '@/features/market-scanner';
+import { useScannerSubscription, HeatmapGrid } from '@/features/market-scanner';
+import type { ScannerConfig } from '@/features/market-scanner';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/shared/components/ui/card';
 import { Button } from '@/shared/components/ui/button';
 import { Loader2, RefreshCw, Activity, Zap } from 'lucide-react';
@@ -17,14 +17,13 @@ export const MarketScanner: React.FC = () => {
   const [user, setUser] = useState<User | null>(null);
   const [authLoading, setAuthLoading] = useState(true);
   const { assets, loading, error, lastUpdate, refresh } = useScannerSubscription();
-  const [filters, setFilters] = useState<Filters>({});
   const [isRefreshing, setIsRefreshing] = useState(false);
 
   // Auth check
   useEffect(() => {
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange((event, session) => {
+    } = supabase.auth.onAuthStateChange((_event, session) => {
       setUser(session?.user ?? null);
       if (!session) {
         navigate('/auth');
@@ -161,10 +160,6 @@ export const MarketScanner: React.FC = () => {
               </div>
             </div>
           </CardHeader>
-
-          <CardContent>
-            <ScannerFilters filters={filters} onFiltersChange={setFilters} />
-          </CardContent>
         </Card>
 
         {/* Help text */}
@@ -179,7 +174,21 @@ export const MarketScanner: React.FC = () => {
         </Card>
 
         {/* Heatmap Grid */}
-        <HeatmapGrid assets={assets} filters={filters} onAssetClick={handleAssetClick} />
+        {assets.length > 0 ? (
+          <HeatmapGrid assets={assets} onAssetClick={handleAssetClick} />
+        ) : (
+          <Card className="glass border-border/60">
+            <CardContent className="py-12 text-center space-y-3">
+              <p className="text-lg font-semibold text-foreground">
+                No high-confidence signals right now
+              </p>
+              <p className="text-sm text-muted-foreground max-w-md mx-auto">
+                The scanner displays the 20 assets with the best win rate that also have at
+                least 15 signals. We will refresh automatically as soon as new signals arrive.
+              </p>
+            </CardContent>
+          </Card>
+        )}
       </div>
     </div>
   );

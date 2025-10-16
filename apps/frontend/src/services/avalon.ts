@@ -1,7 +1,7 @@
 // Avalon Broker Service
-// This service interfaces with the Avalon Broker API
+// This service interfaces with the Avalon Broker API via backend proxy
 
-const AVALON_CREATE_USER_URL = import.meta.env.VITE_AVALON_CREATE_USER_URL || 'https://api.trade.avalonbroker.com'
+const BACKEND_API_URL = import.meta.env.VITE_API_URL || 'http://localhost:4001'
 const AVALON_AFF_ID = import.meta.env.VITE_AVALON_AFF_ID || '430322'
 
 interface CreateUserParams {
@@ -22,16 +22,20 @@ interface CreateUserResult {
 class AvalonService {
   async createUser(params: CreateUserParams): Promise<CreateUserResult> {
     try {
-      console.log('[AvalonService] Creating user:', params.email)
+      console.log('[AvalonService] Creating user via backend proxy:', params.email)
 
-      const response = await fetch(`${AVALON_CREATE_USER_URL}/users`, {
+      // Use backend proxy to avoid CORS issues
+      const response = await fetch(`${BACKEND_API_URL}/api/avalon/create-user`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          ...params,
-          aff_id: AVALON_AFF_ID,
+          first_name: params.first_name,
+          last_name: params.last_name,
+          email: params.email,
+          password: params.password,
+          affId: AVALON_AFF_ID,
         }),
       })
 

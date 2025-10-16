@@ -4,7 +4,7 @@
 import React from 'react';
 import { Card } from '@/shared/components/ui/card';
 import { TrendingUp, TrendingDown, Activity } from 'lucide-react';
-import type { ScannerAsset } from '../types/scanner.types';
+import type { ScannerAsset } from './types/scanner.types';
 
 interface AssetCardProps {
   asset: ScannerAsset;
@@ -19,11 +19,11 @@ export const AssetCard = React.memo<AssetCardProps>(({ asset, onClick }) => {
       return 'bg-muted/10 border-muted/50';
     }
 
-    if (winRate >= 80) return 'bg-green-500/20 border-green-500 hover:bg-green-500/30';
-    if (winRate >= 65) return 'bg-green-500/10 border-green-500/70 hover:bg-green-500/20';
-    if (winRate >= 50) return 'bg-yellow-500/10 border-yellow-500/70 hover:bg-yellow-500/20';
-    if (winRate >= 35) return 'bg-orange-500/10 border-orange-500/70 hover:bg-orange-500/20';
-    return 'bg-red-500/10 border-red-500/70 hover:bg-red-500/20';
+    if (winRate >= 80) return 'bg-positive/20 border-positive hover:bg-positive/25';
+    if (winRate >= 65) return 'bg-positive/10 border-positive/70 hover:bg-positive/20';
+    if (winRate >= 50) return 'bg-warning/10 border-warning/70 hover:bg-warning/20';
+    if (winRate >= 35) return 'bg-primary/10 border-primary/70 hover:bg-primary/20';
+    return 'bg-negative/10 border-negative/70 hover:bg-negative/20';
   };
 
   const winRate = asset.win_rate ?? 0;
@@ -52,28 +52,20 @@ export const AssetCard = React.memo<AssetCardProps>(({ asset, onClick }) => {
           {asset.ativo_nome}
         </div>
 
-        {/* Timeframe & Strategy */}
-        <div className="text-xs text-muted-foreground flex items-center gap-1 flex-wrap">
+        {/* Timeframe */}
+        <div className="text-xs text-muted-foreground">
           <span className="font-semibold">{formatTimeframe(asset.timeframe)}</span>
-          <span>•</span>
-          <span className="truncate" title={asset.strategy_name}>
-            {(asset.strategy_name || 'Unknown').length > 15
-  ? `${(asset.strategy_name || 'Unknown').substring(0, 15)}...`
-  : (asset.strategy_name || 'Unknown')
-}
-
-          </span>
         </div>
 
         {/* Win rate with icon */}
         <div className="flex items-center gap-2">
           {isProfitable ? (
-            <TrendingUp className="w-4 h-4 text-green-500" />
+            <TrendingUp className="w-4 h-4 text-positive" />
           ) : (
-            <TrendingDown className="w-4 h-4 text-red-500" />
+            <TrendingDown className="w-4 h-4 text-negative" />
           )}
           <span className={`text-lg md:text-xl font-bold font-mono ${
-            isProfitable ? 'text-green-500' : 'text-red-500'
+            isProfitable ? 'text-positive' : 'text-negative'
           }`}>
             {winRate.toFixed(1)}%
           </span>

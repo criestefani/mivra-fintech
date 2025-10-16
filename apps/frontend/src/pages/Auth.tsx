@@ -7,7 +7,7 @@ import { Label } from "@/shared/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/shared/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/shared/components/ui/tabs";
 import { toast } from "sonner";
-import { Zap, Mail, Lock, User, Github, Loader2 } from "lucide-react";
+import { Zap, Mail, Lock, User, Loader2 } from "lucide-react";
 import { z } from "zod";
 // 🆕 IMPORTAR O SERVIÇO AVALON
 import avalonService from "@/features/broker/services/avalon.service";

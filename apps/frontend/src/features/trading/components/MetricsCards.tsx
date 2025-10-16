@@ -3,7 +3,7 @@
 
 import React from 'react'
 import { Card, CardContent } from '@/shared/components/ui/card'
-import { TrendingUp, TrendingDown, Activity, DollarSign } from 'lucide-react'
+import { TrendingUp, TrendingDown, Activity } from 'lucide-react'
 
 interface MetricsCardsProps {
   winRate: number
@@ -32,9 +32,11 @@ export const MetricsCards: React.FC<MetricsCardsProps> = ({
               <span className="text-xs md:text-sm text-muted-foreground">Win Rate</span>
               <Activity className="w-4 h-4 text-muted-foreground" />
             </div>
-            <div className={`text-2xl md:text-3xl font-bold font-mono ${
-              winRate >= 50 ? 'text-green-500' : 'text-red-500'
-            }`}>
+            <div
+              className={`text-2xl md:text-3xl font-bold font-mono ${
+                winRate >= 50 ? 'text-positive' : 'text-negative'
+              }`}
+            >
               {winRate.toFixed(1)}%
             </div>
           </div>
@@ -65,9 +67,9 @@ export const MetricsCards: React.FC<MetricsCardsProps> = ({
           <div className="space-y-2">
             <div className="flex items-center justify-between">
               <span className="text-xs md:text-sm text-muted-foreground">Wins</span>
-              <TrendingUp className="w-4 h-4 text-green-500" />
+              <TrendingUp className="w-4 h-4 text-positive" />
             </div>
-            <div className="text-2xl md:text-3xl font-bold font-mono text-green-500">
+            <div className="text-2xl md:text-3xl font-bold font-mono text-positive">
               {totalWins}
             </div>
           </div>
@@ -75,20 +77,28 @@ export const MetricsCards: React.FC<MetricsCardsProps> = ({
       </Card>
 
       {/* PnL Card */}
-      <Card className={`glass border-2 ${isProfitable ? 'border-green-500/50 bg-green-500/5' : 'border-red-500/50 bg-red-500/5'}`}>
+      <Card
+        className={`glass border-2 ${
+          isProfitable
+            ? 'border-positive/60 bg-positive/10'
+            : 'border-negative/60 bg-negative/10'
+        }`}
+      >
         <CardContent className="p-4 md:p-6">
           <div className="space-y-2">
             <div className="flex items-center justify-between">
               <span className="text-xs md:text-sm text-muted-foreground">P&L</span>
               {isProfitable ? (
-                <TrendingUp className="w-4 h-4 text-green-500" />
+                <TrendingUp className="w-4 h-4 text-positive" />
               ) : (
-                <TrendingDown className="w-4 h-4 text-red-500" />
+                <TrendingDown className="w-4 h-4 text-negative" />
               )}
             </div>
-            <div className={`text-2xl md:text-3xl font-bold font-mono ${
-              isProfitable ? 'text-green-500' : 'text-red-500'
-            }`}>
+            <div
+              className={`text-2xl md:text-3xl font-bold font-mono ${
+                isProfitable ? 'text-positive' : 'text-negative'
+              }`}
+            >
               {isProfitable ? '+' : ''}R$ {pnl.toFixed(2)}
             </div>
           </div>
