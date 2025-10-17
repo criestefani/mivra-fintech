@@ -7,12 +7,14 @@ class VerificationQueue {
     this.candlesService = candlesService;
     this.supabase = supabase; // ✅ Accept supabase client as parameter
     this.queue = [];
-    this.processing = false;
+    this.processing = 0; // Track number of concurrent workers
+    this.processingLock = false; // Prevent queue mutation during processing
 
     // Configuration
-    this.BATCH_SIZE = options.batchSize || 10; // Process 10 verifications at a time
-    this.INTERVAL = options.interval || 2000; // Process batch every 2 seconds
+    this.BATCH_SIZE = options.batchSize || 50; // Process 50 verifications at a time (was 10)
+    this.INTERVAL = options.interval || 500; // Process batch every 500ms (was 2000ms)
     this.MAX_RETRIES = options.maxRetries || 2;
+    this.WORKERS = options.workers || 2; // Number of concurrent workers
 
     // Stats
     this.stats = {
@@ -49,32 +51,42 @@ class VerificationQueue {
   }
 
   /**
-   * Start queue processor
+   * Start queue processor with multiple workers
    */
   start() {
-    if (this.processorInterval) {
+    if (this.processorIntervals && this.processorIntervals.length > 0) {
       console.warn('⚠️  Queue processor already running');
       return;
     }
 
-    console.log('🚀 Starting verification queue processor...');
-    this.processorInterval = setInterval(() => {
-      // ✅ Heartbeat: Show queue is running
-      console.log(`[Queue Heartbeat] Size: ${this.queue.length}, Processing: ${this.processing}`);
-      this.processBatch().catch(err => {
-        console.error('❌ Error in queue processor:', err.message);
-      });
-    }, this.INTERVAL);
+    console.log(`🚀 Starting verification queue processor with ${this.WORKERS} workers...`);
+    this.processorIntervals = [];
+
+    // Create multiple worker intervals
+    for (let i = 0; i < this.WORKERS; i++) {
+      const interval = setInterval(() => {
+        // ✅ Heartbeat: Show queue is running
+        console.log(`[Queue Heartbeat W${i}] Size: ${this.queue.length}, Active workers: ${this.processing}/${this.WORKERS}`);
+        this.processBatch().catch(err => {
+          console.error('❌ Error in queue processor:', err.message);
+        });
+      }, this.INTERVAL);
+
+      this.processorIntervals.push(interval);
+    }
   }
 
   /**
    * Stop queue processor
    */
   stop() {
-    if (this.processorInterval) {
-      clearInterval(this.processorInterval);
-      this.processorInterval = null;
-      console.log('🛑 Queue processor stopped');
+    if (this.processorIntervals && this.processorIntervals.length > 0) {
+      this.processorIntervals.forEach((interval, i) => {
+        clearInterval(interval);
+        console.log(`🛑 Worker ${i} stopped`);
+      });
+      this.processorIntervals = [];
+      console.log('🛑 Queue processor completely stopped');
     }
   }
 
@@ -82,11 +94,13 @@ class VerificationQueue {
    * Process a batch of verifications
    */
   async processBatch() {
-    if (this.processing) {
-      return; // Skip if previous batch still processing
+    // Prevent multiple workers from processing simultaneously
+    if (this.processingLock) {
+      return;
     }
 
-    this.processing = true;
+    this.processingLock = true;
+    this.processing++;
 
     try {
       const now = Date.now();
@@ -105,7 +119,6 @@ class VerificationQueue {
         } else {
           console.log(`✅ Queue is empty`);
         }
-        this.processing = false;
         return;
       }
 
@@ -229,7 +242,8 @@ class VerificationQueue {
     } catch (error) {
       console.error('❌ Fatal error in batch processing:', error.message);
     } finally {
-      this.processing = false;
+      this.processing--;
+      this.processingLock = false;
     }
   }
 
