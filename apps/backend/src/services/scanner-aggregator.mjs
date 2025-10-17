@@ -5,6 +5,7 @@
 import { supabase } from '../../config/supabase.mjs';
 
 export const scannerAggregator = {
+
   /**
    * Aggregates strategy_trades data into scanner_performance table
    * Groups by: active_id, ativo_nome, timeframe
@@ -14,19 +15,24 @@ export const scannerAggregator = {
     try {
       console.log('🔧 [ScannerAggregator] Starting aggregation of strategy_trades...');
 
-      // Step 1: Fetch all completed trades (WIN/LOSS) from strategy_trades
+      // ✅ OPTIMIZATION: Only aggregate last 24 hours of data
+      const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+
+      // Step 1: Fetch completed trades from last 24h only (not full table scan)
       const { data: trades, error: fetchError } = await supabase
         .from('strategy_trades')
-        .select('*')
+        .select('active_id, ativo_nome, timeframe, result, signal_timestamp') // ✅ Select only needed columns
         .in('result', ['WIN', 'LOSS']) // Only completed trades
-        .order('signal_timestamp', { ascending: false });
+        .gte('signal_timestamp', twentyFourHoursAgo) // ✅ Filter by date
+        .order('signal_timestamp', { ascending: false })
+        .limit(5000); // ✅ Safety limit
 
       if (fetchError) {
         throw new Error(`Failed to fetch trades: ${fetchError.message}`);
       }
 
       if (!trades || trades.length === 0) {
-        console.log('⚠️  [ScannerAggregator] No completed trades found');
+        console.log('⚠️ [ScannerAggregator] No completed trades found');
         return { aggregated: 0, upserted: 0 };
       }
 
@@ -46,7 +52,7 @@ export const scannerAggregator = {
             wins: 0,
             losses: 0,
             total: 0,
-            last_updated: trade.signal_timestamp || new Date().toISOString()
+            last_signal: trade.signal_timestamp || new Date().toISOString()
           };
         }
 
@@ -55,11 +61,12 @@ export const scannerAggregator = {
         } else if (trade.result === 'LOSS') {
           grouped[groupKey].losses++;
         }
+
         grouped[groupKey].total++;
 
-        // Update last_updated to most recent trade
-        if (trade.signal_timestamp > grouped[groupKey].last_updated) {
-          grouped[groupKey].last_updated = trade.signal_timestamp;
+        // Update last_signal to most recent trade
+        if (trade.signal_timestamp > grouped[groupKey].last_signal) {
+          grouped[groupKey].last_signal = trade.signal_timestamp;
         }
       });
 
@@ -73,40 +80,34 @@ export const scannerAggregator = {
         total_signals: group.total,
         total_wins: group.wins,
         total_losses: group.losses,
-        win_rate: group.total > 0 ? Math.round((group.wins / group.total) * 100) : 0,
+        win_rate: group.total > 0 ? parseFloat(((group.wins / group.total) * 100).toFixed(2)) : 0,
+        last_signal: group.last_signal,
         last_updated: new Date().toISOString()
       }));
 
       console.log(`✅ [ScannerAggregator] Prepared ${performanceData.length} performance records`);
 
-      // Step 4: Upsert into scanner_performance table
-      // First, delete old records to avoid duplicates
-      const { error: deleteError } = await supabase
-        .from('scanner_performance')
-        .delete()
-        .gt('last_updated', '1900-01-01'); // Delete all (safe way)
-
-      if (deleteError) {
-        console.warn(`⚠️  [ScannerAggregator] Could not clear old data: ${deleteError.message}`);
-      }
-
-      // Then insert new aggregated data
+      // Step 4: ✅ CORREÇÃO - Usar UPSERT nativo em vez de DELETE + INSERT
       const { data: upserted, error: upsertError } = await supabase
         .from('scanner_performance')
-        .insert(performanceData)
+        .upsert(performanceData, { 
+          onConflict: 'active_id,timeframe',
+          ignoreDuplicates: false 
+        })
         .select();
 
       if (upsertError) {
         throw new Error(`Failed to upsert performance data: ${upsertError.message}`);
       }
 
-      console.log(`🎯 [ScannerAggregator] Upserted ${upserted?.length || 0} records into scanner_performance`);
+      console.log(`🎯 [ScannerAggregator] Successfully upserted ${upserted?.length || 0} records into scanner_performance`);
 
       return {
         aggregated: Object.keys(grouped).length,
         upserted: upserted?.length || 0,
         success: true
       };
+
     } catch (error) {
       console.error(`❌ [ScannerAggregator] Error during aggregation: ${error.message}`);
       throw error;

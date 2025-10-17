@@ -14,8 +14,9 @@ import { createClient } from '@supabase/supabase-js';
 import { analyzeAggressive } from './strategies/strategy-aggressive.mjs';
 import { getAvailableAssets, getAssetName } from '../constants/fixed-assets.mjs';
 import ssidManager from '../services/ssid-manager.mjs';
+import VerificationQueue from '../services/verification-queue.mjs'; // ✅ NEW: Queue system
 
-const TIMEFRAMES = [10, 30, 60, 180, 300]; // ✅ 10s, 30s, 1min, 3min, 5min
+const TIMEFRAMES = [10, 30, 60, 300]; // ✅ 10s, 30s, 1min, 5min
 const SCAN_INTERVAL = 15000; // 15 seconds (increased to allow scan completion)
 const PARALLEL_BATCH_SIZE = 35; // ✅ OPTIMIZED: Increased from 20 to 35 for better throughput
 const AVALON_WS_URL = process.env.AVALON_WS_URL || 'wss://ws.trade.avalonbroker.com/echo/websocket';
@@ -37,6 +38,7 @@ class MarketScanner {
     this.isScanning = false; // ✅ Lock to prevent overlapping scans
     this.scanStartTime = null; // ✅ Track when scan started for timeout safety
     this.SCAN_TIMEOUT = 25000; // ✅ Max 25 seconds per scan (SCAN_INTERVAL is 15s, so 25s = 67% buffer)
+    this.verificationQueue = null; // ✅ NEW: Queue for batch verification
   }
 
   async connect() {
@@ -70,12 +72,20 @@ class MarketScanner {
 
     this.blitz = await this.sdk.blitzOptions();
     this.candlesService = await this.sdk.candles();
+
+    // ✅ Initialize verification queue
+    this.verificationQueue = new VerificationQueue(this.candlesService, {
+      batchSize: 10,
+      interval: 2000
+    });
+    this.verificationQueue.start();
+
     console.log('✅ Market Scanner conectado ao Avalon\n');
   }
 
   async scanLoop() {
     console.log('🔄 Scanner tempo real iniciado (scan a cada 15s)\n');
-    console.log('📊 Monitorando: 49 ativos × 5 timeframes = 245 combinações (Estratégia Híbrida Agressiva)\n');
+    console.log('📊 Monitorando: 141 ativos × 4 timeframes = 564 combinações (Estratégia Híbrida Agressiva)\n');
     console.log(`⚡ Usando processamento PARALELO: ${PARALLEL_BATCH_SIZE} chamadas simultâneas\n`);
 
     let skippedScans = 0;
@@ -250,7 +260,7 @@ class MarketScanner {
             } else {
               console.log(`✅ ${insertedSignals.length} sinais inseridos em batch (${insertTime}ms)`);
 
-              // ✅ Schedule verification for all inserted signals
+              // ✅ NEW: Add verifications to queue (replaces individual setTimeout)
               for (let i = 0; i < signalsToInsert.length; i++) {
                 const signal = signalsToInsert[i];
                 const tradeId = insertedSignals[i]?.id;
@@ -259,11 +269,15 @@ class MarketScanner {
                   continue;
                 }
 
-                const delay = signal.timeframe * 1000 + 2000;
-                setTimeout(async () => {
-                  await this.verificarResultado(tradeId, parseInt(signal.active_id), signal.timeframe, signal.signal_price, signal.signal_direction);
-                }, delay);
+                this.verificationQueue.add({
+                  tradeId: tradeId,
+                  activeId: parseInt(signal.active_id),
+                  timeframe: signal.timeframe,
+                  signalPrice: signal.signal_price,
+                  direction: signal.signal_direction
+                });
               }
+              console.log(`✅ ${signalsToInsert.length} verifications added to queue`);
             }
           } catch (err) {
             console.error(`❌ Batch insert exception: ${err.message}`);
