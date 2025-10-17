@@ -14,6 +14,8 @@ class VerificationQueue {
     this.INTERVAL = options.interval || 500; // Process batch every 500ms (was 2000ms)
     this.MAX_RETRIES = options.maxRetries || 2;
     this.WORKERS = options.workers || 2; // Number of concurrent workers
+    this.CIRCUIT_BREAKER_THRESHOLD = 1500; // Pause processing if backlog exceeds this
+    this.hasCircuitBreaker = options.hasCircuitBreaker || false; // Enable circuit breaker
 
     // Stats
     this.stats = {
@@ -156,6 +158,15 @@ class VerificationQueue {
       const readyCount = this.queue.filter(v => v.executeAt <= now).length;
       console.log(`📊 Queue status: ${readyCount}/${totalInQueue} ready | Processing batch of ${ready.length}...`);
       console.log(`\n🔄 Processing batch of ${ready.length} verifications...`);
+
+      // 🚨 CIRCUIT BREAKER: If backlog exceeds threshold, pause to let queue recover
+      if (this.hasCircuitBreaker && totalInQueue > this.CIRCUIT_BREAKER_THRESHOLD) {
+        console.warn(`🚨 CIRCUIT BREAKER ACTIVATED: Backlog ${totalInQueue} > threshold ${this.CIRCUIT_BREAKER_THRESHOLD}`);
+        console.log(`⏸️  Pausing processing for 60s to allow API recovery...`);
+        await new Promise(r => setTimeout(r, 60000)); // Wait 60 seconds
+        console.log(`✅ Circuit breaker reset, resuming processing`);
+      }
+
       const batchStartTime = Date.now();
 
       // ✅ STEP 1: Fetch candles in chunks (reduce API pressure)

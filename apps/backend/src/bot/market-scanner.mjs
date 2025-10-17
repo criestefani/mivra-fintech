@@ -17,7 +17,7 @@ import ssidManager from '../services/ssid-manager.mjs';
 import VerificationQueue from '../services/verification-queue.mjs'; // ✅ NEW: Queue system
 
 const TIMEFRAMES = [10, 30, 60, 300]; // ✅ 10s, 30s, 1min, 5min
-const SCAN_INTERVAL = 15000; // 15 seconds (increased to allow scan completion)
+const SCAN_INTERVAL = 30000; // 🔧 OPTIMIZED: 30 seconds (was 15s) - reduce signal creation rate
 const PARALLEL_BATCH_SIZE = 35; // ✅ OPTIMIZED: Increased from 20 to 35 for better throughput
 const AVALON_WS_URL = process.env.AVALON_WS_URL || 'wss://ws.trade.avalonbroker.com/echo/websocket';
 const AVALON_API_HOST = process.env.AVALON_API_HOST || 'https://trade.avalonbroker.com';
@@ -74,11 +74,12 @@ class MarketScanner {
     this.candlesService = await this.sdk.candles();
 
     // ✅ Initialize verification queue (pass supabase client)
-    // 🚨 EMERGENCY: Conservative settings to prevent connection pool overflow
+    // 🔧 OPTIMIZED: Balanced settings after architectural analysis
     this.verificationQueue = new VerificationQueue(this.candlesService, supabase, {
-      batchSize: 10,    // REDUCED to 10 (was 50) - connection pool safety
-      interval: 1000,   // INCREASED to 1000ms (was 500ms) - reduce call frequency
-      workers: 1        // REDUCED to 1 (was 2) - single worker mode during emergency
+      batchSize: 20,    // INCREASED to 20 (was 10) - double processing capacity
+      interval: 1000,   // KEEP at 1000ms - process every second
+      workers: 1,       // KEEP at 1 - stable single worker
+      hasCircuitBreaker: true  // Enable circuit breaker for backlog protection
     });
     this.verificationQueue.start();
 
@@ -86,7 +87,7 @@ class MarketScanner {
   }
 
   async scanLoop() {
-    console.log('🔄 Scanner tempo real iniciado (scan a cada 15s)\n');
+    console.log('🔄 Scanner tempo real iniciado (scan a cada 30s)\n');
     console.log('📊 Monitorando: 141 ativos × 4 timeframes = 564 combinações (Estratégia Híbrida Agressiva)\n');
     console.log(`⚡ Usando processamento PARALELO: ${PARALLEL_BATCH_SIZE} chamadas simultâneas\n`);
 
