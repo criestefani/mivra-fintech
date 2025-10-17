@@ -2,16 +2,10 @@
 // Replaces individual setTimeout() with controlled batch processing
 // Eliminates deadlock issues by serializing operations
 
-import { createClient } from '@supabase/supabase-js';
-
-const supabase = createClient(
-  process.env.SUPABASE_URL || 'https://vecofrvxrepogtigmeyj.supabase.co',
-  process.env.SUPABASE_SERVICE_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY
-);
-
 class VerificationQueue {
-  constructor(candlesService, options = {}) {
+  constructor(candlesService, supabase, options = {}) {
     this.candlesService = candlesService;
+    this.supabase = supabase; // ✅ Accept supabase client as parameter
     this.queue = [];
     this.processing = false;
 
@@ -156,7 +150,7 @@ class VerificationQueue {
       // ✅ STEP 3: Batch UPDATE to Supabase (1 query instead of N)
       if (updates.length > 0) {
         const updateStartTime = Date.now();
-        const { error: upsertError } = await supabase
+        const { error: upsertError } = await this.supabase
           .from('strategy_trades')
           .upsert(updates, { onConflict: 'id', ignoreDuplicates: false });
 

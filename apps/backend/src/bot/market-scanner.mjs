@@ -73,8 +73,8 @@ class MarketScanner {
     this.blitz = await this.sdk.blitzOptions();
     this.candlesService = await this.sdk.candles();
 
-    // ✅ Initialize verification queue
-    this.verificationQueue = new VerificationQueue(this.candlesService, {
+    // ✅ Initialize verification queue (pass supabase client)
+    this.verificationQueue = new VerificationQueue(this.candlesService, supabase, {
       batchSize: 10,
       interval: 2000
     });
