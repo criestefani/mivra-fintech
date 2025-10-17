@@ -158,14 +158,31 @@ class VerificationQueue {
       console.log(`\n🔄 Processing batch of ${ready.length} verifications...`);
       const batchStartTime = Date.now();
 
-      // ✅ STEP 1: Fetch candles in parallel (with timeout)
-      console.log(`🔧 [DEBUG] Starting STEP 1: Fetch candles (${ready.length} items, 30s timeout)`);
-      const candleResults = await this.promiseWithTimeout(
-        Promise.all(ready.map(v => this.fetchCandles(v))),
-        30000,
-        'Fetch candles timeout after 30s'
-      );
-      console.log(`🔧 [DEBUG] STEP 1 complete. Results: ${candleResults.length}`);
+      // ✅ STEP 1: Fetch candles in chunks (reduce API pressure)
+      console.log(`🔧 [DEBUG] Starting STEP 1: Fetch candles (${ready.length} items in chunks of 3)`);
+
+      const CANDLE_CHUNK_SIZE = 3;
+      const candleResults = [];
+
+      // Process in chunks of 3 instead of all at once to reduce API pressure
+      for (let i = 0; i < ready.length; i += CANDLE_CHUNK_SIZE) {
+        const chunk = ready.slice(i, i + CANDLE_CHUNK_SIZE);
+        const chunkNum = Math.floor(i / CANDLE_CHUNK_SIZE) + 1;
+        const totalChunks = Math.ceil(ready.length / CANDLE_CHUNK_SIZE);
+
+        console.log(`🔧 [DEBUG] Fetching chunk ${chunkNum}/${totalChunks}: ${chunk.length} items (25s timeout)`);
+
+        const chunkResults = await this.promiseWithTimeout(
+          Promise.all(chunk.map(v => this.fetchCandles(v))),
+          25000,  // 25s timeout for chunk of 3
+          `Fetch candles chunk ${chunkNum} timeout after 25s`
+        );
+
+        candleResults.push(...chunkResults);
+        console.log(`🔧 [DEBUG] Chunk ${chunkNum}/${totalChunks} complete: ${chunkResults.length} results`);
+      }
+
+      console.log(`🔧 [DEBUG] STEP 1 complete. Total results: ${candleResults.length}`);
 
       // ✅ STEP 2: Process results
       console.log(`🔧 [DEBUG] Starting STEP 2: Process results`);
