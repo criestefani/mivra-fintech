@@ -77,14 +77,18 @@ export const useBotStatus = (userId?: string): UseBotStatusResult => {
     try {
       console.log('[useBotStatus] Starting bot runtime...', { userId, config })
 
+      toast.info('Bot iniciando...', { duration: 2 })
+
       const response = await botAPI.startRuntime(userId, config)
 
       if (response.data?.success) {
+        console.log('[useBotStatus] Bot start request sent successfully')
         toast.success('Bot iniciado com sucesso!')
-        console.log('[useBotStatus] Bot started successfully')
 
-        // Refresh status after starting
-        await fetchStatus()
+        // ✅ Refresh status after 2 seconds (gives bot time to initialize)
+        setTimeout(() => {
+          fetchStatus()
+        }, 2000)
       } else {
         throw new Error(response.data?.error || 'Failed to start bot')
       }

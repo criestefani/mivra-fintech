@@ -1,60 +1,94 @@
-# AGENT Overview
+# Platform Overview
 
-## Visao Geral
-- Mivra Fintech e uma plataforma completa de trading automatizado integrada ao broker Avalon.
-- Existem dois sistemas distintos operando no monorepo: **MivraTech** (produto usado pelos clientes finais) e a **Admin Platform** (ferramenta interna para monitoramento e gestao dos clientes e do bot).
-- O sistema entrega analise de mercado em tempo real, execucao automatica de ordens, dashboard administrativo completo e recursos de CRM planejados.
-- Arquitetura monorepo com apps de backend (Node.js/Express) e frontend (React/TypeScript/Vite), além de pacotes compartilhados (`client-sdk-js`, `agent-sdk`).
+## MivraTech - AI-Powered Trading Intelligence Platform
+MivraTech é uma plataforma fintech avançada que combina inteligência artificial e análise de mercado em tempo real para entregar sinais automatizados de trading e gestão de portfólio voltados a opções binárias. O ecossistema processa grandes volumes de dados em múltiplos ativos e timeframes, aplicando estratégias híbridas agressivas proprietárias para identificar oportunidades com alta probabilidade de acerto.
 
-## Componentes Principais
-### Backend (`apps/backend`)
-- Servidor Express principal (`src/api-server.mjs`) exposto em `http://localhost:4001`, com REST/Socket.IO para bot, admin, scanner e CRM.
-- Bot multi-usuario (`src/bot/bot-live.mjs`) gerenciado por `SessionManager` e `BotSession`, suportando 4 estrategias (Conservative, Balanced, Aggressive, Support-Resistance) e 6 indicadores tecnicos (RSI, MACD, Bollinger, ADX, Stochastic RSI, Trend).
-- Market scanner (`src/bot/market-scanner.mjs`) analisa ~150 ativos em 5 timeframes a cada 10 segundos e persiste sinais em `strategy_trades`.
-- Integracoes com Avalon SDK via WebSocket (`@quadcode-tech/client-sdk-js`), Supabase (auth, banco de dados) e gerenciador de SSID com renovacao automatica.
-- Admin APIs para usuarios, trades, analytics e CRM (em desenvolvimento).
+### Core Value Proposition
+- **Real-time Market Scanning:** monitora continuamente 139+ ativos em 4 janelas (10s, 30s, 1m, 5m)
+- **AI-Driven Signal Generation:** algoritmos proprietários identificam trades com vantagem estatística comprovada
+- **Risk Management:** só expõe sinais com pelo menos 15 ocorrências históricas e taxa de vitória validada
+- **Broker Integration:** integração direta com o broker Quadcode/Avalon para execução em tempo real
+- **Portfolio Analytics:** rastreamento completo de performance e ferramentas de otimização de portfólio
 
-### Frontend (`apps/frontend`)
-- React 18 + TypeScript, Vite, TailwindCSS, shadcn/ui e design system proprio descrito em `theme.md` e `tailwind.config.js`.
-- Voltado ao cliente final (MivraTech), com páginas principais: Dashboard, Operations (trading manual/auto), History, Settings, Market Scanner, Auth e seções de trading em tempo real.
-- Hooks de tempo real (`useBotSocket`, `useScannerSubscription`) e integracao com Supabase (`supabase/client.ts`) e backend (`shared/services/api`).
-- Componentes trading: graficos com `lightweight-charts`, cards de metricas, controles de bot e historico de trades.
+## Dual System Architecture
+A solução é composta por dois sistemas interligados, porém distintos, compartilhando infraestrutura, dados e serviços de trading.
 
-### Admin Platform (`apps/admin-frontend`, `apps/admin-backend`)
-- Foco interno: monitoramento de clientes MivraTech, gestao de usuarios, analises financeiras e operacionais.
-- Stack similar (React/TypeScript no frontend, Node/Express no backend) com layout dedicado e permissoes diferenciadas para `super_admin`, `admin`, `support`, `analyst`.
-- GUI composta por dashboard principal, gerenciamento de usuarios, historico de trades, analytics avancados, monitoramento em tempo real e configuracoes administrativas.
-- Backend oferece APIs administrativas dedicadas (health, metrics, alerts, CRM futuro) e integra com Supabase e Avalon para consolidar dados operacionais.
+### 1. MivraTech Client Platform (produto principal)
+Aplicação voltada ao cliente final, responsável pela experiência completa de trading assistido.
 
-### Pacotes Compartilhados (`packages`)
-- `client-sdk-js`: SDK customizado para interagir com Avalon Broker.
-- `agent-sdk`: Ferramentas de integracao com agentes (Claude) e automacoes futuras.
+#### Key Features
+- **Market Scanner Dashboard:** heatmap em tempo real destacando ativos e estratégias com melhor desempenho
+- **Trading Operations Interface:** execução de sinais, gerenciamento de posições e monitoramento contínuo
+- **Portfolio Management:** visão consolidada de conta, métricas de performance e avaliação de risco
+- **User Authentication:** login seguro, gestão de assinatura e preferências do usuário
+- **Mobile & Desktop Support:** layout responsivo otimizado para múltiplos dispositivos
 
-## Fluxos Centrais
-- **Execucao do Bot**: comandos sao gravados em `bot_control` (Supabase); `bot-live.mjs` verifica a cada 5 s, conecta ao Avalon via SSID, avalia ativos conforme estrategia e executa ordens (`blitz.buy()`), salvando resultados em `trades_history`.
-- **Market Scanner**: coleta candles via Avalon SDK, calcula assertividade por estrategia/timeframe, alimenta `strategy_trades` e `scanner_performance`, exposto no frontend via WebSocket e APIs.
-- **Admin Dashboard**: namespace `/admin` no Socket.IO para metricas em tempo real, paginas React dedicadas a usuarios, trades, analytics, monitoring e settings com design orientado a contas reais.
-- **Autenticacao**: Supabase Auth (email/password e OAuth), com tabelas `profiles`, `admin_users` e gerenciamento de roles (`super_admin`, `admin`, `support`, `analyst`).
+#### Target Users
+Traders individuais, investidores de varejo e entusiastas de trading que buscam insights de mercado baseados em dados.
 
-## Integracoes Externas
-- **Avalon Broker**: WebSocket `wss://ws.trade.avalonbroker.com/echo/websocket`, APIs auxiliares documentadas em `docs/QUADCODE_API_GUIDE.md` e `docs/Outros endpoints Avalon.md`.
-- **Supabase**: banco PostgreSQL gerenciando tabelas de bot, trades, scanner, usuarios, admin e futuras estruturas de CRM.
-- **MCP (Model Context Protocol)**: configuracoes no repo (`claude_desktop_config.json`, `.mcp.json`) habilitam servidores Supabase, GitHub, Filesystem, Notion, Magic, ShadCN, Brave Search, entre outros.
+### 2. Admin Management System
+Console interno para operação, governança e acompanhamento do negócio.
 
-## Setup Essencial
-1. Instalar dependencias separadamente em `apps/backend` e `apps/frontend` (`npm install`).
-2. Configurar variaveis de ambiente (`apps/backend/.env`, `apps/frontend/.env`) com credenciais Supabase e Avalon.
-3. Iniciar backend (`node src/api-server.mjs` com Node >= 18) e frontend (`npm run dev`).
-4. Opcional: executar `apps/backend/src/bot/bot-live.mjs` para rodar o bot em modo standalone.
+#### Key Features
+- **User Management:** analytics de clientes, controle de assinaturas e monitoramento de comportamento
+- **Trading Analytics:** métricas agregadas, análise de efetividade de sinais e histórico operacional
+- **Revenue Dashboard:** relatórios financeiros, acompanhamento de receita e indicadores de negócio
+- **System Monitoring:** monitoramento de saúde da plataforma, status de APIs e métricas técnicas
+- **Customer Support Tools:** gestão de tickets, acompanhamento de issues e ferramentas de diagnóstico
 
-## Estado Atual e Roadmap
-- De acordo com `docs/PROJETO_PROGRESSO.md` (15/10/2025), build frontend esta funcional, com todos componentes trading e admin implementados e integracoes finalizadas.
-- Backend e banco estao completos para MVP (fase 2); modulo CRM extensivo permanece planejado para versoes futuras.
-- Pendencias: validar fluxos end-to-end (auth, bot, scanner, admin), garantir renovacao de SSID automatica em producao, implementar tabelas e funcoes do CRM.
+#### Target Users
+Administradores da plataforma, times de suporte, analistas de negócios e operações técnicas.
 
-## Documentacao de Referencia
-- `README.md` para resumo inicial e quick start.
-- Pasta `docs/overview/` para arquitetura detalhada de backend, frontend, bot, scanner, dashboard e schema de banco.
-- `docs/QUADCODE_API_GUIDE.md` e `docs/WEBSOCKET_MIGRATION.md` para integracao Avalon.
-- `docs/PLANO_CORRECAO_BUILD.md` e `docs/PROJETO_PROGRESSO.md` para status de build e roadmap.
-- `docs/MCP_*.md` para configuracao de agentes MCP e automacao com Claude.
+## Business Model
+- **B2C SaaS Platform:** acesso por assinatura aos módulos de inteligência e análise de mercado
+- **Freemium Tiers:** camada gratuita com sinais básicos e upgrade para recursos avançados e automação
+- **Broker Revenue Share:** participação em receitas via integrações com brokers parceiros
+- **Enterprise Solutions:** implementações customizadas para traders institucionais e gestores
+
+## Core Commands
+### Essential Development Commands
+- `cd apps/frontend && npm run dev` — inicia o frontend com hot reload (use `pnpm run dev` se preferir pnpm)
+- `cd apps/frontend && npm run preview` — pré-visualização otimizada para mobile/produção
+- `node apps/backend/src/bot/market-scanner.mjs` — executa o market scanner em tempo real
+- `node apps/backend/src/api-server.mjs` — sobe a API REST/Socket para cliente e admin
+- `npx tsc --noEmit` — verificação de tipos (executar dentro dos workspaces TypeScript)
+- `npm run lint` — linting (disponível nos frontends; ajuste o diretório antes de rodar)
+- `cd apps/backend && npm run test` — suíte de testes do backend/bot
+- `cd apps/frontend && npm run build` — build de produção do frontend
+
+### Database Management
+- `npx supabase start` — inicia a stack Supabase local para desenvolvimento
+- `npx supabase db reset` — recria o banco local do zero
+- `npx supabase db push` — aplica migrações pendentes (schema e funções)
+
+### Frontend Development Modes
+- **Desktop Development:** `npm run dev` dentro de `apps/frontend` para desenvolvimento padrão
+- **Mobile Testing:** `npm run preview` para validar responsividade e fluxo mobile
+- **Production Build:** `npm run build` seguido de `npm run preview` para inspecionar o bundle final
+
+## Project Architecture
+```
+apps/
+  frontend/        # React + TypeScript (cliente e consoles admin)
+    src/pages/     # Interfaces principais (trading, scanner, admin dashboard)
+    src/features/  # Componentes de domínio (trading, admin, market-scanner)
+    src/shared/    # UI compartilhada, hooks e utilitários
+  backend/         # API Node.js/Express e serviços de trading
+    src/bot/       # Bot live, market scanner, estratégias e sessão
+    src/services/  # Autenticação, portfólio, integrações auxiliares
+    src/api-server.mjs  # API REST/WebSocket unificada
+packages/
+  client-sdk-js/   # SDK para integração com o broker Avalon (Quadcode)
+  agent-sdk/       # Infra de agentes/automação e ferramentas MCP
+```
+
+### Key Backend Services
+- **Market Scanner (`apps/backend/src/bot/market-scanner.mjs`):** análise contínua dos ativos e consolidação de sinais
+- **API Server (`apps/backend/src/api-server.mjs`):** endpoints REST, WebSocket namespaces e roteamento para cliente/admin
+- **Service Layer (`apps/backend/src/services/`):** autenticação, processamento de sinais, gestão de portfólio e analytics administrativos
+
+## System Boundaries
+- **Shared Infrastructure:** banco de dados, autenticação e serviços de trading servem tanto clientes quanto admins
+- **Separate UI Flows:** interfaces e permissões dedicadas para o público final versus operadores internos
+- **Unified Backend:** API única com controle de acesso baseado em papéis para cada tipo de usuário
+- **Common Data Layer:** dados compartilhados de analytics e trading apresentados em perspectivas distintas conforme o contexto

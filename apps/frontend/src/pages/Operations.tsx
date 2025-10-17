@@ -570,12 +570,12 @@ const Operations = () => {
     let userConfig;
 
     if (botMode === "manual") {
-      // Manual Mode: User controls specific asset + timeframe (always uses hybrid strategy)
+      // Manual Mode: User controls specific asset + timeframe (always uses aggressive strategy)
       userConfig = {
         mode: 'manual',
         asset: asset,
         timeframe: parseInt(timeframe),
-        strategy: 'hybrid', // ✅ Manual mode ALWAYS uses hybrid strategy
+        strategy: 'aggressive', // ✅ Manual mode ALWAYS uses aggressive strategy
         amount: entryValue,
         // Optional: Pass advanced settings for manual mode too
         leverageEnabled: leverageEnabled,

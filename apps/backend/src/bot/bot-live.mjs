@@ -10,6 +10,8 @@ import { analyzeAggressive } from './strategies/strategy-aggressive.mjs';
 import { analyzeConservative } from './strategies/strategy-conservative.mjs';
 import { analyzeBalanced } from './strategies/strategy-balanced.mjs';
 
+// ✅ REAL-TIME BOT CONTROL LISTENER (replaces polling)
+import { BotControlListener } from './bot-control-listener.mjs';
 
 // ✅ Shared constants / helpers (previously provided by @mivratec/shared)
 import { STRATEGIES, TIMEFRAMES } from './constants.mjs';
@@ -48,12 +50,19 @@ class MivraTecBot {
     this.winsHoje = 0;
     this.lucroHoje = 0;
 
+    // ✅ REAL-TIME BOT CONTROL LISTENER
+    this.controlListener = null;
+    this.isStarted = false;
 
     // ✅ Armazena user_id, SSID, estratégia e modo do comando START
     this.currentUserId = null;
     this.userSSID = null;
     this.strategy = 'aggressive'; // Default: aggressive
     this.botMode = 'auto'; // Default: auto
+
+    // ✅ MANUAL MODE: Asset and timeframe selection
+    this.manualAsset = null; // Asset ID to trade (manual mode only)
+    this.manualTimeframe = null; // Timeframe to use (manual mode only)
 
     // ✅ ENTRY VALUE AND ADVANCED CONFIG
     this.tradeAmount = 1; // Default entry value
@@ -227,94 +236,106 @@ class MivraTecBot {
   }
 
 
-  async checkStartCommand() {
-    console.log('👁️ Verificando comando START...');
-
-
-    const { data: commands, error } = await supabase
-      .from('bot_control')
-      .select('*')
-      .eq('status', 'ACTIVE')
-      .order('updated_at', { ascending: false })
-      .limit(1);
-
-
-    if (error) {
-      console.error('❌ Erro ao verificar bot_control:', error.message);
-      return false;
-    }
-
-
-    if (!commands || commands.length === 0) {
-      console.log('⚪ Bot não está ativo\n');
-      return false;
-    }
-
-
-    const cmd = commands[0];
-    console.log(`🟢 Comando START detectado para user: ${cmd.user_id}`);
-
-    // ✅ ARMAZENA user_id
-    this.currentUserId = cmd.user_id;
-
-    // ✅ LER ESTRATÉGIA, MODO E CONFIGURAÇÕES AVANÇADAS DO CONFIG
-    if (cmd.config) {
-      this.strategy = cmd.config.strategy || 'aggressive';
-      this.botMode = cmd.config.mode || 'auto';
-      this.tradeAmount = cmd.config.amount || 1;
-      this.leverage = cmd.config.leverage || 2;
-      this.safetyStop = cmd.config.safetyStop || 3;
-      this.dailyGoal = cmd.config.dailyGoal || 100;
-
-      // ✅ Read advanced settings state
-      if (cmd.config.leverageEnabled !== undefined) {
-        this.leverageEnabled = cmd.config.leverageEnabled;
-      }
-      if (cmd.config.safetyStopEnabled !== undefined) {
-        this.safetyStopEnabled = cmd.config.safetyStopEnabled;
-      }
-      if (cmd.config.dailyGoalEnabled !== undefined) {
-        this.dailyGoalEnabled = cmd.config.dailyGoalEnabled;
+  /**
+   * ✅ NEW: Handle bot command from real-time event
+   * Replaces the old polling-based checkStartCommand
+   */
+  async handleBotCommand(cmd) {
+    try {
+      // ✅ Skip if already started
+      if (this.isStarted) {
+        console.log('⚠️ Bot already started, ignoring duplicate command');
+        return;
       }
 
-      console.log(`📋 Config: Strategy=${this.strategy}, Mode=${this.botMode}`);
-      console.log(`💰 Entry Value: ${this.tradeAmount} | Leverage: ${this.leverageEnabled ? this.leverage + 'x' : 'OFF'}`);
-      console.log(`🛑 Safety Stop: ${this.safetyStopEnabled ? this.safetyStop : 'OFF'} | Daily Goal: ${this.dailyGoalEnabled ? this.dailyGoal : 'OFF'}`);
-    }
+      console.log(`🟢 START command received for user: ${cmd.user_id}`);
 
-    // ✅ BUSCAR SSID VÁLIDO DE bot_status (que foi salvo quando conectou em POST /api/bot/connect)
-    console.log('🔍 Buscando SSID válido em bot_status...');
-    const { data: botStatus, error: statusError } = await supabase
-      .from('bot_status')
-      .select('ssid')
-      .eq('user_id', this.currentUserId)
-      .maybeSingle();
+      // ✅ STORE user_id
+      this.currentUserId = cmd.user_id;
 
-    if (statusError || !botStatus?.ssid) {
-      console.error('❌ SSID não encontrado em bot_status! Tentando profiles.broker_user_id...');
+      // ✅ READ STRATEGY, MODE AND ADVANCED CONFIG
+      if (cmd.config) {
+        this.strategy = cmd.config.strategy || 'aggressive';
+        this.botMode = cmd.config.mode || 'auto';
+        this.tradeAmount = cmd.config.amount || 1;
+        this.leverage = cmd.config.leverage || 2;
+        this.safetyStop = cmd.config.safetyStop || 3;
+        this.dailyGoal = cmd.config.dailyGoal || 100;
 
-      // Fallback: Tentar usar broker_user_id de profiles (mas isso pode não funcionar)
-      const { data: profile, error: profileError } = await supabase
-        .from('profiles')
-        .select('broker_user_id')
+        // ✅ MANUAL MODE: Read asset and timeframe
+        if (this.botMode === 'manual') {
+          this.manualAsset = cmd.config.asset || null;
+          this.manualTimeframe = cmd.config.timeframe || 60;
+          console.log(`🎮 Manual Mode Config: Asset=${this.manualAsset}, Timeframe=${this.manualTimeframe}s`);
+        }
+
+        // ✅ Read advanced settings state
+        if (cmd.config.leverageEnabled !== undefined) {
+          this.leverageEnabled = cmd.config.leverageEnabled;
+        }
+        if (cmd.config.safetyStopEnabled !== undefined) {
+          this.safetyStopEnabled = cmd.config.safetyStopEnabled;
+        }
+        if (cmd.config.dailyGoalEnabled !== undefined) {
+          this.dailyGoalEnabled = cmd.config.dailyGoalEnabled;
+        }
+
+        console.log(`📋 Config: Strategy=${this.strategy}, Mode=${this.botMode}`);
+        console.log(`💰 Entry Value: ${this.tradeAmount} | Leverage: ${this.leverageEnabled ? this.leverage + 'x' : 'OFF'}`);
+        console.log(`🛑 Safety Stop: ${this.safetyStopEnabled ? this.safetyStop : 'OFF'} | Daily Goal: ${this.dailyGoalEnabled ? this.dailyGoal : 'OFF'}`);
+      }
+
+      // ✅ FETCH SSID from bot_status (saved when user connected in POST /api/bot/connect)
+      console.log('🔍 Fetching SSID from bot_status...');
+      const { data: botStatus, error: statusError } = await supabase
+        .from('bot_status')
+        .select('ssid')
         .eq('user_id', this.currentUserId)
         .maybeSingle();
 
-      if (profileError || !profile?.broker_user_id) {
-        console.error('❌ Nenhum SSID ou broker_user_id encontrado!');
-        return false;
+      if (statusError || !botStatus?.ssid) {
+        console.warn('⚠️ SSID not found in bot_status, trying profiles.broker_user_id...');
+
+        // Fallback: Try broker_user_id from profiles
+        const { data: profile, error: profileError } = await supabase
+          .from('profiles')
+          .select('broker_user_id')
+          .eq('user_id', this.currentUserId)
+          .maybeSingle();
+
+        if (profileError || !profile?.broker_user_id) {
+          console.error('❌ No SSID or broker_user_id found!');
+          return;
+        }
+
+        this.userSSID = profile.broker_user_id;
+        console.warn(`⚠️ Using fallback broker_user_id: ${this.userSSID.substring(0, 15)}...`);
+      } else {
+        this.userSSID = botStatus.ssid;
+        console.log(`✅ Valid SSID found in bot_status`);
       }
 
-      this.userSSID = profile.broker_user_id;
-      console.warn(`⚠️ Usando fallback broker_user_id: ${this.userSSID.substring(0, 15)}...`);
-    } else {
-      this.userSSID = botStatus.ssid;
-      console.log(`✅ SSID válido encontrado em bot_status`);
+      console.log(`🔑 User SSID: ${this.userSSID.substring(0, 15)}...\n`);
+
+      // ✅ Initialize Avalon connection
+      await this.init();
+
+      // ✅ Mark as started so main loop can proceed
+      this.isStarted = true;
+    } catch (error) {
+      console.error('❌ Error handling bot command:', error.message);
+      this.isStarted = false;
     }
+  }
 
-    console.log(`🔑 SSID do usuário: ${this.userSSID.substring(0, 15)}...\n`);
-
-    return true;
+  /**
+   * ✅ DEPRECATED: Old polling method - kept for reference only
+   * Use handleBotCommand instead (called by real-time listener)
+   */
+  async checkStartCommand() {
+    // This method is no longer used but kept for backwards compatibility
+    console.warn('⚠️ checkStartCommand() is deprecated - using real-time listener instead');
+    return false;
   }
 
 
@@ -708,10 +729,48 @@ class MivraTecBot {
         return;
       }
 
-      const signals = await this.scanAllAssets();
-      if (signals.length === 0) {
-        console.log('⚪ Nenhum sinal forte\n');
-        return;
+      let signals = [];
+
+      // ✅ MANUAL MODE: Analyze only the selected asset with selected timeframe
+      if (this.botMode === 'manual') {
+        console.log(`🎮 MANUAL MODE: Analyzing ${this.manualAsset} on ${this.manualTimeframe}s timeframe`);
+
+        if (!this.manualAsset) {
+          console.log('❌ Manual asset not configured');
+          return;
+        }
+
+        const actives = this.blitz.getActives();
+        const manualActiveObj = actives.find(a => a.ticker === this.manualAsset || a.id === this.manualAsset);
+
+        if (!manualActiveObj) {
+          console.log(`❌ Manual asset ${this.manualAsset} not found in available actives`);
+          return;
+        }
+
+        try {
+          // ✅ Get candles for manual asset with manual timeframe
+          const candleData = await this.candlesService.getCandles(manualActiveObj.id, this.manualTimeframe, { count: 50 });
+          const analysis = await this.analyzeActive(manualActiveObj, candleData);
+
+          if (analysis && analysis.direction !== 'NEUTRO') {
+            signals = [analysis];
+            console.log(`✅ Manual analysis complete: ${analysis.activeName} → ${analysis.direction}`);
+          } else {
+            console.log('⚪ No strong signal on manual asset\n');
+            return;
+          }
+        } catch (error) {
+          console.error(`❌ Error analyzing manual asset: ${error.message}`);
+          return;
+        }
+      } else {
+        // ✅ AUTO MODE: Scan all assets
+        signals = await this.scanAllAssets();
+        if (signals.length === 0) {
+          console.log('⚪ Nenhum sinal forte\n');
+          return;
+        }
       }
 
       console.log(`📡 Sinais detectados: ${signals.length}`);
@@ -758,8 +817,14 @@ class MivraTecBot {
         : BlitzOptionsDirection.Put;
 
 
-      // ✅ SELECT DYNAMIC TIMEFRAME BASED ON SIGNAL CONFIDENCE
-      const expirationTime = this.selectBestTimeframe(activeObj, signal.confidence);
+      // ✅ SELECT TIMEFRAME: Use manual timeframe if in manual mode, otherwise dynamic
+      let expirationTime;
+      if (this.botMode === 'manual') {
+        expirationTime = this.manualTimeframe;
+        console.log(`⏱️ Using manual timeframe: ${expirationTime}s`);
+      } else {
+        expirationTime = this.selectBestTimeframe(activeObj, signal.confidence);
+      }
 
       // ✅ USE MARTINGALE AMOUNT IF APPLICABLE, OTHERWISE USE DEFAULT ENTRY VALUE
       const tradeValue = this.currentLeverageAmount || this.tradeAmount;
@@ -808,26 +873,60 @@ class MivraTecBot {
   async start() {
     console.log('🤖 MivraTec Bot Started\n');
 
+    // ✅ SET UP REAL-TIME BOT CONTROL LISTENER (replaces polling!)
+    console.log('🔔 Setting up real-time bot control listener...');
+    this.controlListener = new BotControlListener(supabase);
 
-    while (true) {
-      const hasStart = await this.checkStartCommand();
-      if (hasStart) break;
-      await new Promise(r => setTimeout(r, 5000));
+    // ✅ Register callback for bot commands
+    this.controlListener.onBotCommand(async (event) => {
+      try {
+        if (event.type === 'START_BOT') {
+          await this.handleBotCommand(event.command);
+        } else if (event.type === 'STOP_BOT') {
+          console.log('🛑 STOP command received via real-time');
+          this.shouldStop = true;
+        }
+      } catch (err) {
+        console.error('❌ Error handling bot command:', err.message);
+      }
+    });
+
+    // ✅ Start listening for real-time events
+    await this.controlListener.start();
+
+    // ✅ Check for any existing ACTIVE commands (race condition safeguard)
+    const existingCommands = await this.controlListener.getActiveCommands();
+    if (existingCommands.length > 0) {
+      console.log(`📋 Found ${existingCommands.length} existing ACTIVE command(s)`);
+      await this.handleBotCommand(existingCommands[0]);
     }
 
+    // ✅ Wait for bot to be started via real-time event or initial command
+    console.log('⏳ Waiting for START command...');
+    while (!this.isStarted) {
+      await new Promise(r => setTimeout(r, 1000));
+    }
 
-    await this.init();
     console.log('🚀 Bot ATIVADO!\n');
 
-
+    // ✅ MAIN TRADE LOOP (unchanged - still every 2 seconds)
     while (true) {
       try {
+        if (this.shouldStop) {
+          console.log('⛔ Bot stopping as requested');
+          break;
+        }
         await this.executarCicloTrade();
         await new Promise(r => setTimeout(r, 2000));
       } catch (err) {
         console.error('❌ Erro crítico:', err.message);
         await new Promise(r => setTimeout(r, 10000));
       }
+    }
+
+    // ✅ CLEANUP
+    if (this.controlListener) {
+      await this.controlListener.stop();
     }
   }
 }

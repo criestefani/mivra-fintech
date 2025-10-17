@@ -1,0 +1,71 @@
+version: '3.8'
+
+services:
+  # Redis Cache Server
+  redis:
+    image: redis:latest
+    container_name: mivra-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+    command: redis-server --appendonly yes
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+    restart: unless-stopped
+    networks:
+      - mivra-network
+    environment:
+      - REDIS_LOGLEVEL=notice
+
+  # API Server
+  api-server:
+    build:
+      context: .
+      dockerfile: Dockerfile.api
+    container_name: mivra-api-server
+    ports:
+      - "4001:4001"
+    environment:
+      - NODE_ENV=development
+      - REDIS_URL=redis://redis:6379
+      - REDIS_API_KEY=${REDIS_API_KEY}
+    depends_on:
+      redis:
+        condition: service_healthy
+    volumes:
+      - ./src:/app/src
+      - ./logs:/app/logs
+    restart: unless-stopped
+    networks:
+      - mivra-network
+
+  # Market Scanner (optional)
+  market-scanner:
+    build:
+      context: .
+      dockerfile: Dockerfile.scanner
+    container_name: mivra-market-scanner
+    environment:
+      - NODE_ENV=development
+      - REDIS_URL=redis://redis:6379
+      - REDIS_API_KEY=${REDIS_API_KEY}
+    depends_on:
+      - api-server
+    volumes:
+      - ./src:/app/src
+      - ./logs:/app/logs
+    restart: unless-stopped
+    networks:
+      - mivra-network
+
+volumes:
+  redis-data:
+    driver: local
+
+networks:
+  mivra-network:
+    driver: bridge

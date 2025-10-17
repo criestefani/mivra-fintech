@@ -126,25 +126,25 @@ const Auth = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-black flex items-center justify-center p-4">
-      <Card className="w-full max-w-md bg-gray-800/50 border-gray-700 backdrop-blur-sm">
+    <div className="min-h-screen bg-background flex items-center justify-center p-4">
+      <Card className="w-full max-w-md glass">
         <CardHeader className="space-y-1 text-center">
           <div className="flex items-center justify-center gap-2 mb-4">
-            <Zap className="h-8 w-8 text-blue-500" />
-            <h1 className="text-2xl font-bold text-white">MivraTech</h1>
+            <Zap className="h-8 w-8 text-primary" />
+            <h1 className="text-2xl font-bold text-foreground font-sans">MivraTech</h1>
           </div>
-          <CardTitle className="text-2xl text-white">Bot de Trading Automático</CardTitle>
-          <CardDescription className="text-gray-400">
+          <CardTitle className="text-2xl text-foreground font-sans">Bot de Trading Automático</CardTitle>
+          <CardDescription className="text-muted-foreground">
             Faça login ou crie sua conta para começar
           </CardDescription>
         </CardHeader>
         <CardContent>
           <Tabs defaultValue="login" className="w-full">
-            <TabsList className="grid w-full grid-cols-2 bg-gray-700/50">
-              <TabsTrigger value="login" className="text-gray-300 data-[state=active]:text-white">
+            <TabsList className="grid w-full grid-cols-2 bg-secondary/40">
+              <TabsTrigger value="login" className="text-muted-foreground data-[state=active]:text-foreground">
                 Login
               </TabsTrigger>
-              <TabsTrigger value="signup" className="text-gray-300 data-[state=active]:text-white">
+              <TabsTrigger value="signup" className="text-muted-foreground data-[state=active]:text-foreground">
                 Cadastro
               </TabsTrigger>
             </TabsList>
@@ -152,44 +152,44 @@ const Auth = () => {
             <TabsContent value="login" className="space-y-4">
               <form onSubmit={handleLogin} className="space-y-4">
                 <div className="space-y-2">
-                  <Label htmlFor="email" className="text-white">
+                  <Label htmlFor="email" className="text-foreground font-sans">
                     Email
                   </Label>
                   <div className="relative">
-                    <Mail className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+                    <Mail className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
                     <Input
                       id="email"
                       type="email"
                       placeholder="seu@email.com"
                       value={formData.email}
                       onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                      className="pl-10 bg-gray-700/50 border-gray-600 text-white placeholder:text-gray-400 focus:border-blue-500"
+                      className="pl-10 bg-secondary/50 border-border text-foreground placeholder:text-muted-foreground focus:border-primary"
                       required
                       disabled={isLoading}
                     />
                   </div>
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="password" className="text-white">
+                  <Label htmlFor="password" className="text-foreground font-sans">
                     Senha
                   </Label>
                   <div className="relative">
-                    <Lock className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+                    <Lock className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
                     <Input
                       id="password"
                       type="password"
                       placeholder="••••••••"
                       value={formData.password}
                       onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                      className="pl-10 bg-gray-700/50 border-gray-600 text-white placeholder:text-gray-400 focus:border-blue-500"
+                      className="pl-10 bg-secondary/50 border-border text-foreground placeholder:text-muted-foreground focus:border-primary"
                       required
                       disabled={isLoading}
                     />
                   </div>
                 </div>
-                <Button 
-                  type="submit" 
-                  className="w-full bg-blue-600 hover:bg-blue-700 text-white"
+                <Button
+                  type="submit"
+                  className="w-full bg-primary hover:bg-primary/90 text-primary-foreground font-sans"
                   disabled={isLoading}
                 >
                   {isLoading ? (
@@ -207,67 +207,67 @@ const Auth = () => {
             <TabsContent value="signup" className="space-y-4">
               <form onSubmit={handleSignup} className="space-y-4">
                 <div className="space-y-2">
-                  <Label htmlFor="fullName" className="text-white">
+                  <Label htmlFor="fullName" className="text-foreground font-sans">
                     Nome Completo
                   </Label>
                   <div className="relative">
-                    <User className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+                    <User className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
                     <Input
                       id="fullName"
                       type="text"
                       placeholder="Seu Nome Completo"
                       value={formData.fullName}
                       onChange={(e) => setFormData({ ...formData, fullName: e.target.value })}
-                      className="pl-10 bg-gray-700/50 border-gray-600 text-white placeholder:text-gray-400 focus:border-blue-500"
+                      className="pl-10 bg-secondary/50 border-border text-foreground placeholder:text-muted-foreground focus:border-primary"
                       disabled={isLoading}
                     />
                   </div>
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="email-signup" className="text-white">
+                  <Label htmlFor="email-signup" className="text-foreground font-sans">
                     Email
                   </Label>
                   <div className="relative">
-                    <Mail className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+                    <Mail className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
                     <Input
                       id="email-signup"
                       type="email"
                       placeholder="seu@email.com"
                       value={formData.email}
                       onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                      className="pl-10 bg-gray-700/50 border-gray-600 text-white placeholder:text-gray-400 focus:border-blue-500"
+                      className="pl-10 bg-secondary/50 border-border text-foreground placeholder:text-muted-foreground focus:border-primary"
                       required
                       disabled={isLoading}
                     />
                   </div>
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="password-signup" className="text-white">
+                  <Label htmlFor="password-signup" className="text-foreground font-sans">
                     Senha
                   </Label>
                   <div className="relative">
-                    <Lock className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+                    <Lock className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
                     <Input
                       id="password-signup"
                       type="password"
                       placeholder="••••••••"
                       value={formData.password}
                       onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                      className="pl-10 bg-gray-700/50 border-gray-600 text-white placeholder:text-gray-400 focus:border-blue-500"
+                      className="pl-10 bg-secondary/50 border-border text-foreground placeholder:text-muted-foreground focus:border-primary"
                       required
                       disabled={isLoading}
                     />
                   </div>
                 </div>
-                
+
                 {/* 🆕 AVISO SOBRE A CORRETORA */}
-                <div className="text-xs text-gray-400 bg-gray-700/30 p-3 rounded border border-gray-600">
+                <div className="text-xs text-muted-foreground bg-secondary/40 p-3 rounded border border-border font-sans">
                   <p>Ao se cadastrar, uma conta será criada automaticamente na nossa corretora parceira (Avalon Broker) usando seu email e senha.</p>
                 </div>
 
-                <Button 
-                  type="submit" 
-                  className="w-full bg-green-600 hover:bg-green-700 text-white"
+                <Button
+                  type="submit"
+                  className="w-full bg-positive hover:bg-positive/90 text-positive-foreground font-sans"
                   disabled={isLoading}
                 >
                   {isLoading ? (
