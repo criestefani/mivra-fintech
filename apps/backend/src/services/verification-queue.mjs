@@ -8,7 +8,6 @@ class VerificationQueue {
     this.supabase = supabase; // ✅ Accept supabase client as parameter
     this.queue = [];
     this.processing = 0; // Track number of concurrent workers
-    this.processingLock = false; // Prevent queue mutation during processing
 
     // Configuration
     this.BATCH_SIZE = options.batchSize || 50; // Process 50 verifications at a time (was 10)
@@ -94,12 +93,7 @@ class VerificationQueue {
    * Process a batch of verifications
    */
   async processBatch() {
-    // Prevent multiple workers from processing simultaneously
-    if (this.processingLock) {
-      return;
-    }
-
-    this.processingLock = true;
+    // ✅ Increment active workers (no lock - allows true parallelism)
     this.processing++;
 
     try {
@@ -242,8 +236,8 @@ class VerificationQueue {
     } catch (error) {
       console.error('❌ Fatal error in batch processing:', error.message);
     } finally {
+      // ✅ Decrement active workers
       this.processing--;
-      this.processingLock = false;
     }
   }
 

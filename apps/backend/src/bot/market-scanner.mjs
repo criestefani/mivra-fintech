@@ -75,8 +75,9 @@ class MarketScanner {
 
     // ✅ Initialize verification queue (pass supabase client)
     this.verificationQueue = new VerificationQueue(this.candlesService, supabase, {
-      batchSize: 10,
-      interval: 2000
+      batchSize: 50,    // Process 50 trades per batch (was 10)
+      interval: 500,    // Every 500ms (was 2000ms) = 100 trades/sec per worker
+      workers: 2        // 2 concurrent workers = 200 trades/sec throughput
     });
     this.verificationQueue.start();
 
