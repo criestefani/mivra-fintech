@@ -53,6 +53,12 @@ class VerificationQueue {
    * Start queue processor with multiple workers
    */
   start() {
+    // 🚨 EMERGENCY BRAKE: Prevent restart if too many workers still active
+    if (this.processing > 5) {
+      console.error(`🚨 EMERGENCY: Too many workers active (${this.processing}), aborting start(). Likely recovering from crash.`);
+      return;
+    }
+
     if (this.processorIntervals && this.processorIntervals.length > 0) {
       console.warn('⚠️  Queue processor already running');
       return;
@@ -93,6 +99,12 @@ class VerificationQueue {
    * Process a batch of verifications
    */
   async processBatch() {
+    // 🚨 EMERGENCY FIX: Prevent worker explosion (max N concurrent workers)
+    if (this.processing >= this.WORKERS) {
+      console.log(`⏸️  Max workers (${this.WORKERS}) active, skipping batch. Queue: ${this.queue.length}`);
+      return;
+    }
+
     // ✅ Increment active workers (no lock - allows true parallelism)
     this.processing++;
 
@@ -168,54 +180,61 @@ class VerificationQueue {
         }
       }
 
-      // ✅ STEP 3: Batch UPDATE to Supabase (execute 10 in parallel)
+      // ✅ STEP 3: Batch UPDATE to Supabase (with connection limit)
       if (updates.length > 0) {
         const updateStartTime = Date.now();
 
-        // Execute all UPDATEs in parallel
-        const updateResults = await Promise.all(
-          updates.map(update =>
-            this.supabase
-              .from('strategy_trades')
-              .update({
-                result: update.result,
-                result_price: update.result_price,
-                result_timestamp: update.result_timestamp,
-                price_diff: update.price_diff
-              })
-              .eq('id', update.id)
-          )
-        );
-
-        const updateDuration = Date.now() - updateStartTime;
-
-        // Process results - handle each individually
+        // 🚨 CONNECTION POOL SAFETY: Max 5 concurrent Supabase connections
+        const SAFE_CONCURRENT = Math.min(updates.length, 5);
         let successCount = 0;
         let failureCount = 0;
 
-        for (let i = 0; i < updateResults.length; i++) {
-          const result = updateResults[i];
-          const update = updates[i];
-          const verification = ready[i];
+        // Process updates in chunks of 5 to avoid connection pool overflow
+        for (let i = 0; i < updates.length; i += SAFE_CONCURRENT) {
+          const chunk = updates.slice(i, i + SAFE_CONCURRENT);
+          const chunkReadies = ready.slice(i, i + SAFE_CONCURRENT);
 
-          if (result.error) {
-            failureCount++;
-            console.error(`   ❌ UPDATE failed for ${update.id.substring(0,8)}: ${result.error.message}`);
+          // Execute chunk in parallel (max 5 connections)
+          const updateResults = await Promise.all(
+            chunk.map(update =>
+              this.supabase
+                .from('strategy_trades')
+                .update({
+                  result: update.result,
+                  result_price: update.result_price,
+                  result_timestamp: update.result_timestamp,
+                  price_diff: update.price_diff
+                })
+                .eq('id', update.id)
+            )
+          );
 
-            // Re-queue on failure
-            if (verification.retries < this.MAX_RETRIES) {
-              verification.retries++;
-              verification.executeAt = now + 10000;
-              this.queue.push(verification);
-              console.log(`   ⚠️  Re-queued ${update.id.substring(0,8)} (retry #${verification.retries})`);
+          // Process chunk results
+          for (let j = 0; j < updateResults.length; j++) {
+            const result = updateResults[j];
+            const update = chunk[j];
+            const verification = chunkReadies[j];
+
+            if (result.error) {
+              failureCount++;
+              console.error(`   ❌ UPDATE failed for ${update.id.substring(0,8)}: ${result.error.message}`);
+
+              // Re-queue on failure
+              if (verification.retries < this.MAX_RETRIES) {
+                verification.retries++;
+                verification.executeAt = now + 10000;
+                this.queue.push(verification);
+                console.log(`   ⚠️  Re-queued ${update.id.substring(0,8)} (retry #${verification.retries})`);
+              } else {
+                console.log(`   ❌ Max retries reached for ${update.id.substring(0,8)}`);
+              }
             } else {
-              console.log(`   ❌ Max retries reached for ${update.id.substring(0,8)}`);
+              successCount++;
             }
-          } else {
-            successCount++;
           }
         }
 
+        const updateDuration = Date.now() - updateStartTime;
         console.log(`   ✅ Batch UPDATE complete: ${successCount}/${updates.length} successful (${updateDuration}ms)`);
         this.stats.processed += successCount;
         this.stats.failed += failureCount;

@@ -74,10 +74,11 @@ class MarketScanner {
     this.candlesService = await this.sdk.candles();
 
     // ✅ Initialize verification queue (pass supabase client)
+    // 🚨 EMERGENCY: Conservative settings to prevent connection pool overflow
     this.verificationQueue = new VerificationQueue(this.candlesService, supabase, {
-      batchSize: 50,    // Process 50 trades per batch (was 10)
-      interval: 500,    // Every 500ms (was 2000ms) = 100 trades/sec per worker
-      workers: 2        // 2 concurrent workers = 200 trades/sec throughput
+      batchSize: 10,    // REDUCED to 10 (was 50) - connection pool safety
+      interval: 1000,   // INCREASED to 1000ms (was 500ms) - reduce call frequency
+      workers: 1        // REDUCED to 1 (was 2) - single worker mode during emergency
     });
     this.verificationQueue.start();
 
