@@ -17,8 +17,8 @@ import ssidManager from '../services/ssid-manager.mjs';
 import VerificationQueue from '../services/verification-queue.mjs'; // ✅ NEW: Queue system
 
 const TIMEFRAMES = [10, 30, 60, 300]; // ✅ 10s, 30s, 1min, 5min
-const SCAN_INTERVAL = 30000; // 🔧 OPTIMIZED: 30 seconds (was 15s) - reduce signal creation rate
-const PARALLEL_BATCH_SIZE = 35; // ✅ OPTIMIZED: Increased from 20 to 35 for better throughput
+const SCAN_INTERVAL = 45000; // 🔧 HYBRID: 45 seconds - ensures scan completes before next starts
+const PARALLEL_BATCH_SIZE = 15; // 🔧 HYBRID: Reduced for sequential processing (15 × 50ms = 750ms/batch)
 const AVALON_WS_URL = process.env.AVALON_WS_URL || 'wss://ws.trade.avalonbroker.com/echo/websocket';
 const AVALON_API_HOST = process.env.AVALON_API_HOST || 'https://trade.avalonbroker.com';
 
@@ -74,11 +74,11 @@ class MarketScanner {
     this.candlesService = await this.sdk.candles();
 
     // ✅ Initialize verification queue (pass supabase client)
-    // 🔧 OPTIMIZED: Balanced settings after architectural analysis
+    // 🔧 HYBRID: Balanced settings for stability and efficiency
     this.verificationQueue = new VerificationQueue(this.candlesService, supabase, {
-      batchSize: 20,    // INCREASED to 20 (was 10) - double processing capacity
-      interval: 1000,   // KEEP at 1000ms - process every second
-      workers: 1,       // KEEP at 1 - stable single worker
+      batchSize: 15,    // HYBRID: 15 trades per batch (balanced processing)
+      interval: 800,    // HYBRID: 800ms between batches (~18.75 trades/sec processing)
+      workers: 1,       // Single worker for stability (no race conditions)
       hasCircuitBreaker: true  // Enable circuit breaker for backlog protection
     });
     this.verificationQueue.start();
@@ -171,57 +171,59 @@ class MarketScanner {
           const batchStartTime = Date.now();
           const batch = combinations.slice(i, i + PARALLEL_BATCH_SIZE);
 
-          // Process entire batch in parallel using Promise.all
-          const batchResults = await Promise.all(batch.map(async ({ active, timeframe }) => {
+          // ✅ SEQUENTIAL API CALLS with rate limiting (50ms delay between calls)
+          const batchResults = [];
+          for (const { active, timeframe } of batch) {
             try {
-              const candleStartTime = Date.now();
               const candles = await this.candlesService.getCandles(active.id, timeframe, { count: 50 });
-              const candleTime = Date.now() - candleStartTime;
 
               if (!candles || candles.length < 50) {
                 totalCandlesErrors++;
                 console.log(`⚠️  ${active.ticker || active.id} @ ${timeframe}s: Received ${candles?.length || 0}/50 candles`);
-                return null;
+                batchResults.push(null);
+              } else {
+                totalCandlesFetched++;
+
+                const candlesFormatted = candles.map(c => ({
+                  open: parseFloat(c.open),
+                  high: parseFloat(c.max),
+                  low: parseFloat(c.min),
+                  close: parseFloat(c.close),
+                  timestamp: c.from
+                }));
+
+                const result = analyzeAggressive(candlesFormatted);
+
+                if (result?.consensus && result.consensus !== 'NEUTRAL') {
+                  const lastCandle = candles[candles.length - 1];
+                  const ativoNome = getAssetName(active.id);
+                  const signalPrice = parseFloat(lastCandle.close);
+
+                  console.log(`✅ ${active.ticker || active.id} | ${timeframe}s | ${result.consensus} (${result.confidence}%)`);
+
+                  batchResults.push({
+                    active_id: active.id.toString(),
+                    ativo_nome: ativoNome,
+                    timeframe: timeframe,
+                    signal_timestamp: new Date().toISOString(),
+                    signal_direction: result.consensus,
+                    signal_price: signalPrice,
+                    result: 'PENDING'
+                  });
+                } else {
+                  batchResults.push(null);
+                }
               }
 
-              totalCandlesFetched++;
+              // ✅ CRITICAL: Rate limiting exactly like old code (50ms delay)
+              await new Promise(r => setTimeout(r, 50));
 
-              const candlesFormatted = candles.map(c => ({
-                open: parseFloat(c.open),
-                high: parseFloat(c.max),
-                low: parseFloat(c.min),
-                close: parseFloat(c.close),
-                timestamp: c.from
-              }));
-
-              // ✅ Use ONLY aggressive hybrid strategy (4 advisors)
-              const result = analyzeAggressive(candlesFormatted);
-
-              // Aggressive strategy ALWAYS returns a signal
-              if (result?.consensus && result.consensus !== 'NEUTRAL') {
-                const lastCandle = candles[candles.length - 1];
-                const ativoNome = getAssetName(active.id);
-                const signalPrice = parseFloat(lastCandle.close);
-
-                console.log(`✅ ${active.ticker || active.id} | ${timeframe}s | ${result.consensus} (${result.confidence}%)`);
-
-                return {
-                  active_id: active.id.toString(),
-                  ativo_nome: ativoNome,
-                  timeframe: timeframe,
-                  signal_timestamp: new Date().toISOString(),
-                  signal_direction: result.consensus,
-                  signal_price: signalPrice,
-                  result: 'PENDING'
-                };
-              }
-              return null;
             } catch (err) {
               totalCandlesErrors++;
               console.error(`❌ Error fetching candles for ${active.ticker} @ ${timeframe}s: ${err.message}`);
-              return null;
+              batchResults.push(null);
             }
-          }));
+          }
 
           // Collect all valid signals from batch
           batchResults.forEach(signal => {

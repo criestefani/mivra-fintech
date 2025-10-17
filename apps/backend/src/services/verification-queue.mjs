@@ -57,7 +57,6 @@ class VerificationQueue {
   start() {
     // 🔧 RESET: Force reset worker count if stuck
     if (this.processing > 0) {
-      console.warn(`⚠️ [DEBUG] Worker count was ${this.processing}, forcing reset to 0`);
       this.processing = 0;
     }
 
@@ -117,7 +116,6 @@ class VerificationQueue {
    * Process a batch of verifications
    */
   async processBatch() {
-    console.log(`🔧 [DEBUG] processBatch called. Current processing: ${this.processing}/${this.WORKERS}`);
 
     // 🚨 EMERGENCY FIX: Prevent worker explosion (max N concurrent workers)
     if (this.processing >= this.WORKERS) {
@@ -127,18 +125,15 @@ class VerificationQueue {
 
     // ✅ Increment active workers (no lock - allows true parallelism)
     this.processing++;
-    console.log(`🔧 [DEBUG] Worker started. Processing now: ${this.processing}`);
 
     try {
       const now = Date.now();
 
-      console.log(`🔧 [DEBUG] Getting ready items from queue...`);
       // Get verifications ready to execute
       const ready = this.queue
         .filter(v => v.executeAt <= now)
         .slice(0, this.BATCH_SIZE);
 
-      console.log(`🔧 [DEBUG] Ready items: ${ready.length}/${this.queue.length}`);
 
       if (ready.length === 0) {
         // ✅ Show when next trade will be ready
@@ -149,7 +144,6 @@ class VerificationQueue {
         } else {
           console.log(`✅ Queue is empty`);
         }
-        console.log(`🔧 [DEBUG] No ready items, returning early`);
         return;
       }
 
@@ -170,7 +164,6 @@ class VerificationQueue {
       const batchStartTime = Date.now();
 
       // ✅ STEP 1: Fetch candles in chunks (reduce API pressure)
-      console.log(`🔧 [DEBUG] Starting STEP 1: Fetch candles (${ready.length} items in chunks of 3)`);
 
       const CANDLE_CHUNK_SIZE = 3;
       const candleResults = [];
@@ -181,7 +174,6 @@ class VerificationQueue {
         const chunkNum = Math.floor(i / CANDLE_CHUNK_SIZE) + 1;
         const totalChunks = Math.ceil(ready.length / CANDLE_CHUNK_SIZE);
 
-        console.log(`🔧 [DEBUG] Fetching chunk ${chunkNum}/${totalChunks}: ${chunk.length} items (25s timeout)`);
 
         const chunkResults = await this.promiseWithTimeout(
           Promise.all(chunk.map(v => this.fetchCandles(v))),
@@ -190,13 +182,10 @@ class VerificationQueue {
         );
 
         candleResults.push(...chunkResults);
-        console.log(`🔧 [DEBUG] Chunk ${chunkNum}/${totalChunks} complete: ${chunkResults.length} results`);
       }
 
-      console.log(`🔧 [DEBUG] STEP 1 complete. Total results: ${candleResults.length}`);
 
       // ✅ STEP 2: Process results
-      console.log(`🔧 [DEBUG] Starting STEP 2: Process results`);
       const updates = [];
       for (let i = 0; i < ready.length; i++) {
         const v = ready[i];
@@ -236,13 +225,11 @@ class VerificationQueue {
         }
       }
 
-      console.log(`🔧 [DEBUG] STEP 2 complete. Updates to process: ${updates.length}`);
 
       // ✅ STEP 3: Batch UPDATE to Supabase (with connection limit)
       if (updates.length > 0) {
         const updateStartTime = Date.now();
 
-        console.log(`🔧 [DEBUG] Starting STEP 3: Supabase updates (${updates.length} items, 20s timeout)`);
 
         // 🚨 CONNECTION POOL SAFETY: Max 5 concurrent Supabase connections
         const SAFE_CONCURRENT = Math.min(updates.length, 5);
@@ -254,7 +241,6 @@ class VerificationQueue {
           const chunk = updates.slice(i, i + SAFE_CONCURRENT);
           const chunkReadies = ready.slice(i, i + SAFE_CONCURRENT);
 
-          console.log(`🔧 [DEBUG] Processing chunk ${Math.floor(i / SAFE_CONCURRENT) + 1}: ${chunk.length} items with 20s timeout`);
 
           // Execute chunk in parallel (max 5 connections) with timeout
           const updateResults = await this.promiseWithTimeout(
@@ -302,18 +288,15 @@ class VerificationQueue {
 
         const updateDuration = Date.now() - updateStartTime;
         console.log(`   ✅ Batch UPDATE complete: ${successCount}/${updates.length} successful (${updateDuration}ms)`);
-        console.log(`🔧 [DEBUG] STEP 3 complete`);
         this.stats.processed += successCount;
         this.stats.failed += failureCount;
       }
 
-      console.log(`🔧 [DEBUG] Removing processed items from queue`);
       // Remove processed items from queue
       this.queue = this.queue.filter(v => !ready.includes(v));
 
       const batchDuration = Date.now() - batchStartTime;
       this.stats.batchesProcessed++;
-      console.log(`🔧 [DEBUG] Batch processing completed successfully`);
       console.log(`   ⏱️  Batch complete in ${batchDuration}ms (${this.queue.length} remaining in queue)\n`);
 
       // ✅ Print stats every 6 batches
@@ -322,13 +305,9 @@ class VerificationQueue {
       }
 
     } catch (error) {
-      console.error('🔧 [DEBUG] ERROR in batch processing:',  error.message);
-      console.error('🔧 [DEBUG] Error stack:', error.stack);
     } finally {
-      console.log(`🔧 [DEBUG] FINALLY block executing. Processing before decrement: ${this.processing}`);
       // ✅ Decrement active workers
       this.processing--;
-      console.log(`🔧 [DEBUG] FINALLY complete. Processing after decrement: ${this.processing}`);
     }
   }
 
@@ -338,7 +317,6 @@ class VerificationQueue {
    */
   async fetchCandles(verification) {
     try {
-      console.log(`🔧 [DEBUG] Fetching candles for trade ${verification.tradeId.substring(0,8)}`);
 
       // Add timeout to prevent hanging
       const timeoutPromise = new Promise((_, reject) =>
@@ -355,16 +333,13 @@ class VerificationQueue {
       ]);
 
       if (!candles || candles.length === 0) {
-        console.log(`🔧 [DEBUG] No candles for ${verification.tradeId.substring(0,8)}`);
         return { success: false, error: 'No candles returned' };
       }
 
       const resultPrice = parseFloat(candles[candles.length - 1].close);
-      console.log(`🔧 [DEBUG] Candles fetched for ${verification.tradeId.substring(0,8)}: ${resultPrice}`);
       return { success: true, resultPrice };
 
     } catch (error) {
-      console.error(`🔧 [DEBUG] fetchCandles error for ${verification.tradeId.substring(0,8)}: ${error.message}`);
       return { success: false, error: error.message };
     }
   }
