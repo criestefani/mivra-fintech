@@ -14,17 +14,21 @@ import { createClient } from '@supabase/supabase-js';
 import { analyzeAggressive } from './strategies/strategy-aggressive.mjs';
 import { getAvailableAssets, getAssetName } from '../constants/fixed-assets.mjs';
 import ssidManager from '../services/ssid-manager.mjs';
-import VerificationQueue from '../services/verification-queue.mjs'; // ✅ NEW: Queue system
 
 const TIMEFRAMES = [10, 30, 60, 300]; // ✅ 10s, 30s, 1min, 5min
-const SCAN_INTERVAL = 15000; // ⚡ SPEED: 15 seconds (was 45s) - 3x more frequent scans
-const PARALLEL_BATCH_SIZE = 15; // 🔧 HYBRID: Reduced for sequential processing
+const SCAN_INTERVAL = 10000; // ⚡ PERFORMANCE: 10 seconds for high-frequency scans
+const PARALLEL_BATCH_SIZE = 15; // 🔧 SEQUENTIAL: 15 combinations at a time
 const AVALON_WS_URL = process.env.AVALON_WS_URL || 'wss://ws.trade.avalonbroker.com/echo/websocket';
 const AVALON_API_HOST = process.env.AVALON_API_HOST || 'https://trade.avalonbroker.com';
 
+// ⚡ OPTIMIZED: Supabase connection with pooling for better performance
 const supabase = createClient(
   process.env.SUPABASE_URL || 'https://vecofrvxrepogtigmeyj.supabase.co',
-  process.env.SUPABASE_SERVICE_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY
+  process.env.SUPABASE_SERVICE_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY,
+  {
+    db: { pool: { min: 2, max: 10 } },  // Connection pooling
+    auth: { persistSession: false }      // Reduce overhead
+  }
 );
 
 class MarketScanner {
@@ -37,8 +41,7 @@ class MarketScanner {
     this.scanCount = 0; // ✅ Counter for recovery/cleanup throttling
     this.isScanning = false; // ✅ Lock to prevent overlapping scans
     this.scanStartTime = null; // ✅ Track when scan started for timeout safety
-    this.SCAN_TIMEOUT = 180000; // ✅ Max 180 seconds (3 min) - Sequential processing needs time (15 combos × 280ms = 4.2s/batch × 38 batches = 159s total)
-    this.verificationQueue = null; // ✅ NEW: Queue for batch verification
+    this.SCAN_TIMEOUT = 180000; // ✅ Max 180 seconds (3 min)
   }
 
   async connect() {
@@ -72,16 +75,6 @@ class MarketScanner {
 
     this.blitz = await this.sdk.blitzOptions();
     this.candlesService = await this.sdk.candles();
-
-    // ✅ Initialize verification queue (pass supabase client)
-    // 🔧 HYBRID: Balanced settings for stability and efficiency
-    this.verificationQueue = new VerificationQueue(this.candlesService, supabase, {
-      batchSize: 15,    // HYBRID: 15 trades per batch (balanced processing)
-      interval: 800,    // HYBRID: 800ms between batches (~18.75 trades/sec processing)
-      workers: 1,       // Single worker for stability (no race conditions)
-      hasCircuitBreaker: true  // Enable circuit breaker for backlog protection
-    });
-    this.verificationQueue.start();
 
     console.log('✅ Market Scanner conectado ao Avalon\n');
   }
@@ -147,7 +140,7 @@ class MarketScanner {
         console.log(`✅ ${actives.length}/${fixedAssets.length} ativos disponíveis\n`);
 
         // ✅ MICRO-BATCH PATTERN: Save signals as discovered (prevents data loss)
-        const MICRO_BATCH_SIZE = 15; // ⚡ SPEED: 15 signals (was 5) - 3x fewer DB operations (38 batches vs 113)
+        const MICRO_BATCH_SIZE = 25; // ⚡ PERFORMANCE: 25 signals per batch - optimal PostgreSQL batch size
         let microBatch = [];
         let totalSignalsProcessed = 0;
 
@@ -187,10 +180,10 @@ class MarketScanner {
                 totalCandlesFetched++;
 
                 const candlesFormatted = candles.map(c => ({
-                  open: parseFloat(c.open),
-                  high: parseFloat(c.max),
-                  low: parseFloat(c.min),
-                  close: parseFloat(c.close),
+                  open: +c.open,
+                  high: +c.max,
+                  low: +c.min,
+                  close: +c.close,
                   timestamp: c.from
                 }));
 
@@ -199,7 +192,7 @@ class MarketScanner {
                 if (result?.consensus && result.consensus !== 'NEUTRAL') {
                   const lastCandle = candles[candles.length - 1];
                   const ativoNome = getAssetName(active.id);
-                  const signalPrice = parseFloat(lastCandle.close);
+                  const signalPrice = +lastCandle.close;
 
                   const signal = {
                     active_id: active.id.toString(),
@@ -301,7 +294,7 @@ class MarketScanner {
 
   async registrarSinalSimulado(active, timeframe, direction, lastCandle, strategyResult) {
     const signalTime = new Date();
-    const signalPrice = parseFloat(lastCandle.close);
+    const signalPrice = +lastCandle.close;
     const ativoNome = getAssetName(active.id);
 
     // ✅ Save signal to strategy_trades (only columns that exist)
@@ -337,7 +330,7 @@ class MarketScanner {
         return;
       }
 
-      const resultPrice = parseFloat(candles[candles.length - 1].close);
+      const resultPrice = +candles[candles.length - 1].close;
       const isWin = (direction === 'CALL' && resultPrice > signalPrice) ||
                     (direction === 'PUT' && resultPrice < signalPrice);
 
@@ -355,7 +348,7 @@ class MarketScanner {
       if (error) {
         console.log(`❌ Erro ao atualizar trade ${tradeId}: ${error.message}`);
       } else {
-        console.log(`✅ Trade ${tradeId.substring(0, 8)} | ${isWin ? 'WIN' : 'LOSS'} | ${resultPrice.toFixed(2)}`);
+        console.log(`✅ Trade ${tradeId.substring(0, 8)} | ${isWin ? 'WIN' : 'LOSS'} | ${resultPrice.toFixed(4)}`);
       }
     } catch (err) {
       console.log(`❌ Erro ao verificar resultado: ${err.message}`);
@@ -446,7 +439,7 @@ class MarketScanner {
 
   /**
    * Save micro-batch of signals and schedule immediate verification
-   * @param {Array} signals - Batch of signals to save (max 15)
+   * @param {Array} signals - Batch of signals to save (max 25)
    */
   async saveMicroBatch(signals) {
     const batchStartTime = Date.now();
@@ -458,30 +451,30 @@ class MarketScanner {
         .select('id');
 
       if (error) {
-        console.error(`❌ Micro-batch save error: ${error.message}`);
+        console.error(`❌ Batch error: ${error.message}`);
         return;
       }
 
       if (!insertedSignals) {
-        console.error(`❌ Micro-batch returned no data`);
+        console.error(`❌ Batch returned no data`);
         return;
       }
 
       const batchTime = Date.now() - batchStartTime;
-      console.log(`💾 Batch: ${signals.length} signals saved in ${batchTime}ms`);
+      console.log(`✅ ${signals.length} signals saved in ${batchTime}ms`);
 
-      // ✅ IMMEDIATE VERIFICATION SCHEDULING (like old code - WORKS)
+      // ✅ IMMEDIATE VERIFICATION SCHEDULING (direct setTimeout - no queue overhead)
       insertedSignals.forEach((inserted, index) => {
         const signal = signals[index];
         if (!inserted?.id) return;
 
         const delay = signal.timeframe * 1000 + 2000;
 
-        // ✅ Individual setTimeout (prevents race conditions when throttled)
+        // ✅ Direct setTimeout (proven pattern from old code)
         setTimeout(async () => {
           await this.verificarResultado(
             inserted.id,
-            parseInt(signal.active_id),
+            +signal.active_id,  // Unary + for faster conversion
             signal.timeframe,
             signal.signal_price,
             signal.signal_direction
@@ -489,7 +482,7 @@ class MarketScanner {
         }, delay);
       });
     } catch (err) {
-      console.error(`❌ Micro-batch exception: ${err.message}`);
+      console.error(`❌ Batch exception: ${err.message}`);
     }
   }
 
