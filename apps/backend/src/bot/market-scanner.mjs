@@ -16,8 +16,8 @@ import { getAvailableAssets, getAssetName } from '../constants/fixed-assets.mjs'
 import ssidManager from '../services/ssid-manager.mjs';
 
 const TIMEFRAMES = [10, 30, 60, 300]; // ✅ 10s, 30s, 1min, 5min
-const SCAN_INTERVAL = 10000; // ⚡ PERFORMANCE: 10 seconds for high-frequency scans
-const PARALLEL_BATCH_SIZE = 15; // 🔧 SEQUENTIAL: 15 combinations at a time
+const CONCURRENT_LIMIT = 2; // 🚀 2-CONCURRENT: Safe API-friendly parallelism
+const INITIAL_SCAN_DELAY = 5000; // 5s before first scan
 const AVALON_WS_URL = process.env.AVALON_WS_URL || 'wss://ws.trade.avalonbroker.com/echo/websocket';
 const AVALON_API_HOST = process.env.AVALON_API_HOST || 'https://trade.avalonbroker.com';
 
@@ -80,216 +80,171 @@ class MarketScanner {
   }
 
   async scanLoop() {
-    console.log('🔄 Scanner tempo real iniciado (scan a cada 30s)\n');
-    console.log('📊 Monitorando: 141 ativos × 4 timeframes = 564 combinações (Estratégia Híbrida Agressiva)\n');
-    console.log(`⚡ Usando processamento PARALELO: ${PARALLEL_BATCH_SIZE} chamadas simultâneas\n`);
+    console.log('🚀 HIGH-PERFORMANCE SCANNER: 2-Concurrent API + Dynamic Interval\n');
+    console.log('📊 Monitorando: 141 ativos × 4 timeframes = 564 combinações\n');
 
-    let skippedScans = 0;
     let totalScans = 0;
 
-    setInterval(async () => {
+    const performScan = async () => {
       totalScans++;
-      const globalStartTime = Date.now();
 
-      // ✅ SAFETY TIMEOUT: Check if previous scan exceeded timeout
-      if (this.isScanning && this.scanStartTime) {
-        const scanDuration = Date.now() - this.scanStartTime;
-        if (scanDuration > this.SCAN_TIMEOUT) {
-          console.error(`🚨 TIMEOUT RECOVERY: Previous scan exceeded ${this.SCAN_TIMEOUT}ms limit (${scanDuration}ms). Force-releasing lock...`);
-          this.isScanning = false;
-        }
-      }
-
-      // ✅ LOCK: Prevent overlapping scans
+      // ✅ PREVENT OVERLAPS: Skip if already scanning
       if (this.isScanning) {
-        skippedScans++;
-        const pendingDuration = this.scanStartTime ? Date.now() - this.scanStartTime : 0;
-        console.log(`⚠️  Scan #${totalScans} SKIPPED (anterior ainda em execução por ${pendingDuration}ms) - Total pulados: ${skippedScans}`);
+        console.log(`⏳ Scan #${totalScans} waiting... (previous still running)`);
+        setTimeout(performScan, 5000); // Retry in 5s
         return;
       }
 
       this.isScanning = true;
-      this.scanStartTime = Date.now();
+      const scanStartTime = Date.now();
 
       try {
-        console.log(`\n🟢 ===== SCAN #${totalScans} INICIADO =====`);
-        const startTime = Date.now();
-        let analyzed = 0;
-        let signalsFound = 0;
+        console.log(`\n🟢 SCAN #${totalScans} INICIADO`);
 
-        // ✅ STAGE 1: Get fixed assets list
-        const t1 = Date.now();
+        // Get combinations to process
         const fixedAssets = getAvailableAssets();
-        console.log(`⏱️ [STAGE 1] Get fixed assets: ${Date.now() - t1}ms`);
-
-        // ✅ STAGE 2: Get available assets from SDK for validation
-        const t2 = Date.now();
         const availableFromSDK = this.blitz.getActives();
         const availableIds = new Set(availableFromSDK.map(a => a.id));
-        console.log(`⏱️ [STAGE 2] Get SDK actives: ${Date.now() - t2}ms`);
-
-        // ✅ STAGE 3: Filter only assets that are currently available
-        const t3 = Date.now();
         const actives = fixedAssets
-          .filter(fixedAsset => availableIds.has(fixedAsset.id))
-          .map(fixedAsset => {
-            return availableFromSDK.find(sdkActive => sdkActive.id === fixedAsset.id);
-          })
-          .filter(active => active !== undefined);
-        console.log(`⏱️ [STAGE 3] Filter actives: ${Date.now() - t3}ms`);
-        console.log(`✅ ${actives.length}/${fixedAssets.length} ativos disponíveis\n`);
+          .filter(a => availableIds.has(a.id))
+          .map(a => availableFromSDK.find(sdk => sdk.id === a.id))
+          .filter(a => a !== undefined);
 
-        // ✅ MICRO-BATCH PATTERN: Save signals as discovered (prevents data loss)
-        const MICRO_BATCH_SIZE = 25; // ⚡ PERFORMANCE: 25 signals per batch - optimal PostgreSQL batch size
-        let microBatch = [];
-        let totalSignalsProcessed = 0;
-
-        // ✅ Create array of all combinations to process
-        const t4 = Date.now();
         const combinations = [];
         for (const active of actives) {
           for (const timeframe of TIMEFRAMES) {
             combinations.push({ active, timeframe });
           }
         }
-        console.log(`⏱️ [STAGE 4] Create combinations: ${Date.now() - t4}ms`);
-        console.log(`🔄 Processando ${combinations.length} combinações em ${Math.ceil(combinations.length / PARALLEL_BATCH_SIZE)} batches (${PARALLEL_BATCH_SIZE} por vez)...\n`);
 
-        // ✅ STAGE 5: Process combinations in parallel batches
-        const t5 = Date.now();
-        let batchNumber = 0;
+        console.log(`🔄 Processing ${combinations.length} combinations with 2-concurrent calls...`);
+
+        // ✅ 2-CONCURRENT PROCESSING: Process in pairs
+        let signalsFound = 0;
         let totalCandlesFetched = 0;
-        let totalCandlesErrors = 0;
+        let totalErrors = 0;
 
-        for (let i = 0; i < combinations.length; i += PARALLEL_BATCH_SIZE) {
-          batchNumber++;
-          const batchStartTime = Date.now();
-          const batch = combinations.slice(i, i + PARALLEL_BATCH_SIZE);
+        for (let i = 0; i < combinations.length; i += CONCURRENT_LIMIT) {
+          const concurrentPair = combinations.slice(i, i + CONCURRENT_LIMIT);
 
-          // ✅ SEQUENTIAL API CALLS with rate limiting (50ms delay between calls)
-          const batchResults = [];
-          for (const { active, timeframe } of batch) {
+          // Process 2 calls in parallel
+          const promises = concurrentPair.map(async ({ active, timeframe }) => {
             try {
               const candles = await this.candlesService.getCandles(active.id, timeframe, { count: 50 });
 
               if (!candles || candles.length < 50) {
-                totalCandlesErrors++;
-                // ⚡ SPEED: Skip individual error logs (no spam)
-                batchResults.push(null);
-              } else {
-                totalCandlesFetched++;
-
-                const candlesFormatted = candles.map(c => ({
-                  open: +c.open,
-                  high: +c.max,
-                  low: +c.min,
-                  close: +c.close,
-                  timestamp: c.from
-                }));
-
-                const result = analyzeAggressive(candlesFormatted);
-
-                if (result?.consensus && result.consensus !== 'NEUTRAL') {
-                  const lastCandle = candles[candles.length - 1];
-                  const ativoNome = getAssetName(active.id);
-                  const signalPrice = +lastCandle.close;
-
-                  const signal = {
-                    active_id: active.id.toString(),
-                    ativo_nome: ativoNome,
-                    timeframe: timeframe,
-                    signal_timestamp: new Date().toISOString(),
-                    signal_direction: result.consensus,
-                    signal_price: signalPrice,
-                    result: 'PENDING'
-                  };
-
-                  microBatch.push(signal);
-
-                  // ✅ MICRO-BATCH SAVE: Save every 5 signals immediately (prevents data loss)
-                  if (microBatch.length >= MICRO_BATCH_SIZE) {
-                    await this.saveMicroBatch(microBatch);
-                    totalSignalsProcessed += microBatch.length;
-                    signalsFound += microBatch.length;
-                    microBatch = []; // Reset batch
-                  }
-
-                  batchResults.push(signal);
-                } else {
-                  batchResults.push(null);
-                }
+                totalErrors++;
+                return null;
               }
 
-              // ⚡ SPEED: REMOVED API delays (was 20ms) - SDK handles rate limiting internally
-              // Sequential calls don't overwhelm API. Removal saves 11.28s per scan!
+              totalCandlesFetched++;
 
+              const candlesFormatted = candles.map(c => ({
+                open: +c.open,
+                high: +c.max,
+                low: +c.min,
+                close: +c.close,
+                timestamp: c.from
+              }));
+
+              const result = analyzeAggressive(candlesFormatted);
+
+              if (result?.consensus && result.consensus !== 'NEUTRAL') {
+                const lastCandle = candles[candles.length - 1];
+                const ativoNome = getAssetName(active.id);
+                const signalPrice = +lastCandle.close;
+
+                return {
+                  active_id: active.id.toString(),
+                  ativo_nome: ativoNome,
+                  timeframe: timeframe,
+                  signal_timestamp: new Date().toISOString(),
+                  signal_direction: result.consensus,
+                  signal_price: signalPrice,
+                  result: 'PENDING'
+                };
+              }
+
+              return null;
             } catch (err) {
-              totalCandlesErrors++;
-              console.error(`❌ Error fetching candles for ${active.ticker} @ ${timeframe}s: ${err.message}`);
-              batchResults.push(null);
+              totalErrors++;
+              return null;
+            }
+          });
+
+          // Wait for pair to complete
+          const pairResults = await Promise.all(promises);
+
+          // ✅ STREAMING SAVES: Save each signal immediately
+          for (const signal of pairResults) {
+            if (signal) {
+              try {
+                const { data, error } = await supabase
+                  .from('strategy_trades')
+                  .insert(signal)
+                  .select('id');
+
+                if (!error && data?.length > 0) {
+                  signalsFound++;
+                  this.signalsCount++;
+
+                  // Schedule verification immediately
+                  const tradeId = data[0].id;
+                  const delay = signal.timeframe * 1000 + 2000;
+
+                  setTimeout(async () => {
+                    await this.verificarResultado(
+                      tradeId,
+                      +signal.active_id,
+                      signal.timeframe,
+                      signal.signal_price,
+                      signal.signal_direction
+                    );
+                  }, delay);
+
+                  console.log(`✅ ${signal.ativo_nome} | ${signal.timeframe}s | ${signal.signal_direction}`);
+                }
+              } catch (err) {
+                console.error(`❌ Save error: ${err.message}`);
+              }
             }
           }
-
-          // Count all results (already processed and saved above)
-          batchResults.forEach(signal => {
-            analyzed++;
-          });
-
-          const batchTime = Date.now() - batchStartTime;
-          console.log(`⏱️ Batch #${batchNumber}: ${batch.length} combos em ${batchTime}ms (${(batchTime/batch.length).toFixed(1)}ms/combo)`);
         }
 
-        const stage5Time = Date.now() - t5;
-        console.log(`\n⏱️ [STAGE 5] All batches completed: ${stage5Time}ms`);
-        console.log(`📊 Candles fetched: ${totalCandlesFetched}, Errors: ${totalCandlesErrors}`);
+        const scanDuration = Date.now() - scanStartTime;
+        const scanSeconds = (scanDuration / 1000).toFixed(1);
 
-        // ✅ STAGE 6: SAVE REMAINING MICRO-BATCH (final signals)
-        const t6 = Date.now();
-        if (microBatch.length > 0) {
-          console.log(`\n📊 STAGE 6: Saving final micro-batch of ${microBatch.length} signals...`);
-          await this.saveMicroBatch(microBatch);
-          totalSignalsProcessed += microBatch.length;
-          signalsFound += microBatch.length;
-          microBatch = [];
-        } else {
-          console.log(`✅ STAGE 6: All micro-batches already saved during processing`);
-        }
-        console.log(`⏱️ [STAGE 6] Micro-batch processing complete: ${Date.now() - t6}ms`);
-
-        const totalElapsed = ((Date.now() - startTime) / 1000).toFixed(2);
-        this.signalsCount += signalsFound;
-
-        console.log(`\n████████████████████████████████████████████████████████`);
-        console.log(`⏱️ SCAN #${totalScans} SUMMARY:`);
-        console.log(`   Total time: ${totalElapsed}s`);
-        console.log(`   Combinations analyzed: ${analyzed}`);
+        console.log(`\n📊 Scan complete:`);
+        console.log(`   Time: ${scanSeconds}s`);
+        console.log(`   Fetched: ${totalCandlesFetched}, Errors: ${totalErrors}`);
         console.log(`   Signals found: ${signalsFound}`);
-        console.log(`   Total accumulated: ${this.signalsCount}`);
-        console.log(`   Skipped scans so far: ${skippedScans}`);
-        console.log(`████████████████████████████████████████████████████████\n`);
+        console.log(`   Total accumulated: ${this.signalsCount}\n`);
 
-        // ✅ Move recovery/cleanup to background (fire-and-forget) to avoid blocking scans
-        console.log(`🔍 Recovery check: scanCount = ${this.scanCount}, will run? ${this.scanCount % 6 === 0}`);
+        // ✅ BACKGROUND TASKS: Fire-and-forget
         if (this.scanCount % 6 === 0) {
-          // ✅ FIRE-AND-FORGET: Don't await these operations
-          this.recuperarTradesPendentes().catch(err => {
-            console.error(`❌ Background recovery error: ${err.message}`);
-          });
-          this.limparDadosAntigos().catch(err => {
-            console.error(`❌ Background cleanup error: ${err.message}`);
-          });
+          this.recuperarTradesPendentes().catch(err => console.error(`Recovery error: ${err.message}`));
+          this.limparDadosAntigos().catch(err => console.error(`Cleanup error: ${err.message}`));
         }
         this.scanCount++;
+
+        // ✅ DYNAMIC INTERVAL: Schedule next scan based on duration
+        const nextInterval = Math.max(15000, scanDuration + 10000);
+        console.log(`⏰ Next scan in ${(nextInterval / 1000).toFixed(1)}s...\n`);
+        setTimeout(performScan, nextInterval);
+
       } catch (err) {
-        console.error(`❌ CRITICAL ERROR in scan loop: ${err.message}`);
+        console.error(`❌ SCAN ERROR: ${err.message}`);
         console.error(`   Stack: ${err.stack}`);
+
+        // Retry on error
+        setTimeout(performScan, 30000);
       } finally {
-        const globalElapsed = ((Date.now() - globalStartTime) / 1000).toFixed(2);
-        console.log(`🟢 ===== SCAN #${totalScans} COMPLETED (${globalElapsed}s) =====\n`);
-        // ✅ UNLOCK: Allow next scan
         this.isScanning = false;
       }
-    }, SCAN_INTERVAL);
+    };
+
+    // Start first scan after initial delay
+    setTimeout(performScan, INITIAL_SCAN_DELAY);
   }
 
   async registrarSinalSimulado(active, timeframe, direction, lastCandle, strategyResult) {
