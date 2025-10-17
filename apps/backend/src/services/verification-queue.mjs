@@ -59,6 +59,8 @@ class VerificationQueue {
 
     console.log('🚀 Starting verification queue processor...');
     this.processorInterval = setInterval(() => {
+      // ✅ Heartbeat: Show queue is running
+      console.log(`[Queue Heartbeat] Size: ${this.queue.length}, Processing: ${this.processing}`);
       this.processBatch().catch(err => {
         console.error('❌ Error in queue processor:', err.message);
       });
@@ -95,10 +97,22 @@ class VerificationQueue {
         .slice(0, this.BATCH_SIZE);
 
       if (ready.length === 0) {
+        // ✅ Show when next trade will be ready
+        if (this.queue.length > 0) {
+          const nextReady = Math.min(...this.queue.map(v => v.executeAt));
+          const waitTime = Math.ceil((nextReady - now) / 1000);
+          console.log(`⏳ Queue has ${this.queue.length} trades, next ready in ${waitTime}s`);
+        } else {
+          console.log(`✅ Queue is empty`);
+        }
         this.processing = false;
         return;
       }
 
+      // ✅ Show queue status
+      const totalInQueue = this.queue.length;
+      const readyCount = this.queue.filter(v => v.executeAt <= now).length;
+      console.log(`📊 Queue status: ${readyCount}/${totalInQueue} ready | Processing batch of ${ready.length}...`);
       console.log(`\n🔄 Processing batch of ${ready.length} verifications...`);
       const batchStartTime = Date.now();
 
@@ -178,6 +192,11 @@ class VerificationQueue {
       const batchDuration = Date.now() - batchStartTime;
       this.stats.batchesProcessed++;
       console.log(`   ⏱️  Batch complete in ${batchDuration}ms (${this.queue.length} remaining in queue)\n`);
+
+      // ✅ Print stats every 6 batches
+      if (this.stats.batchesProcessed % 6 === 0 && this.stats.batchesProcessed > 0) {
+        this.printStats();
+      }
 
     } catch (error) {
       console.error('❌ Fatal error in batch processing:', error.message);
