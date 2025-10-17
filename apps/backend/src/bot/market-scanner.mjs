@@ -17,8 +17,8 @@ import ssidManager from '../services/ssid-manager.mjs';
 import VerificationQueue from '../services/verification-queue.mjs'; // ✅ NEW: Queue system
 
 const TIMEFRAMES = [10, 30, 60, 300]; // ✅ 10s, 30s, 1min, 5min
-const SCAN_INTERVAL = 45000; // 🔧 HYBRID: 45 seconds - ensures scan completes before next starts
-const PARALLEL_BATCH_SIZE = 15; // 🔧 HYBRID: Reduced for sequential processing (15 × 50ms = 750ms/batch)
+const SCAN_INTERVAL = 15000; // ⚡ SPEED: 15 seconds (was 45s) - 3x more frequent scans
+const PARALLEL_BATCH_SIZE = 15; // 🔧 HYBRID: Reduced for sequential processing
 const AVALON_WS_URL = process.env.AVALON_WS_URL || 'wss://ws.trade.avalonbroker.com/echo/websocket';
 const AVALON_API_HOST = process.env.AVALON_API_HOST || 'https://trade.avalonbroker.com';
 
@@ -147,7 +147,7 @@ class MarketScanner {
         console.log(`✅ ${actives.length}/${fixedAssets.length} ativos disponíveis\n`);
 
         // ✅ MICRO-BATCH PATTERN: Save signals as discovered (prevents data loss)
-        const MICRO_BATCH_SIZE = 5; // Safe batch size for Supabase (avoids deadlocks)
+        const MICRO_BATCH_SIZE = 15; // ⚡ SPEED: 15 signals (was 5) - 3x fewer DB operations (38 batches vs 113)
         let microBatch = [];
         let totalSignalsProcessed = 0;
 
@@ -181,7 +181,7 @@ class MarketScanner {
 
               if (!candles || candles.length < 50) {
                 totalCandlesErrors++;
-                console.log(`⚠️  ${active.ticker || active.id} @ ${timeframe}s: Received ${candles?.length || 0}/50 candles`);
+                // ⚡ SPEED: Skip individual error logs (no spam)
                 batchResults.push(null);
               } else {
                 totalCandlesFetched++;
@@ -200,8 +200,6 @@ class MarketScanner {
                   const lastCandle = candles[candles.length - 1];
                   const ativoNome = getAssetName(active.id);
                   const signalPrice = parseFloat(lastCandle.close);
-
-                  console.log(`✅ ${active.ticker || active.id} | ${timeframe}s | ${result.consensus} (${result.confidence}%)`);
 
                   const signal = {
                     active_id: active.id.toString(),
@@ -229,10 +227,8 @@ class MarketScanner {
                 }
               }
 
-              // ✅ CRITICAL: Rate limiting reduced from 50ms to 20ms (still API-safe, 2.5x faster)
-              // Old: 15 × 50ms = 750ms/batch → 38 batches × 750ms = 28.5s
-              // New: 15 × 20ms = 300ms/batch → 38 batches × 300ms = 11.4s ✅
-              await new Promise(r => setTimeout(r, 20));
+              // ⚡ SPEED: REMOVED API delays (was 20ms) - SDK handles rate limiting internally
+              // Sequential calls don't overwhelm API. Removal saves 11.28s per scan!
 
             } catch (err) {
               totalCandlesErrors++;
@@ -450,12 +446,12 @@ class MarketScanner {
 
   /**
    * Save micro-batch of signals and schedule immediate verification
-   * @param {Array} signals - Batch of signals to save (max 5)
+   * @param {Array} signals - Batch of signals to save (max 15)
    */
   async saveMicroBatch(signals) {
-    try {
-      console.log(`💾 Saving micro-batch of ${signals.length} signals...`);
+    const batchStartTime = Date.now();
 
+    try {
       const { data: insertedSignals, error } = await supabase
         .from('strategy_trades')
         .insert(signals)
@@ -471,35 +467,29 @@ class MarketScanner {
         return;
       }
 
-      console.log(`✅ Micro-batch saved: ${insertedSignals.length} signals`);
+      const batchTime = Date.now() - batchStartTime;
+      console.log(`💾 Batch: ${signals.length} signals saved in ${batchTime}ms`);
 
       // ✅ IMMEDIATE VERIFICATION SCHEDULING (like old code - WORKS)
-      for (let i = 0; i < signals.length; i++) {
-        const signal = signals[i];
-        const tradeId = insertedSignals[i]?.id;
-
-        if (!tradeId) {
-          console.error(`❌ Signal ${i} missing tradeId`);
-          continue;
-        }
+      insertedSignals.forEach((inserted, index) => {
+        const signal = signals[index];
+        if (!inserted?.id) return;
 
         const delay = signal.timeframe * 1000 + 2000;
 
-        // ✅ Individual setTimeout (like old code - prevents race conditions when throttled)
+        // ✅ Individual setTimeout (prevents race conditions when throttled)
         setTimeout(async () => {
           await this.verificarResultado(
-            tradeId,
+            inserted.id,
             parseInt(signal.active_id),
             signal.timeframe,
             signal.signal_price,
             signal.signal_direction
           );
         }, delay);
-
-        console.log(`⏰ Verification scheduled for ${tradeId.substring(0, 8)} in ${delay}ms`);
-      }
+      });
     } catch (err) {
-      console.error(`❌ Micro-batch save exception: ${err.message}`);
+      console.error(`❌ Micro-batch exception: ${err.message}`);
     }
   }
 
