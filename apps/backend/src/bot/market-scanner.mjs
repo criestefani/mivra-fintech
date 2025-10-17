@@ -146,8 +146,10 @@ class MarketScanner {
         console.log(`⏱️ [STAGE 3] Filter actives: ${Date.now() - t3}ms`);
         console.log(`✅ ${actives.length}/${fixedAssets.length} ativos disponíveis\n`);
 
-        // ✅ BATCH INSERT: Collect all signals first, then insert together
-        const signalsToInsert = [];
+        // ✅ MICRO-BATCH PATTERN: Save signals as discovered (prevents data loss)
+        const MICRO_BATCH_SIZE = 5; // Safe batch size for Supabase (avoids deadlocks)
+        let microBatch = [];
+        let totalSignalsProcessed = 0;
 
         // ✅ Create array of all combinations to process
         const t4 = Date.now();
@@ -201,7 +203,7 @@ class MarketScanner {
 
                   console.log(`✅ ${active.ticker || active.id} | ${timeframe}s | ${result.consensus} (${result.confidence}%)`);
 
-                  batchResults.push({
+                  const signal = {
                     active_id: active.id.toString(),
                     ativo_nome: ativoNome,
                     timeframe: timeframe,
@@ -209,7 +211,19 @@ class MarketScanner {
                     signal_direction: result.consensus,
                     signal_price: signalPrice,
                     result: 'PENDING'
-                  });
+                  };
+
+                  microBatch.push(signal);
+
+                  // ✅ MICRO-BATCH SAVE: Save every 5 signals immediately (prevents data loss)
+                  if (microBatch.length >= MICRO_BATCH_SIZE) {
+                    await this.saveMicroBatch(microBatch);
+                    totalSignalsProcessed += microBatch.length;
+                    signalsFound += microBatch.length;
+                    microBatch = []; // Reset batch
+                  }
+
+                  batchResults.push(signal);
                 } else {
                   batchResults.push(null);
                 }
@@ -227,12 +241,8 @@ class MarketScanner {
             }
           }
 
-          // Collect all valid signals from batch
+          // Count all results (already processed and saved above)
           batchResults.forEach(signal => {
-            if (signal) {
-              signalsToInsert.push(signal);
-              signalsFound++;
-            }
             analyzed++;
           });
 
@@ -244,97 +254,18 @@ class MarketScanner {
         console.log(`\n⏱️ [STAGE 5] All batches completed: ${stage5Time}ms`);
         console.log(`📊 Candles fetched: ${totalCandlesFetched}, Errors: ${totalCandlesErrors}`);
 
-        // ✅ PROGRESS LOGGING: Show what's about to happen
-        console.log(`\n📊 SCAN PROGRESS: ${analyzed} analyzed, ${signalsFound} signals found`);
-        console.log(`📊 Proceeding to STAGE 6: Batch insert of ${signalsToInsert.length} signals...`);
-
-        // ✅ STAGE 6: BATCH INSERT all signals at once
+        // ✅ STAGE 6: SAVE REMAINING MICRO-BATCH (final signals)
         const t6 = Date.now();
-        let insertCompleted = false; // ✅ Track if insert succeeded
-        if (signalsToInsert.length > 0) {
-          try {
-            console.log(`\n📝 Inserting ${signalsToInsert.length} sinais into Supabase...`);
-            const insertStartTime = Date.now();
-
-            const { data: insertedSignals, error: insertError } = await supabase
-              .from('strategy_trades')
-              .insert(signalsToInsert)
-              .select('id');
-
-            const insertTime = Date.now() - insertStartTime;
-
-            if (insertError) {
-              console.error(`❌ Batch insert error (${insertTime}ms): ${insertError.message}`);
-              console.error(`   Code: ${insertError.code}`);
-              console.error(`   Details: ${JSON.stringify(insertError.details)}`);
-            } else if (!insertedSignals) {
-              console.error(`❌ Batch insert returned no data (${insertTime}ms)`);
-            } else {
-              insertCompleted = true; // ✅ Mark insert as successful
-              console.log(`✅ ${insertedSignals.length} sinais inseridos em batch (${insertTime}ms)`);
-
-              // ✅ NEW: Add verifications to queue (replaces individual setTimeout)
-              for (let i = 0; i < signalsToInsert.length; i++) {
-                const signal = signalsToInsert[i];
-                const tradeId = insertedSignals[i]?.id;
-                if (!tradeId) {
-                  console.error(`❌ Signal ${i} missing tradeId from insert response`);
-                  continue;
-                }
-
-                this.verificationQueue.add({
-                  tradeId: tradeId,
-                  activeId: parseInt(signal.active_id),
-                  timeframe: signal.timeframe,
-                  signalPrice: signal.signal_price,
-                  direction: signal.signal_direction
-                });
-              }
-              console.log(`✅ ${signalsToInsert.length} verifications added to queue`);
-            }
-          } catch (err) {
-            console.error(`❌ Batch insert exception: ${err.message}`);
-            console.error(`   Stack: ${err.stack}`);
-          }
-        }
-
-        // ✅ EMERGENCY FALLBACK: Save data even if insert failed or was skipped
-        if (signalsToInsert.length > 0 && !insertCompleted) {
-          console.log(`\n🚨 EMERGENCY SAVE: Previous insert failed or was skipped`);
-          console.log(`🚨 Attempting emergency save of ${signalsToInsert.length} signals...`);
-          try {
-            const { data: emergencyInserted, error: emergencyError } = await supabase
-              .from('strategy_trades')
-              .insert(signalsToInsert)
-              .select('id');
-
-            if (!emergencyError && emergencyInserted) {
-              console.log(`✅ EMERGENCY SAVE SUCCESSFUL: ${emergencyInserted.length} signals saved`);
-
-              // Add to verification queue
-              for (let i = 0; i < signalsToInsert.length; i++) {
-                const signal = signalsToInsert[i];
-                const tradeId = emergencyInserted[i]?.id;
-                if (tradeId) {
-                  this.verificationQueue.add({
-                    tradeId: tradeId,
-                    activeId: parseInt(signal.active_id),
-                    timeframe: signal.timeframe,
-                    signalPrice: signal.signal_price,
-                    direction: signal.signal_direction
-                  });
-                }
-              }
-            } else {
-              console.error(`❌ EMERGENCY SAVE FAILED: ${emergencyError?.message}`);
-            }
-          } catch (err) {
-            console.error(`❌ EMERGENCY SAVE EXCEPTION: ${err.message}`);
-          }
+        if (microBatch.length > 0) {
+          console.log(`\n📊 STAGE 6: Saving final micro-batch of ${microBatch.length} signals...`);
+          await this.saveMicroBatch(microBatch);
+          totalSignalsProcessed += microBatch.length;
+          signalsFound += microBatch.length;
+          microBatch = [];
         } else {
-          console.log(`⚠️  No signals to insert`);
+          console.log(`✅ STAGE 6: All micro-batches already saved during processing`);
         }
-        console.log(`⏱️ [STAGE 6] Batch insert: ${Date.now() - t6}ms`);
+        console.log(`⏱️ [STAGE 6] Micro-batch processing complete: ${Date.now() - t6}ms`);
 
         const totalElapsed = ((Date.now() - startTime) / 1000).toFixed(2);
         this.signalsCount += signalsFound;
@@ -514,6 +445,61 @@ class MarketScanner {
     } catch (err) {
       console.error(`❌ [CLEANUP] Fatal error: ${err.message}`);
       console.error(`   Stack: ${err.stack}`);
+    }
+  }
+
+  /**
+   * Save micro-batch of signals and schedule immediate verification
+   * @param {Array} signals - Batch of signals to save (max 5)
+   */
+  async saveMicroBatch(signals) {
+    try {
+      console.log(`💾 Saving micro-batch of ${signals.length} signals...`);
+
+      const { data: insertedSignals, error } = await supabase
+        .from('strategy_trades')
+        .insert(signals)
+        .select('id');
+
+      if (error) {
+        console.error(`❌ Micro-batch save error: ${error.message}`);
+        return;
+      }
+
+      if (!insertedSignals) {
+        console.error(`❌ Micro-batch returned no data`);
+        return;
+      }
+
+      console.log(`✅ Micro-batch saved: ${insertedSignals.length} signals`);
+
+      // ✅ IMMEDIATE VERIFICATION SCHEDULING (like old code - WORKS)
+      for (let i = 0; i < signals.length; i++) {
+        const signal = signals[i];
+        const tradeId = insertedSignals[i]?.id;
+
+        if (!tradeId) {
+          console.error(`❌ Signal ${i} missing tradeId`);
+          continue;
+        }
+
+        const delay = signal.timeframe * 1000 + 2000;
+
+        // ✅ Individual setTimeout (like old code - prevents race conditions when throttled)
+        setTimeout(async () => {
+          await this.verificarResultado(
+            tradeId,
+            parseInt(signal.active_id),
+            signal.timeframe,
+            signal.signal_price,
+            signal.signal_direction
+          );
+        }, delay);
+
+        console.log(`⏰ Verification scheduled for ${tradeId.substring(0, 8)} in ${delay}ms`);
+      }
+    } catch (err) {
+      console.error(`❌ Micro-batch save exception: ${err.message}`);
     }
   }
 
