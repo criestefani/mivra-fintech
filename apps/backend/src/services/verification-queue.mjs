@@ -161,29 +161,57 @@ class VerificationQueue {
         }
       }
 
-      // ✅ STEP 3: Batch UPDATE to Supabase (1 query instead of N)
+      // ✅ STEP 3: Batch UPDATE to Supabase (execute 10 in parallel)
       if (updates.length > 0) {
         const updateStartTime = Date.now();
-        const { error: upsertError } = await this.supabase
-          .from('strategy_trades')
-          .upsert(updates, { onConflict: 'id', ignoreDuplicates: false });
+
+        // Execute all UPDATEs in parallel
+        const updateResults = await Promise.all(
+          updates.map(update =>
+            this.supabase
+              .from('strategy_trades')
+              .update({
+                result: update.result,
+                result_price: update.result_price,
+                result_timestamp: update.result_timestamp,
+                price_diff: update.price_diff
+              })
+              .eq('id', update.id)
+          )
+        );
 
         const updateDuration = Date.now() - updateStartTime;
 
-        if (upsertError) {
-          console.error(`   ❌ Batch UPDATE failed (${updateDuration}ms): ${upsertError.message}`);
-          // Re-queue failed updates for retry
-          ready.forEach(v => {
-            if (v.retries < this.MAX_RETRIES) {
-              v.retries++;
-              v.executeAt = now + 10000;
-              this.queue.push(v);
+        // Process results - handle each individually
+        let successCount = 0;
+        let failureCount = 0;
+
+        for (let i = 0; i < updateResults.length; i++) {
+          const result = updateResults[i];
+          const update = updates[i];
+          const verification = ready[i];
+
+          if (result.error) {
+            failureCount++;
+            console.error(`   ❌ UPDATE failed for ${update.id.substring(0,8)}: ${result.error.message}`);
+
+            // Re-queue on failure
+            if (verification.retries < this.MAX_RETRIES) {
+              verification.retries++;
+              verification.executeAt = now + 10000;
+              this.queue.push(verification);
+              console.log(`   ⚠️  Re-queued ${update.id.substring(0,8)} (retry #${verification.retries})`);
+            } else {
+              console.log(`   ❌ Max retries reached for ${update.id.substring(0,8)}`);
             }
-          });
-        } else {
-          console.log(`   ✅ Batch UPDATE complete: ${updates.length} trades (${updateDuration}ms)`);
-          this.stats.processed += updates.length;
+          } else {
+            successCount++;
+          }
         }
+
+        console.log(`   ✅ Batch UPDATE complete: ${successCount}/${updates.length} successful (${updateDuration}ms)`);
+        this.stats.processed += successCount;
+        this.stats.failed += failureCount;
       }
 
       // Remove processed items from queue
