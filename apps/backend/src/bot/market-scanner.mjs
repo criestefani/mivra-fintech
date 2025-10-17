@@ -37,7 +37,7 @@ class MarketScanner {
     this.scanCount = 0; // ✅ Counter for recovery/cleanup throttling
     this.isScanning = false; // ✅ Lock to prevent overlapping scans
     this.scanStartTime = null; // ✅ Track when scan started for timeout safety
-    this.SCAN_TIMEOUT = 25000; // ✅ Max 25 seconds per scan (SCAN_INTERVAL is 15s, so 25s = 67% buffer)
+    this.SCAN_TIMEOUT = 180000; // ✅ Max 180 seconds (3 min) - Sequential processing needs time (15 combos × 280ms = 4.2s/batch × 38 batches = 159s total)
     this.verificationQueue = null; // ✅ NEW: Queue for batch verification
   }
 
@@ -215,8 +215,10 @@ class MarketScanner {
                 }
               }
 
-              // ✅ CRITICAL: Rate limiting exactly like old code (50ms delay)
-              await new Promise(r => setTimeout(r, 50));
+              // ✅ CRITICAL: Rate limiting reduced from 50ms to 20ms (still API-safe, 2.5x faster)
+              // Old: 15 × 50ms = 750ms/batch → 38 batches × 750ms = 28.5s
+              // New: 15 × 20ms = 300ms/batch → 38 batches × 300ms = 11.4s ✅
+              await new Promise(r => setTimeout(r, 20));
 
             } catch (err) {
               totalCandlesErrors++;
@@ -242,8 +244,13 @@ class MarketScanner {
         console.log(`\n⏱️ [STAGE 5] All batches completed: ${stage5Time}ms`);
         console.log(`📊 Candles fetched: ${totalCandlesFetched}, Errors: ${totalCandlesErrors}`);
 
+        // ✅ PROGRESS LOGGING: Show what's about to happen
+        console.log(`\n📊 SCAN PROGRESS: ${analyzed} analyzed, ${signalsFound} signals found`);
+        console.log(`📊 Proceeding to STAGE 6: Batch insert of ${signalsToInsert.length} signals...`);
+
         // ✅ STAGE 6: BATCH INSERT all signals at once
         const t6 = Date.now();
+        let insertCompleted = false; // ✅ Track if insert succeeded
         if (signalsToInsert.length > 0) {
           try {
             console.log(`\n📝 Inserting ${signalsToInsert.length} sinais into Supabase...`);
@@ -263,6 +270,7 @@ class MarketScanner {
             } else if (!insertedSignals) {
               console.error(`❌ Batch insert returned no data (${insertTime}ms)`);
             } else {
+              insertCompleted = true; // ✅ Mark insert as successful
               console.log(`✅ ${insertedSignals.length} sinais inseridos em batch (${insertTime}ms)`);
 
               // ✅ NEW: Add verifications to queue (replaces individual setTimeout)
@@ -287,6 +295,41 @@ class MarketScanner {
           } catch (err) {
             console.error(`❌ Batch insert exception: ${err.message}`);
             console.error(`   Stack: ${err.stack}`);
+          }
+        }
+
+        // ✅ EMERGENCY FALLBACK: Save data even if insert failed or was skipped
+        if (signalsToInsert.length > 0 && !insertCompleted) {
+          console.log(`\n🚨 EMERGENCY SAVE: Previous insert failed or was skipped`);
+          console.log(`🚨 Attempting emergency save of ${signalsToInsert.length} signals...`);
+          try {
+            const { data: emergencyInserted, error: emergencyError } = await supabase
+              .from('strategy_trades')
+              .insert(signalsToInsert)
+              .select('id');
+
+            if (!emergencyError && emergencyInserted) {
+              console.log(`✅ EMERGENCY SAVE SUCCESSFUL: ${emergencyInserted.length} signals saved`);
+
+              // Add to verification queue
+              for (let i = 0; i < signalsToInsert.length; i++) {
+                const signal = signalsToInsert[i];
+                const tradeId = emergencyInserted[i]?.id;
+                if (tradeId) {
+                  this.verificationQueue.add({
+                    tradeId: tradeId,
+                    activeId: parseInt(signal.active_id),
+                    timeframe: signal.timeframe,
+                    signalPrice: signal.signal_price,
+                    direction: signal.signal_direction
+                  });
+                }
+              }
+            } else {
+              console.error(`❌ EMERGENCY SAVE FAILED: ${emergencyError?.message}`);
+            }
+          } catch (err) {
+            console.error(`❌ EMERGENCY SAVE EXCEPTION: ${err.message}`);
           }
         } else {
           console.log(`⚠️  No signals to insert`);

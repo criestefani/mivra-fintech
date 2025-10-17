@@ -77,8 +77,10 @@ class VerificationQueue {
     // Create multiple worker intervals
     for (let i = 0; i < this.WORKERS; i++) {
       const interval = setInterval(() => {
-        // ✅ Heartbeat: Show queue is running
-        console.log(`[Queue Heartbeat W${i}] Size: ${this.queue.length}, Active workers: ${this.processing}/${this.WORKERS}`);
+        // ✅ SILENT HEARTBEAT: Only log when queue has work (no spam when idle)
+        if (this.queue.length > 0) {
+          console.log(`[Queue W${i}] Size: ${this.queue.length}, Active workers: ${this.processing}/${this.WORKERS}`);
+        }
         this.processBatch().catch(err => {
           console.error('❌ Error in queue processor:', err.message);
         });
