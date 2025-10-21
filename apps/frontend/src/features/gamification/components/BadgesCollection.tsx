@@ -3,8 +3,8 @@
  * Displays all earned badges with filtering by category and rarity
  */
 
-import { useState, useMemo } from 'react';
-import { motion } from 'framer-motion';
+import { useState, useMemo, useEffect } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { useShallow } from 'zustand/react/shallow';
 import { useBadges } from '../../../hooks/useGamification';
 import { Badge as BadgeType } from '../../../stores/gamificationStore';
@@ -177,14 +177,15 @@ export function BadgesCollection({ userId, maxColumns = 4 }: BadgesCollectionPro
       </div>
 
       {/* Badge Details Modal */}
-      {selectedBadge && (
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
-          onClick={() => setSelectedBadge(null)}
-          className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4"
-        >
+      <AnimatePresence>
+        {selectedBadge && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={() => setSelectedBadge(null)}
+            className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+          >
           <motion.div
             initial={{ scale: 0.9, y: 20 }}
             animate={{ scale: 1, y: 0 }}
@@ -242,8 +243,9 @@ export function BadgesCollection({ userId, maxColumns = 4 }: BadgesCollectionPro
               Fechar
             </button>
           </motion.div>
-        </motion.div>
-      )}
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

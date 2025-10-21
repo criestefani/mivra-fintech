@@ -5,7 +5,7 @@
 
 import { useState, useMemo, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { useAuth } from '@clerk/clerk-react';
+import { useUser } from '@clerk/clerk-react';
 import { cn } from '@/shared/utils/cn';
 
 const PERIODS = ['daily', 'weekly', 'monthly', 'all_time'];
@@ -24,7 +24,8 @@ interface LeaderboardPageProps {
 }
 
 export function LeaderboardPage({ limit = 100 }: LeaderboardPageProps) {
-  const { userId } = useAuth();
+  const { user } = useUser();
+  const userId = user?.id;
   const [selectedPeriod, setSelectedPeriod] = useState<string>('daily');
   const [selectedCategory, setSelectedCategory] = useState<string>('xp');
   const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([]);

@@ -1,7 +1,7 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { Toaster } from 'sonner'
-import { useAuth } from '@clerk/clerk-react'
+import { useUser } from '@clerk/clerk-react'
 import { ThemeProvider } from '@/shared/context/ThemeProvider'
 import { BrokerProvider } from '@/shared/context/BrokerContext'
 import { NotificationProvider } from '@/features/gamification/providers/NotificationProvider'
@@ -19,8 +19,8 @@ import { BadgesCollection } from '@/features/gamification/components/BadgesColle
 
 // Wrapper for Badges page with userId
 function BadgesPage() {
-  const { userId } = useAuth()
-  return <BadgesCollection userId={userId} />
+  const { user } = useUser()
+  return <BadgesCollection userId={user?.id || null} />
 }
 
 // Create QueryClient
