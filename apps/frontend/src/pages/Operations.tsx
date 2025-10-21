@@ -33,6 +33,7 @@ import {
   StreakOverlay,
   NextTradePreview,
   CommandCenter,
+  MetricsGrid,
   QuestTracker,
   type Trade as TradeFeedTrade,
 } from "@/components/trading";
@@ -589,7 +590,10 @@ const Operations = () => {
 
   // START BOT handler
   const handleStartBot = async () => {
+    console.log('🎯 [handleStartBot] Called - isConnected:', isConnected, 'entryValue:', entryValue, 'botMode:', botMode);
+
     if (!isConnected) {
+      console.log('❌ [handleStartBot] BLOCKED: Not connected to broker');
       toast({
         title: "Not Connected",
         description: "Please connect to broker in Settings first",
@@ -600,6 +604,7 @@ const Operations = () => {
 
     // Validations
     if (entryValue <= 0) {
+      console.log('❌ [handleStartBot] BLOCKED: Invalid entry value:', entryValue);
       toast({
         title: "Invalid Entry Value",
         description: "Entry value must be greater than 0",
@@ -657,9 +662,13 @@ const Operations = () => {
       console.log('🤖 [Operations] Starting AUTO mode:', userConfig);
     }
 
+    console.log('✅ [handleStartBot] All validations passed, calling startBotRuntime with userId:', user?.id);
+
     try {
       // ✅ Pass userConfig to startBotRuntime
+      console.log('📡 [handleStartBot] Calling startBotRuntime...');
       await startBotRuntime(user!.id, userConfig);
+      console.log('✅ [handleStartBot] startBotRuntime completed successfully');
 
       // Reset data when starting
       if (botMode === "auto") {
@@ -668,13 +677,15 @@ const Operations = () => {
         setTradeMarkers([]);
       }
     } catch (error) {
-      console.error("Failed to start bot:", error);
+      console.error("❌ [handleStartBot] Failed to start bot:", error);
       toast({
         title: "Failed to Start Bot",
         description: "An error occurred while starting the bot",
         variant: "destructive",
       });
     }
+
+    console.log('🏁 [handleStartBot] Function completed');
   };
 
   // STOP BOT handler
@@ -879,7 +890,7 @@ const Operations = () => {
               currentStatus={currentStatus}
             />
 
-            {/* ✅ Gamification: Live Trade Feed (Manual Mode) */}
+            {/* ✅ Gamification: Live Trade Feed (Manual Mode) - Floating Button */}
             <LiveTradeFeed
               trades={trades.slice(0, 5).map((t) => ({
                 id: t.id,
@@ -889,7 +900,6 @@ const Operations = () => {
                 pnl: t.pnl,
                 timestamp: new Date(t.created_at).getTime(),
               }))}
-              position="right"
               maxTrades={5}
             />
 

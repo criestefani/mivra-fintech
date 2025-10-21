@@ -31,15 +31,15 @@ export function useGamification(userId: string | null) {
       fetchBadges: state.fetchBadges,
     }))
   );
-  const { currentStreak, fetchQuests } = useStreaksStore(
+  const { currentStreak } = useStreaksStore(
     useShallow((state) => ({
       currentStreak: state.currentStreak,
-      fetchQuests: state.fetchQuests,
     }))
   );
-  const { dailyQuests } = useQuestsStore(
+  const { dailyQuests, fetchQuests } = useQuestsStore(
     useShallow((state) => ({
       dailyQuests: state.dailyQuests,
+      fetchQuests: state.fetchQuests,
     }))
   );
 

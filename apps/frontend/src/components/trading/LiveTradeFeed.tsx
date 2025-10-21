@@ -1,11 +1,12 @@
 /**
  * LiveTradeFeed Component
- * Sidebar showing recent trades in real-time with animations
+ * Floating button that opens a drawer with recent trades
  */
 
 import { motion, AnimatePresence } from 'framer-motion';
 import confetti from 'canvas-confetti';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
+import { X, TrendingUp } from 'lucide-react';
 
 export interface Trade {
   id: string;
@@ -19,44 +20,94 @@ export interface Trade {
 interface LiveTradeFeedProps {
   trades: Trade[];
   maxTrades?: number;
-  position?: 'right' | 'left';
   className?: string;
 }
 
 export function LiveTradeFeed({
   trades,
   maxTrades = 5,
-  position = 'right',
   className = ''
 }: LiveTradeFeedProps) {
+  const [isOpen, setIsOpen] = useState(false);
   const recentTrades = trades.slice(0, maxTrades);
+  const winCount = recentTrades.filter(t => t.result === 'WIN').length;
 
   return (
-    <div
-      className={`fixed top-20 ${
-        position === 'right' ? 'right-4' : 'left-4'
-      } w-64 z-30 ${className}`}
-    >
-      <div className="bg-deep-space/90 backdrop-blur-lg rounded-2xl border border-white/10 p-4 shadow-xl">
-        <h3 className="text-sm font-bold text-gray-400 mb-3 uppercase tracking-wide">
-          Trades Recentes
-        </h3>
+    <>
+      {/* ✅ Floating Button (Small) */}
+      <motion.button
+        onClick={() => setIsOpen(!isOpen)}
+        className={`fixed bottom-8 right-8 w-14 h-14 rounded-full bg-gradient-to-r from-electric-blue to-neon-cyan shadow-2xl flex items-center justify-center z-40 hover:scale-110 transition-transform ${className}`}
+        whileHover={{ scale: 1.1 }}
+        whileTap={{ scale: 0.95 }}
+      >
+        <TrendingUp className="w-6 h-6 text-white" />
+        {winCount > 0 && (
+          <motion.div
+            initial={{ scale: 0 }}
+            animate={{ scale: 1 }}
+            className="absolute -top-2 -right-2 bg-profit-green text-white text-xs font-bold rounded-full w-6 h-6 flex items-center justify-center"
+          >
+            {winCount}
+          </motion.div>
+        )}
+      </motion.button>
 
-        <div className="space-y-2">
-          <AnimatePresence mode="popLayout">
-            {recentTrades.map((trade, index) => (
-              <TradeCard key={trade.id} trade={trade} index={index} />
-            ))}
-          </AnimatePresence>
+      {/* ✅ Drawer Modal */}
+      <AnimatePresence>
+        {isOpen && (
+          <>
+            {/* Backdrop */}
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setIsOpen(false)}
+              className="fixed inset-0 bg-black/50 z-40 backdrop-blur-sm"
+            />
 
-          {recentTrades.length === 0 && (
-            <div className="text-center py-8 text-gray-500 text-sm">
-              Nenhum trade ainda
-            </div>
-          )}
-        </div>
-      </div>
-    </div>
+            {/* Drawer from right */}
+            <motion.div
+              initial={{ x: 400, opacity: 0 }}
+              animate={{ x: 0, opacity: 1 }}
+              exit={{ x: 400, opacity: 0 }}
+              transition={{ type: 'spring', damping: 25, stiffness: 300 }}
+              className="fixed right-0 top-0 h-full w-96 bg-deep-space border-l border-white/10 shadow-2xl z-50 overflow-y-auto"
+            >
+              {/* Header */}
+              <div className="sticky top-0 bg-deep-space/95 backdrop-blur-lg border-b border-white/10 p-4 flex items-center justify-between">
+                <h2 className="text-lg font-bold text-white flex items-center gap-2">
+                  <TrendingUp className="w-5 h-5 text-electric-blue" />
+                  Trades Recentes
+                </h2>
+                <button
+                  onClick={() => setIsOpen(false)}
+                  className="p-1 hover:bg-white/10 rounded-lg transition-colors"
+                >
+                  <X className="w-5 h-5 text-gray-400" />
+                </button>
+              </div>
+
+              {/* Trades List */}
+              <div className="p-4 space-y-3">
+                <AnimatePresence mode="popLayout">
+                  {recentTrades.length > 0 ? (
+                    recentTrades.map((trade, index) => (
+                      <TradeCard key={trade.id} trade={trade} index={index} />
+                    ))
+                  ) : (
+                    <div className="text-center py-12 text-gray-500">
+                      <TrendingUp className="w-8 h-8 mx-auto mb-2 opacity-50" />
+                      <p>Nenhum trade ainda</p>
+                    </div>
+                  )}
+                </AnimatePresence>
+              </div>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
+    </>
   );
 }
 
@@ -77,7 +128,7 @@ function TradeCard({ trade, index }: TradeCardProps) {
       confetti({
         particleCount: 30,
         spread: 60,
-        origin: { x: 0.9, y: 0.2 },
+        origin: { x: 0.5, y: 0.5 },
         colors: ['#10B981', '#F59E0B'],
       });
     }
@@ -110,8 +161,8 @@ function TradeCard({ trade, index }: TradeCardProps) {
   return (
     <motion.div
       layout
-      initial={{ opacity: 0, x: position === 'right' ? 50 : -50, scale: 0.8 }}
-      animate={{ opacity: 1, x: 0, scale: 1 }}
+      initial={{ opacity: 0, y: 20, scale: 0.8 }}
+      animate={{ opacity: 1, y: 0, scale: 1 }}
       exit={{ opacity: 0, scale: 0.8, height: 0 }}
       transition={{ duration: 0.3 }}
       className={`rounded-lg border ${resultConfig.bgColor} ${resultConfig.borderColor} p-3`}

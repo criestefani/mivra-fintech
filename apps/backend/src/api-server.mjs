@@ -1204,7 +1204,12 @@ app.post('/api/bot/start-runtime', async (req, res) => {
     console.log(`✅ Bot control entry created with ID: ${controlEntry.id}`);
 
     // Spawn bot-live.mjs process
-    botProcess = spawn('node', ['bot/bot-live.mjs'], {
+    // ✅ Use correct absolute path: src/bot/bot-live.mjs
+    const botLivePath = path.join(__dirname, 'bot', 'bot-live.mjs');
+
+    console.log(`📂 Bot file path: ${botLivePath}`);
+
+    botProcess = spawn('node', [botLivePath], {
       cwd: process.cwd(),
       stdio: ['ignore', 'pipe', 'pipe'],
       detached: false,
