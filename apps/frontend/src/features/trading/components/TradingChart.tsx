@@ -9,6 +9,7 @@ import { createChart, IChartApi, ISeriesApi, CandlestickData, Time } from 'light
 import { useRealtimeCandles } from '@/shared/hooks/useRealtimeCandles'
 import { Loader2, TrendingUp, Wifi, WifiOff } from 'lucide-react'
 import axios from 'axios'
+import { GlassCard } from '@/components/ui/gamification'
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:4001'
 
@@ -196,16 +197,16 @@ export const TradingChart: React.FC<TradingChartProps> = ({
   }
 
   return (
-    <Card className="glass border-border">
+    <GlassCard className="border-electric-blue/30 shadow-[0_0_20px_rgba(0,150,255,0.15)]">
       <CardHeader>
         <div className="flex items-center justify-between">
-          <CardTitle className="text-lg md:text-xl flex items-center gap-2">
+          <CardTitle className="text-lg md:text-xl flex items-center gap-2 text-electric-blue">
             <TrendingUp className="w-5 h-5" />
             Manual Trading Chart
           </CardTitle>
           <div className="flex items-center gap-2">
             {/* WebSocket connection status */}
-            <Badge variant={isConnected ? 'default' : 'secondary'} className="gap-1.5">
+            <Badge variant={isConnected ? 'default' : 'secondary'} className={`gap-1.5 ${isConnected ? 'bg-profit-green text-white' : 'bg-loss-red text-white'}`}>
               {isConnected ? (
                 <>
                   <Wifi className="w-3 h-3" />
@@ -219,8 +220,8 @@ export const TradingChart: React.FC<TradingChartProps> = ({
               )}
             </Badge>
             {currentStatus && (
-              <Badge variant="outline" className="gap-2">
-                <div className="w-2 h-2 bg-positive rounded-full animate-pulse" />
+              <Badge variant="outline" className="gap-2 bg-golden-amber/10 text-golden-amber border-golden-amber/40">
+                <div className="w-2 h-2 bg-golden-amber rounded-full animate-pulse" />
                 {currentStatus}
               </Badge>
             )}

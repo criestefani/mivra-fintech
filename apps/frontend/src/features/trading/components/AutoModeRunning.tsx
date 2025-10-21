@@ -5,6 +5,7 @@ import React from 'react'
 import { Card, CardHeader, CardTitle, CardContent } from '@/shared/components/ui/card'
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, ReferenceLine } from 'recharts'
 import { Activity, TrendingUp, TrendingDown } from 'lucide-react'
+import { GlassCard } from '@/components/ui/gamification'
 
 interface PnlDataPoint {
   time: string
@@ -29,14 +30,14 @@ export const AutoModeRunning: React.FC<AutoModeRunningProps> = ({
   return (
     <div className="space-y-4">
       {/* Current Status Card */}
-      <Card className="glass border-border">
+      <GlassCard className="border-electric-blue/30 shadow-[0_0_20px_rgba(0,150,255,0.15)]">
         <CardContent className="p-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <div className="w-3 h-3 bg-positive rounded-full animate-pulse" />
+              <div className="w-3 h-3 bg-profit-green rounded-full animate-pulse shadow-[0_0_10px_rgba(16,185,129,0.6)]" />
               <div>
                 <p className="text-sm text-muted-foreground">Bot Status</p>
-                <p className="font-semibold text-foreground">
+                <p className="font-semibold text-electric-blue">
                   {currentStatus || 'Running...'}
                 </p>
               </div>
@@ -45,30 +46,34 @@ export const AutoModeRunning: React.FC<AutoModeRunningProps> = ({
             {currentAsset && (
               <div className="text-right">
                 <p className="text-sm text-muted-foreground">Current Asset</p>
-                <p className="font-semibold text-foreground">{currentAsset}</p>
+                <p className="font-semibold text-golden-amber">{currentAsset}</p>
               </div>
             )}
           </div>
         </CardContent>
-      </Card>
+      </GlassCard>
 
       {/* PnL Chart */}
-      <Card className="glass border-border">
+      <GlassCard className={`border-2 ${
+        isProfitable
+          ? 'border-profit-green/50 shadow-[0_0_20px_rgba(16,185,129,0.2)]'
+          : 'border-loss-red/50 shadow-[0_0_20px_rgba(239,68,68,0.2)]'
+      }`}>
         <CardHeader>
           <div className="flex items-center justify-between">
-            <CardTitle className="text-lg flex items-center gap-2">
+            <CardTitle className="text-lg flex items-center gap-2 text-electric-blue">
               <Activity className="w-5 h-5" />
               P&L Evolution
             </CardTitle>
             <div className="flex items-center gap-2">
               {isProfitable ? (
-                <TrendingUp className="w-5 h-5 text-positive" />
+                <TrendingUp className="w-5 h-5 text-profit-green" />
               ) : (
-                <TrendingDown className="w-5 h-5 text-negative" />
+                <TrendingDown className="w-5 h-5 text-loss-red" />
               )}
               <span
                 className={`text-xl font-bold font-mono ${
-                  isProfitable ? 'text-positive' : 'text-negative'
+                  isProfitable ? 'text-profit-green' : 'text-loss-red'
                 }`}
               >
                 {isProfitable ? '+' : ''}R$ {currentPnl.toFixed(2)}
@@ -108,7 +113,7 @@ export const AutoModeRunning: React.FC<AutoModeRunningProps> = ({
                 <Line
                   type="monotone"
                   dataKey="value"
-                  stroke={isProfitable ? 'hsl(var(--positive))' : 'hsl(var(--negative))'}
+                  stroke={isProfitable ? '#10B981' : '#EF4444'}
                   strokeWidth={2}
                   dot={false}
                   animationDuration={300}

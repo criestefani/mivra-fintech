@@ -1,8 +1,10 @@
 {
   "mcpServers": {
     "supabase": {
-      "command": "npx",
+      "command": "cmd",
       "args": [
+        "/c",
+        "npx",
         "-y",
         "@modelcontextprotocol/server-supabase"
       ],
@@ -13,8 +15,10 @@
       "description": "Supabase MCP - Database operations and queries"
     },
     "github": {
-      "command": "npx",
+      "command": "cmd",
       "args": [
+        "/c",
+        "npx",
         "-y",
         "@modelcontextprotocol/server-github"
       ],
@@ -24,16 +28,20 @@
       "description": "GitHub MCP - Repository management, issues, PRs"
     },
     "git": {
-      "command": "npx",
+      "command": "cmd",
       "args": [
+        "/c",
+        "npx",
         "-y",
         "@modelcontextprotocol/server-git"
       ],
       "description": "Git MCP - Local git operations"
     },
     "magic": {
-      "command": "npx",
+      "command": "cmd",
       "args": [
+        "/c",
+        "npx",
         "-y",
         "@21st-dev/magic"
       ],
@@ -42,54 +50,51 @@
       },
       "description": "Magic MCP (21st.dev) - AI-powered tools"
     },
-    "sentry": {
-      "command": "npx",
-      "args": [
-        "-y",
-        "@modelcontextprotocol/server-sentry"
-      ],
-      "env": {
-        "SENTRY_AUTH_TOKEN": "${SENTRY_API}"
-      },
-      "description": "Sentry MCP - Error tracking and monitoring"
-    },
     "notion": {
-      "command": "npx",
+      "command": "cmd",
       "args": [
+        "/c",
+        "npx",
         "-y",
-        "@notionhq/client-mcp"
+        "@modelcontextprotocol/server-notion"
       ],
       "env": {
         "NOTION_API_KEY": "${NOTION_API}"
       },
       "description": "Notion MCP - Notion workspace integration"
     },
-    "shadcn-ui": {
-      "command": "npx",
-      "args": [
-        "-y",
-        "@modelcontextprotocol/server-shadcn"
-      ],
-      "description": "ShadCN UI MCP - UI component library"
-    },
     "web-search": {
-      "command": "npx",
+      "command": "cmd",
       "args": [
+        "/c",
+        "npx",
         "-y",
-        "@modelcontextprotocol/server-brave-search"
+        "@modelcontextprotocol/server-web-search"
       ],
       "description": "Web Search MCP - Search the web"
     },
-    "deep-thinking": {
-      "command": "npx",
+    "shadcn": {
+      "command": "cmd",
       "args": [
+        "/c",
+        "npx",
+        "shadcn@latest",
+        "mcp"
+      ],
+      "description": "ShadCN UI MCP - Install and manage ShadCN components"
+    },
+    "sequential-thinking": {
+      "command": "cmd",
+      "args": [
+        "/c",
+        "npx",
         "-y",
-        "@anthropic/deep-thinking-mcp"
+        "@modelcontextprotocol/server-sequential-thinking"
       ],
       "env": {
         "ANTHROPIC_API_KEY": "${ANTHROPIC_API}"
       },
-      "description": "Deep Thinking MCP - Advanced reasoning and analysis"
+      "description": "Sequential Thinking MCP - Advanced reasoning and analysis"
     }
   },
   "environmentFile": "apps/backend/.env"

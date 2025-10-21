@@ -9,7 +9,7 @@
     "server": "node src/api-server.mjs",
     "server:auto": "node start-with-redis.mjs",
     "scanner": "node start-market-scanner.mjs",
-    "dev": "concurrently \"npm run server\" \"npm run scanner\"",
+    "dev": "node start-all.mjs",
     "dev:auto": "concurrently \"npm run server:auto\" \"npm run scanner\"",
     "start:all": "npm run dev",
     "check:redis": "node check-redis.mjs",
@@ -37,5 +37,9 @@
     "socket.io": "^4.8.1",
     "technicalindicators": "^3.1.0",
     "ws": "^8.18.3"
+  },
+  "devDependencies": {
+    "concurrently": "^9.2.1",
+    "pm2": "^5.3.1"
   }
 }
