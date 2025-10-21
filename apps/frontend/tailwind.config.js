@@ -187,6 +187,8 @@ export default {
       },
       fontFamily: {
         sans: ["var(--font-sans)"],
+        heading: ["var(--font-heading)"],
+        'heading-alt': ["var(--font-heading-alt)"],
         serif: ["var(--font-serif)"],
         mono: ["var(--font-mono)"],
       },
