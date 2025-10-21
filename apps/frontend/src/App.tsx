@@ -14,14 +14,8 @@ import MarketScanner from '@/pages/MarketScanner'
 import History from '@/pages/History'
 
 // Gamification Pages
-import { LeaderboardPage } from '@/features/gamification/pages/Leaderboard'
-import { BadgesCollection } from '@/features/gamification/components/BadgesCollection'
-
-// Wrapper for Badges page with userId
-function BadgesPage() {
-  const { userId } = useSupabaseUser()
-  return <BadgesCollection userId={userId} />
-}
+import Leaderboard from '@/pages/Leaderboard'
+import Badges from '@/pages/Badges'
 
 // Create QueryClient
 const queryClient = new QueryClient({
@@ -53,8 +47,8 @@ function App() {
                 <Route path="/history" element={<History />} />
 
                 {/* Gamification Pages */}
-                <Route path="/gamification/leaderboard" element={<LeaderboardPage />} />
-                <Route path="/gamification/badges" element={<BadgesPage />} />
+                <Route path="/gamification/leaderboard" element={<Leaderboard />} />
+                <Route path="/gamification/badges" element={<Badges />} />
 
                 {/* 404 */}
                 <Route path="*" element={<Navigate to="/operations" replace />} />
