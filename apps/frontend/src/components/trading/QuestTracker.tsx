@@ -32,9 +32,9 @@ export function QuestTracker({
         position === 'left' ? 'left-4' : 'right-4'
       } z-30 w-72 ${className}`}
     >
-      <div className="bg-deep-space/90 backdrop-blur-lg rounded-2xl border border-golden-amber/30 p-4 shadow-xl">
+      <div className="bg-deep-space/90 backdrop-blur-lg rounded-2xl border border-warning/30 p-4 shadow-xl">
         <div className="flex items-center justify-between mb-3">
-          <h3 className="text-sm font-bold text-golden-amber uppercase tracking-wide flex items-center gap-2">
+          <h3 className="text-sm font-bold text-warning uppercase tracking-wide flex items-center gap-2">
             <span>🎯</span>
             <span>Quests Ativas</span>
           </h3>
@@ -72,7 +72,7 @@ function QuestItem({ quest, index }: QuestItemProps) {
       transition={{ delay: index * 0.1 }}
       className={`rounded-lg p-3 border ${
         isCompleted
-          ? 'bg-profit-green/10 border-profit-green/30'
+          ? 'bg-positive/10 border-positive/30'
           : 'bg-white/5 border-white/10'
       }`}
     >
@@ -95,12 +95,12 @@ function QuestItem({ quest, index }: QuestItemProps) {
           <motion.div
             initial={{ scale: 0, rotate: -180 }}
             animate={{ scale: 1, rotate: 0 }}
-            className="flex-shrink-0 w-6 h-6 rounded-full bg-profit-green flex items-center justify-center"
+            className="flex-shrink-0 w-6 h-6 rounded-full bg-positive flex items-center justify-center"
           >
             <span className="text-xs">✓</span>
           </motion.div>
         ) : (
-          <div className="flex-shrink-0 px-2 py-1 rounded-full bg-golden-amber/20 text-xs text-golden-amber font-bold">
+          <div className="flex-shrink-0 px-2 py-1 rounded-full bg-warning/20 text-xs text-warning font-bold">
             +{quest.quests.xp_reward}
           </div>
         )}
@@ -114,8 +114,8 @@ function QuestItem({ quest, index }: QuestItemProps) {
           transition={{ duration: 0.5, ease: 'easeOut' }}
           className={`h-full rounded-full ${
             isCompleted
-              ? 'bg-profit-green'
-              : 'bg-gradient-to-r from-electric-blue to-golden-amber'
+              ? 'bg-positive'
+              : 'bg-gradient-to-r from-primary to-warning'
           }`}
         >
           {/* Shine effect */}
@@ -140,7 +140,7 @@ function QuestItem({ quest, index }: QuestItemProps) {
         <motion.div
           initial={{ opacity: 0, scale: 0 }}
           animate={{ opacity: 1, scale: 1 }}
-          className="mt-2 text-xs text-profit-green font-medium flex items-center gap-1"
+          className="mt-2 text-xs text-positive font-medium flex items-center gap-1"
         >
           <span>✓</span>
           <span>Completa! Resgate na aba Quests</span>

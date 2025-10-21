@@ -41,7 +41,7 @@ export function NextTradePreview({
       exit={{ opacity: 0, y: -20 }}
       className={`fixed bottom-6 left-1/2 -translate-x-1/2 z-30 ${className}`}
     >
-      <div className="bg-deep-space/95 backdrop-blur-xl rounded-2xl border border-electric-blue/30 px-6 py-4 shadow-[0_0_30px_rgba(14,165,233,0.3)] min-w-[300px]">
+      <div className="bg-deep-space/95 backdrop-blur-xl rounded-2xl border border-primary/30 px-6 py-4 shadow-[0_0_30px_rgba(255,140,26,0.3)] min-w-[300px]">
         {isAnalyzing ? (
           // Analyzing state
           <div className="flex items-center gap-3">
@@ -53,7 +53,7 @@ export function NextTradePreview({
               🔍
             </motion.div>
             <div>
-              <div className="text-sm font-medium text-electric-blue">
+              <div className="text-sm font-medium text-primary">
                 Analisando mercado...
               </div>
               <div className="text-xs text-gray-400">
@@ -74,7 +74,7 @@ export function NextTradePreview({
               <motion.div
                 animate={{ scale: [1, 1.1, 1] }}
                 transition={{ duration: 1, repeat: Infinity }}
-                className="text-2xl font-bold text-electric-blue font-heading"
+                className="text-2xl font-bold text-primary font-heading"
               >
                 {secondsUntilNext}s
               </motion.div>
@@ -92,7 +92,7 @@ export function NextTradePreview({
                 initial={{ width: 0 }}
                 animate={{ width: `${progress}%` }}
                 transition={{ duration: 0.5, ease: 'easeOut' }}
-                className="h-full bg-gradient-to-r from-electric-blue to-golden-amber rounded-full"
+                className="h-full bg-gradient-to-r from-primary to-warning rounded-full"
               >
                 {/* Shine effect */}
                 <motion.div

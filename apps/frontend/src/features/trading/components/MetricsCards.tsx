@@ -28,18 +28,18 @@ export const MetricsCards: React.FC<MetricsCardsProps> = ({
       {/* Win Rate Card */}
       <GlassCard className={`border-2 ${
         winRate >= 50
-          ? 'border-profit-green/50 shadow-[0_0_20px_rgba(16,185,129,0.15)]'
-          : 'border-loss-red/50 shadow-[0_0_20px_rgba(239,68,68,0.15)]'
+          ? 'border-positive/50 shadow-[0_0_20px_rgba(16,185,129,0.15)]'
+          : 'border-negative/50 shadow-[0_0_20px_rgba(235,47,47,0.15)]'
       }`}>
         <CardContent className="p-4 md:p-6">
           <div className="space-y-2">
             <div className="flex items-center justify-between">
               <span className="text-xs md:text-sm text-muted-foreground">Win Rate</span>
-              <Activity className="w-4 h-4 text-golden-amber" />
+              <Activity className="w-4 h-4 text-warning" />
             </div>
             <div
               className={`text-2xl md:text-3xl font-bold font-mono ${
-                winRate >= 50 ? 'text-profit-green' : 'text-loss-red'
+                winRate >= 50 ? 'text-positive' : 'text-negative'
               }`}
             >
               {winRate.toFixed(1)}%
@@ -49,18 +49,18 @@ export const MetricsCards: React.FC<MetricsCardsProps> = ({
       </GlassCard>
 
       {/* Total Trades Card */}
-      <GlassCard className="border-electric-blue/30 shadow-[0_0_20px_rgba(0,150,255,0.15)]">
+      <GlassCard className="border-primary/30 shadow-[0_0_20px_rgba(255,140,26,0.15)]">
         <CardContent className="p-4 md:p-6">
           <div className="space-y-2">
             <div className="flex items-center justify-between">
               <span className="text-xs md:text-sm text-muted-foreground">Total Trades</span>
-              <Activity className="w-4 h-4 text-golden-amber" />
+              <Activity className="w-4 h-4 text-warning" />
             </div>
-            <div className="text-2xl md:text-3xl font-bold font-mono text-electric-blue">
+            <div className="text-2xl md:text-3xl font-bold font-mono text-primary">
               {totalTrades}
             </div>
             <div className="text-xs text-muted-foreground">
-              <span className="text-profit-green">{totalWins}W</span> / <span className="text-loss-red">{totalLosses}L</span>
+              <span className="text-positive">{totalWins}W</span> / <span className="text-negative">{totalLosses}L</span>
             </div>
           </div>
         </CardContent>
@@ -70,8 +70,8 @@ export const MetricsCards: React.FC<MetricsCardsProps> = ({
       <GlassCard
         className={`border-2 ${
           isProfitable
-            ? 'border-profit-green/50 shadow-[0_0_20px_rgba(16,185,129,0.2)]'
-            : 'border-loss-red/50 shadow-[0_0_20px_rgba(239,68,68,0.2)]'
+            ? 'border-positive/50 shadow-[0_0_20px_rgba(16,185,129,0.2)]'
+            : 'border-negative/50 shadow-[0_0_20px_rgba(235,47,47,0.2)]'
         }`}
       >
         <CardContent className="p-4 md:p-6">
@@ -79,14 +79,14 @@ export const MetricsCards: React.FC<MetricsCardsProps> = ({
             <div className="flex items-center justify-between">
               <span className="text-xs md:text-sm text-muted-foreground">P&L</span>
               {isProfitable ? (
-                <TrendingUp className="w-4 h-4 text-profit-green" />
+                <TrendingUp className="w-4 h-4 text-positive" />
               ) : (
-                <TrendingDown className="w-4 h-4 text-loss-red" />
+                <TrendingDown className="w-4 h-4 text-negative" />
               )}
             </div>
             <div
               className={`text-2xl md:text-3xl font-bold font-mono ${
-                isProfitable ? 'text-profit-green' : 'text-loss-red'
+                isProfitable ? 'text-positive' : 'text-negative'
               }`}
             >
               {isProfitable ? '+' : ''}R$ {pnl.toFixed(2)}

@@ -49,8 +49,8 @@ export function QuestCard({ quest, onClaim, isLoading }: QuestCardProps) {
         </div>
 
         {/* XP Badge */}
-        <div className="flex-shrink-0 px-3 py-1 rounded-full bg-golden-amber/20 border border-golden-amber/50">
-          <span className="text-sm font-bold text-golden-amber">
+        <div className="flex-shrink-0 px-3 py-1 rounded-full bg-warning/20 border border-warning/50">
+          <span className="text-sm font-bold text-warning">
             +{quest.quests.xp_reward} XP
           </span>
         </div>
@@ -72,8 +72,8 @@ export function QuestCard({ quest, onClaim, isLoading }: QuestCardProps) {
             transition={{ duration: 0.5, ease: 'easeOut' }}
             className={`h-full rounded-full ${
               isCompleted
-                ? 'bg-gradient-to-r from-profit-green to-profit-green-600'
-                : 'bg-gradient-to-r from-electric-blue to-golden-amber'
+                ? 'bg-gradient-to-r from-positive to-positive-600'
+                : 'bg-gradient-to-r from-primary to-warning'
             }`}
           >
             {/* Shine effect */}
@@ -101,7 +101,7 @@ export function QuestCard({ quest, onClaim, isLoading }: QuestCardProps) {
 
         {/* Claim Button or Status */}
         {isClaimed ? (
-          <div className="flex items-center gap-1 text-profit-green font-medium">
+          <div className="flex items-center gap-1 text-positive font-medium">
             <span>✓</span>
             <span>Concluída</span>
           </div>

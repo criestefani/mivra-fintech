@@ -72,14 +72,14 @@ interface MetricCardProps {
 
 function MetricCard({ metric, index }: MetricCardProps) {
   const trendColors = {
-    up: 'text-profit-green',
-    down: 'text-loss-red',
+    up: 'text-positive',
+    down: 'text-negative',
     neutral: 'text-gray-400',
   };
 
   const glowColors = {
     up: 'shadow-[0_0_30px_rgba(16,185,129,0.5)]',
-    down: 'shadow-[0_0_30px_rgba(239,68,68,0.5)]',
+    down: 'shadow-[0_0_30px_rgba(235,47,47,0.5)]',
     neutral: '',
   };
 

@@ -33,13 +33,13 @@ export function CommandCenter({
     SCANNING: {
       icon: '🔍',
       text: 'SCANNING MARKETS...',
-      color: 'text-electric-blue',
+      color: 'text-primary',
       animate: true,
     },
     TRADING: {
       icon: '⚡',
       text: 'EXECUTING TRADE',
-      color: 'text-golden-amber',
+      color: 'text-warning',
       animate: true,
     },
     WAITING: {
@@ -51,7 +51,7 @@ export function CommandCenter({
     STOPPED: {
       icon: '🛑',
       text: 'BOT STOPPED',
-      color: 'text-loss-red',
+      color: 'text-negative',
       animate: false,
     },
   }[botStatus];
@@ -83,11 +83,11 @@ export function CommandCenter({
             transition={{ duration: 2, repeat: Infinity }}
             className="relative"
           >
-            <div className="w-16 h-16 rounded-full bg-gradient-to-br from-electric-blue to-golden-amber flex items-center justify-center text-3xl">
+            <div className="w-16 h-16 rounded-full bg-gradient-to-br from-primary to-warning flex items-center justify-center text-3xl">
               🤖
             </div>
             {/* Level badge */}
-            <div className="absolute -bottom-1 -right-1 w-6 h-6 rounded-full bg-golden-amber border-2 border-deep-space flex items-center justify-center">
+            <div className="absolute -bottom-1 -right-1 w-6 h-6 rounded-full bg-warning border-2 border-deep-space flex items-center justify-center">
               <span className="text-xs font-bold text-white">{userLevel}</span>
             </div>
           </motion.div>
@@ -140,8 +140,8 @@ export function CommandCenter({
               />
               <defs>
                 <linearGradient id="gradient" x1="0%" y1="0%" x2="100%" y2="0%">
-                  <stop offset="0%" stopColor="#0EA5E9" />
-                  <stop offset="100%" stopColor="#F59E0B" />
+                  <stop offset="0%" stopColor="hsl(26, 100%, 55%)" />
+                  <stop offset="100%" stopColor="hsl(35, 96%, 52%)" />
                 </linearGradient>
               </defs>
             </svg>

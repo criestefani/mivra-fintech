@@ -36,7 +36,7 @@ const clipPaths = {
 export function DiagonalSection({
   className,
   direction = 'top-left',
-  gradientFrom = 'from-electric-blue/10',
+  gradientFrom = 'from-primary/10',
   inverted = false,
   children,
   ...props

@@ -30,14 +30,14 @@ export const AutoModeRunning: React.FC<AutoModeRunningProps> = ({
   return (
     <div className="space-y-4">
       {/* Current Status Card */}
-      <GlassCard className="border-electric-blue/30 shadow-[0_0_20px_rgba(0,150,255,0.15)]">
+      <GlassCard className="border-primary/30 shadow-[0_0_20px_rgba(255,140,26,0.15)]">
         <CardContent className="p-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <div className="w-3 h-3 bg-profit-green rounded-full animate-pulse shadow-[0_0_10px_rgba(16,185,129,0.6)]" />
+              <div className="w-3 h-3 bg-positive rounded-full animate-pulse shadow-[0_0_10px_rgba(16,185,129,0.6)]" />
               <div>
                 <p className="text-sm text-muted-foreground">Bot Status</p>
-                <p className="font-semibold text-electric-blue">
+                <p className="font-semibold text-primary">
                   {currentStatus || 'Running...'}
                 </p>
               </div>
@@ -46,7 +46,7 @@ export const AutoModeRunning: React.FC<AutoModeRunningProps> = ({
             {currentAsset && (
               <div className="text-right">
                 <p className="text-sm text-muted-foreground">Current Asset</p>
-                <p className="font-semibold text-golden-amber">{currentAsset}</p>
+                <p className="font-semibold text-warning">{currentAsset}</p>
               </div>
             )}
           </div>
@@ -56,24 +56,24 @@ export const AutoModeRunning: React.FC<AutoModeRunningProps> = ({
       {/* PnL Chart */}
       <GlassCard className={`border-2 ${
         isProfitable
-          ? 'border-profit-green/50 shadow-[0_0_20px_rgba(16,185,129,0.2)]'
-          : 'border-loss-red/50 shadow-[0_0_20px_rgba(239,68,68,0.2)]'
+          ? 'border-positive/50 shadow-[0_0_20px_rgba(16,185,129,0.2)]'
+          : 'border-negative/50 shadow-[0_0_20px_rgba(235,47,47,0.2)]'
       }`}>
         <CardHeader>
           <div className="flex items-center justify-between">
-            <CardTitle className="text-lg flex items-center gap-2 text-electric-blue">
+            <CardTitle className="text-lg flex items-center gap-2 text-primary">
               <Activity className="w-5 h-5" />
               P&L Evolution
             </CardTitle>
             <div className="flex items-center gap-2">
               {isProfitable ? (
-                <TrendingUp className="w-5 h-5 text-profit-green" />
+                <TrendingUp className="w-5 h-5 text-positive" />
               ) : (
-                <TrendingDown className="w-5 h-5 text-loss-red" />
+                <TrendingDown className="w-5 h-5 text-negative" />
               )}
               <span
                 className={`text-xl font-bold font-mono ${
-                  isProfitable ? 'text-profit-green' : 'text-loss-red'
+                  isProfitable ? 'text-positive' : 'text-negative'
                 }`}
               >
                 {isProfitable ? '+' : ''}R$ {currentPnl.toFixed(2)}
@@ -113,7 +113,7 @@ export const AutoModeRunning: React.FC<AutoModeRunningProps> = ({
                 <Line
                   type="monotone"
                   dataKey="value"
-                  stroke={isProfitable ? '#10B981' : '#EF4444'}
+                  stroke={isProfitable ? 'hsl(152, 71%, 45%)' : 'hsl(0, 84%, 55%)'}
                   strokeWidth={2}
                   dot={false}
                   animationDuration={300}

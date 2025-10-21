@@ -22,7 +22,7 @@ export function LevelUpModal() {
         particleCount: 100,
         spread: 70,
         origin: { y: 0.6 },
-        colors: ['#F59E0B', '#0EA5E9', '#10B981', '#EF4444'],
+        colors: ['hsl(35, 96%, 52%)', 'hsl(26, 100%, 55%)', 'hsl(152, 71%, 45%)', 'hsl(0, 84%, 55%)'],
       });
 
       // Auto-close after 5 seconds
@@ -81,7 +81,7 @@ export function LevelUpModal() {
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: 0.4 }}
-                  className="text-4xl font-bold text-electric-blue mb-4 font-heading-alt uppercase"
+                  className="text-4xl font-bold text-primary mb-4 font-heading-alt uppercase"
                 >
                   Level Up!
                 </motion.h2>
@@ -108,7 +108,7 @@ export function LevelUpModal() {
                     initial={{ x: -20, opacity: 0 }}
                     animate={{ x: 0, opacity: 1 }}
                     transition={{ delay: 0.7 }}
-                    className="text-3xl text-electric-blue"
+                    className="text-3xl text-primary"
                   >
                     →
                   </motion.div>
@@ -120,7 +120,7 @@ export function LevelUpModal() {
                       initial={{ scale: 0.8 }}
                       animate={{ scale: [0.8, 1.2, 1] }}
                       transition={{ delay: 0.8, duration: 0.5 }}
-                      className="w-20 h-20 rounded-full bg-gradient-to-br from-electric-blue to-golden-amber flex items-center justify-center shadow-[0_0_30px_rgba(14,165,233,0.7)]"
+                      className="w-20 h-20 rounded-full bg-gradient-to-br from-primary to-warning flex items-center justify-center shadow-[0_0_30px_rgba(255,140,26,0.7)]"
                     >
                       <span className="text-3xl font-bold text-white">
                         {recentLevelUp.new_level}
@@ -134,7 +134,7 @@ export function LevelUpModal() {
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: 0.9 }}
-                  className="text-2xl font-bold text-golden-amber mb-4 font-heading"
+                  className="text-2xl font-bold text-warning mb-4 font-heading"
                 >
                   {recentLevelUp.level_title}
                 </motion.p>
@@ -145,7 +145,7 @@ export function LevelUpModal() {
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: 1 }}
-                    className="px-6 py-3 rounded-lg bg-golden-amber/10 border border-golden-amber/30 mb-6"
+                    className="px-6 py-3 rounded-lg bg-warning/10 border border-warning/30 mb-6"
                   >
                     <p className="text-sm text-gray-400 mb-1">🔓 Desbloqueado:</p>
                     <p className="text-white font-medium">{recentLevelUp.level_unlocks}</p>
@@ -158,7 +158,7 @@ export function LevelUpModal() {
                   animate={{ opacity: 1 }}
                   transition={{ delay: 1.2 }}
                   onClick={handleClose}
-                  className="px-8 py-3 rounded-full bg-gradient-to-r from-electric-blue to-golden-amber hover:shadow-[0_0_20px_rgba(14,165,233,0.7)] transition-all text-white font-bold"
+                  className="px-8 py-3 rounded-full bg-gradient-to-r from-primary to-warning hover:shadow-[0_0_20px_rgba(255,140,26,0.7)] transition-all text-white font-bold"
                 >
                   Incrível!
                 </motion.button>

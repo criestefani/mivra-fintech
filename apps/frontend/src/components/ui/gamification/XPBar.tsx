@@ -45,14 +45,14 @@ export function XPBar({
   return (
     <div
       className={cn(
-        'w-full bg-deep-space/90 backdrop-blur-lg px-4 py-2 border-b border-golden-amber/20',
+        'w-full bg-deep-space/90 backdrop-blur-lg px-4 py-2 border-b border-warning/20',
         className
       )}
       {...props}
     >
       <div className="flex items-center justify-between mb-1">
         <div className="flex items-center gap-2">
-          <span className="text-lg font-bold text-golden-amber">
+          <span className="text-lg font-bold text-warning">
             Nível {level}
           </span>
           {!compact && levelTitle && (
@@ -67,7 +67,7 @@ export function XPBar({
       {/* Progress bar */}
       <div className="relative h-2 bg-deep-space rounded-full overflow-hidden">
         <motion.div
-          className="absolute inset-y-0 left-0 bg-gradient-to-r from-golden-amber via-golden-amber-600 to-golden-amber rounded-full"
+          className="absolute inset-y-0 left-0 bg-gradient-to-r from-warning via-warning-600 to-warning rounded-full"
           initial={{ width: 0 }}
           animate={{ width: `${progress}%` }}
           transition={{ duration: 0.5, ease: 'easeOut' }}

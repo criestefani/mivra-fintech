@@ -43,7 +43,7 @@ export const TradeHistory: React.FC<TradeHistoryProps> = ({
   const getResultBadge = (result: Trade['result']) => {
     if (result === 'PENDING') {
       return (
-        <Badge variant="outline" className="gap-1 bg-golden-amber/10 text-golden-amber border-golden-amber/40">
+        <Badge variant="outline" className="gap-1 bg-warning/10 text-warning border-warning/40">
           <Clock className="w-3 h-3" />
           PENDING
         </Badge>
@@ -52,7 +52,7 @@ export const TradeHistory: React.FC<TradeHistoryProps> = ({
 
     if (result === 'WIN') {
       return (
-        <Badge variant="outline" className="gap-1 bg-profit-green/10 text-profit-green border-profit-green/50">
+        <Badge variant="outline" className="gap-1 bg-positive/10 text-positive border-positive/50">
           <TrendingUp className="w-3 h-3" />
           WIN
         </Badge>
@@ -60,7 +60,7 @@ export const TradeHistory: React.FC<TradeHistoryProps> = ({
     }
 
     return (
-      <Badge variant="outline" className="gap-1 bg-loss-red/10 text-loss-red border-loss-red/50">
+      <Badge variant="outline" className="gap-1 bg-negative/10 text-negative border-negative/50">
         <TrendingDown className="w-3 h-3" />
         LOSS
       </Badge>
@@ -79,11 +79,11 @@ export const TradeHistory: React.FC<TradeHistoryProps> = ({
   }
 
   return (
-    <GlassCard className="border-electric-blue/30 shadow-[0_0_20px_rgba(0,150,255,0.15)]">
+    <GlassCard className="border-primary/30 shadow-[0_0_20px_rgba(255,140,26,0.15)]">
       <CardHeader>
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <CardTitle className="text-lg md:text-xl text-electric-blue">Trade History</CardTitle>
+            <CardTitle className="text-lg md:text-xl text-primary">Trade History</CardTitle>
             {getRealtimeStatusIcon()}
           </div>
           <div className="flex items-center gap-2">
@@ -91,7 +91,7 @@ export const TradeHistory: React.FC<TradeHistoryProps> = ({
               variant="outline"
               size="sm"
               onClick={onRefresh}
-              className="gap-1 hover:bg-electric-blue/10"
+              className="gap-1 hover:bg-primary/10"
             >
               <RefreshCw className="w-3 h-3" />
               <span className="hidden md:inline">Refresh</span>
@@ -100,7 +100,7 @@ export const TradeHistory: React.FC<TradeHistoryProps> = ({
               variant="outline"
               size="sm"
               onClick={onReset}
-              className="gap-1 text-loss-red hover:text-loss-red hover:bg-loss-red/10"
+              className="gap-1 text-negative hover:text-negative hover:bg-negative/10"
             >
               <Trash2 className="w-3 h-3" />
               <span className="hidden md:inline">Clear</span>
@@ -139,8 +139,8 @@ export const TradeHistory: React.FC<TradeHistoryProps> = ({
                         variant="outline"
                         className={`${
                           trade.direction === 'CALL'
-                            ? 'bg-profit-green/10 text-profit-green border-profit-green/50'
-                            : 'bg-loss-red/10 text-loss-red border-loss-red/50'
+                            ? 'bg-positive/10 text-positive border-positive/50'
+                            : 'bg-negative/10 text-negative border-negative/50'
                         }`}
                       >
                         {trade.direction}
@@ -155,8 +155,8 @@ export const TradeHistory: React.FC<TradeHistoryProps> = ({
                         trade.result === 'PENDING'
                           ? 'text-muted-foreground'
                           : trade.pnl >= 0
-                          ? 'text-profit-green'
-                          : 'text-loss-red'
+                          ? 'text-positive'
+                          : 'text-negative'
                       }`}
                     >
                       {trade.result === 'PENDING' ? '-' : `${trade.pnl >= 0 ? '+' : ''}R$ ${trade.pnl.toFixed(2)}`}

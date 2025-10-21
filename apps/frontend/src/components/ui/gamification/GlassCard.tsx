@@ -11,19 +11,19 @@ export interface GlassCardProps extends HTMLAttributes<HTMLDivElement> {
 }
 
 const variantStyles = {
-  default: 'border-golden-amber/30',
-  amber: 'border-golden-amber/50',
-  blue: 'border-electric-blue/50',
-  green: 'border-profit-green/50',
-  red: 'border-loss-red/50',
+  default: 'border-warning/30',
+  amber: 'border-warning/50',
+  blue: 'border-primary/50',
+  green: 'border-positive/50',
+  red: 'border-negative/50',
 };
 
 const glowStyles = {
-  default: 'shadow-[0_0_20px_rgba(245,158,11,0.5)]',
-  amber: 'shadow-[0_0_20px_rgba(245,158,11,0.7)]',
-  blue: 'shadow-[0_0_20px_rgba(14,165,233,0.7)]',
+  default: 'shadow-[0_0_20px_rgba(245,166,35,0.5)]',
+  amber: 'shadow-[0_0_20px_rgba(245,166,35,0.7)]',
+  blue: 'shadow-[0_0_20px_rgba(255,140,26,0.7)]',
   green: 'shadow-[0_0_20px_rgba(16,185,129,0.7)]',
-  red: 'shadow-[0_0_20px_rgba(239,68,68,0.7)]',
+  red: 'shadow-[0_0_20px_rgba(235,47,47,0.7)]',
 };
 
 const blurIntensities = {

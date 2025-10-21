@@ -21,7 +21,7 @@ export function BadgeUnlockModal() {
       const duration = 3000;
       const end = Date.now() + duration;
 
-      const colors = ['#F59E0B', '#0EA5E9', '#10B981'];
+      const colors = ['hsl(35, 96%, 52%)', 'hsl(26, 100%, 55%)', 'hsl(152, 71%, 45%)'];
 
       (function frame() {
         confetti({
@@ -102,7 +102,7 @@ export function BadgeUnlockModal() {
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: 0.4 }}
-                  className="text-3xl font-bold text-golden-amber mb-2 font-heading-alt uppercase"
+                  className="text-3xl font-bold text-warning mb-2 font-heading-alt uppercase"
                 >
                   Badge Desbloqueado!
                 </motion.h2>
@@ -122,10 +122,10 @@ export function BadgeUnlockModal() {
                   initial={{ opacity: 0, scale: 0 }}
                   animate={{ opacity: 1, scale: 1 }}
                   transition={{ delay: 0.6 }}
-                  className="inline-flex items-center gap-2 px-6 py-3 rounded-full bg-golden-amber/20 border border-golden-amber/50"
+                  className="inline-flex items-center gap-2 px-6 py-3 rounded-full bg-warning/20 border border-warning/50"
                 >
                   <span className="text-2xl">✨</span>
-                  <span className="text-xl font-bold text-golden-amber">
+                  <span className="text-xl font-bold text-warning">
                     +{recentBadgeUnlock.xp_reward} XP
                   </span>
                 </motion.div>

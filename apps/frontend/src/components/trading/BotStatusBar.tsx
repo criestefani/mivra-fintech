@@ -45,7 +45,7 @@ export function BotStatusBar({
     RUNNING: {
       icon: '🤖',
       text: 'Bot Ativo',
-      color: 'text-profit-green',
+      color: 'text-positive',
       glow: 'shadow-[0_0_20px_rgba(16,185,129,0.5)]',
       pulse: true,
     },
@@ -59,15 +59,15 @@ export function BotStatusBar({
     PAUSED: {
       icon: '⏸️',
       text: 'Bot Pausado',
-      color: 'text-golden-amber',
-      glow: 'shadow-[0_0_20px_rgba(245,158,11,0.5)]',
+      color: 'text-warning',
+      glow: 'shadow-[0_0_20px_rgba(245,166,35,0.5)]',
       pulse: false,
     },
     ERROR: {
       icon: '⚠️',
       text: 'Erro',
-      color: 'text-loss-red',
-      glow: 'shadow-[0_0_20px_rgba(239,68,68,0.5)]',
+      color: 'text-negative',
+      glow: 'shadow-[0_0_20px_rgba(235,47,47,0.5)]',
       pulse: true,
     },
   }[status];
@@ -107,7 +107,7 @@ export function BotStatusBar({
             animate={isProfitable ? { scale: [1, 1.05, 1] } : {}}
             transition={{ duration: 0.5 }}
             className={`text-lg font-bold ${
-              isProfitable ? 'text-profit-green' : 'text-loss-red'
+              isProfitable ? 'text-positive' : 'text-negative'
             }`}
           >
             {isProfitable ? '+' : ''}R$ {pnlToday.toFixed(2)}
@@ -124,10 +124,10 @@ export function BotStatusBar({
                 opacity: 1
               }}
               exit={{ scale: 0, opacity: 0 }}
-              className="flex items-center gap-2 px-3 py-1 rounded-full bg-golden-amber/20 border border-golden-amber/50"
+              className="flex items-center gap-2 px-3 py-1 rounded-full bg-warning/20 border border-warning/50"
             >
               <span className="text-sm">✨</span>
-              <span className="text-sm font-bold text-golden-amber">
+              <span className="text-sm font-bold text-warning">
                 +{xpGained} XP
               </span>
             </motion.div>

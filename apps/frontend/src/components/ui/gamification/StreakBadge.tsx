@@ -46,10 +46,10 @@ export function StreakBadge({
       className={cn(
         'fixed z-40 flex items-center gap-2',
         'bg-deep-space/90 backdrop-blur-md',
-        'border-2 border-golden-amber/50',
+        'border-2 border-warning/50',
         'rounded-full px-4 py-2',
         'shadow-lg',
-        hasFireParticles && 'shadow-[0_0_20px_rgba(245,158,11,0.6)]',
+        hasFireParticles && 'shadow-[0_0_20px_rgba(245,166,35,0.6)]',
         positionStyles[position],
         className
       )}
@@ -80,7 +80,7 @@ export function StreakBadge({
 
       {/* Streak count */}
       <div className="flex flex-col">
-        <span className="text-xl font-bold text-golden-amber leading-none">
+        <span className="text-xl font-bold text-warning leading-none">
           {streakCount}
         </span>
         <span className="text-xs text-gray-400 leading-none">
@@ -95,7 +95,7 @@ export function StreakBadge({
             {[...Array(3)].map((_, i) => (
               <motion.div
                 key={i}
-                className="absolute w-2 h-2 bg-golden-amber rounded-full"
+                className="absolute w-2 h-2 bg-warning rounded-full"
                 initial={{ x: 0, y: 0, opacity: 1, scale: 1 }}
                 animate={{
                   x: [0, (i - 1) * 20],

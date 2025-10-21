@@ -73,7 +73,7 @@ export function StreakOverlay({
                 ],
               }}
               transition={{ duration: 1, repeat: Infinity }}
-              className="bg-gradient-to-br from-golden-amber via-orange-500 to-red-500 rounded-2xl px-6 py-4 border-2 border-golden-amber"
+              className="bg-gradient-to-br from-warning via-orange-500 to-red-500 rounded-2xl px-6 py-4 border-2 border-warning"
             >
               <div className="flex items-center gap-3">
                 <motion.span
@@ -123,7 +123,7 @@ export function StreakOverlay({
               scale: [1, 1.2, 1],
             }}
             transition={{ duration: 1.5, repeat: Infinity }}
-            className="absolute inset-0 bg-gradient-to-br from-golden-amber/30 to-red-500/30 rounded-2xl blur-xl -z-10"
+            className="absolute inset-0 bg-gradient-to-br from-warning/30 to-red-500/30 rounded-2xl blur-xl -z-10"
           />
         </motion.div>
       )}

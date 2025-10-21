@@ -49,8 +49,8 @@ export function FloatingXP({ amount, x = 0, y = 0, onComplete }: FloatingXPProps
           className={cn(
             'fixed z-50 pointer-events-none',
             'text-2xl font-bold',
-            'text-golden-amber',
-            'drop-shadow-[0_0_8px_rgba(245,158,11,0.8)]'
+            'text-warning',
+            'drop-shadow-[0_0_8px_rgba(245,166,35,0.8)]'
           )}
           style={{ left: x, top: y }}
           initial={{ opacity: 1, y: 0, scale: 1 }}

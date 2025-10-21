@@ -16,10 +16,10 @@ export interface NeonButtonProps extends ButtonHTMLAttributes<HTMLButtonElement>
 }
 
 const variantStyles = {
-  primary: 'bg-electric-blue text-white border-electric-blue hover:bg-electric-blue-600',
-  secondary: 'bg-golden-amber text-deep-space border-golden-amber hover:bg-golden-amber-600',
-  success: 'bg-profit-green text-white border-profit-green hover:bg-profit-green-600',
-  danger: 'bg-loss-red text-white border-loss-red hover:bg-loss-red-600',
+  primary: 'bg-primary text-white border-primary hover:bg-primary-600',
+  secondary: 'bg-warning text-deep-space border-warning hover:bg-warning-600',
+  success: 'bg-positive text-white border-positive hover:bg-positive-600',
+  danger: 'bg-negative text-white border-negative hover:bg-negative-600',
   ghost: 'bg-transparent text-white border-white/30 hover:bg-white/10',
 };
 

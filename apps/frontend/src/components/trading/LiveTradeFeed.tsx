@@ -37,7 +37,7 @@ export function LiveTradeFeed({
       {/* ✅ Floating Button (Small) */}
       <motion.button
         onClick={() => setIsOpen(!isOpen)}
-        className={`fixed bottom-8 right-8 w-14 h-14 rounded-full bg-gradient-to-r from-electric-blue to-neon-cyan shadow-2xl flex items-center justify-center z-40 hover:scale-110 transition-transform ${className}`}
+        className={`fixed bottom-8 right-8 w-14 h-14 rounded-full bg-gradient-to-r from-primary to-neon-cyan shadow-2xl flex items-center justify-center z-40 hover:scale-110 transition-transform ${className}`}
         whileHover={{ scale: 1.1 }}
         whileTap={{ scale: 0.95 }}
       >
@@ -46,7 +46,7 @@ export function LiveTradeFeed({
           <motion.div
             initial={{ scale: 0 }}
             animate={{ scale: 1 }}
-            className="absolute -top-2 -right-2 bg-profit-green text-white text-xs font-bold rounded-full w-6 h-6 flex items-center justify-center"
+            className="absolute -top-2 -right-2 bg-positive text-white text-xs font-bold rounded-full w-6 h-6 flex items-center justify-center"
           >
             {winCount}
           </motion.div>
@@ -77,7 +77,7 @@ export function LiveTradeFeed({
               {/* Header */}
               <div className="sticky top-0 bg-deep-space/95 backdrop-blur-lg border-b border-white/10 p-4 flex items-center justify-between">
                 <h2 className="text-lg font-bold text-white flex items-center gap-2">
-                  <TrendingUp className="w-5 h-5 text-electric-blue" />
+                  <TrendingUp className="w-5 h-5 text-primary" />
                   Trades Recentes
                 </h2>
                 <button
@@ -129,7 +129,7 @@ function TradeCard({ trade, index }: TradeCardProps) {
         particleCount: 30,
         spread: 60,
         origin: { x: 0.5, y: 0.5 },
-        colors: ['#10B981', '#F59E0B'],
+        colors: ['hsl(152, 71%, 45%)', 'hsl(35, 96%, 52%)'],
       });
     }
   }, [isWin, index]);
@@ -137,26 +137,26 @@ function TradeCard({ trade, index }: TradeCardProps) {
   const resultConfig = {
     WIN: {
       icon: '✅',
-      bgColor: 'bg-profit-green/10',
-      borderColor: 'border-profit-green/30',
-      textColor: 'text-profit-green',
+      bgColor: 'bg-positive/10',
+      borderColor: 'border-positive/30',
+      textColor: 'text-positive',
     },
     LOSS: {
       icon: '❌',
-      bgColor: 'bg-loss-red/10',
-      borderColor: 'border-loss-red/30',
-      textColor: 'text-loss-red',
+      bgColor: 'bg-negative/10',
+      borderColor: 'border-negative/30',
+      textColor: 'text-negative',
     },
     PENDING: {
       icon: '⏳',
-      bgColor: 'bg-electric-blue/10',
-      borderColor: 'border-electric-blue/30',
-      textColor: 'text-electric-blue',
+      bgColor: 'bg-primary/10',
+      borderColor: 'border-primary/30',
+      textColor: 'text-primary',
     },
   }[trade.result];
 
   const directionIcon = trade.direction === 'CALL' ? '▲' : '▼';
-  const directionColor = trade.direction === 'CALL' ? 'text-profit-green' : 'text-loss-red';
+  const directionColor = trade.direction === 'CALL' ? 'text-positive' : 'text-negative';
 
   return (
     <motion.div

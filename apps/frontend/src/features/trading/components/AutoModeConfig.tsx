@@ -83,9 +83,9 @@ export const AutoModeConfig: React.FC<AutoModeConfigProps> = ({
   return (
     <div className="space-y-4">
       {/* Strategy Selection */}
-      <GlassCard className="border-electric-blue/30 shadow-[0_0_20px_rgba(0,150,255,0.15)]">
+      <GlassCard className="border-primary/30 shadow-[0_0_20px_rgba(255,140,26,0.15)]">
         <CardHeader>
-          <CardTitle className="text-lg text-electric-blue">Strategy Selection</CardTitle>
+          <CardTitle className="text-lg text-primary">Strategy Selection</CardTitle>
           <CardDescription>Choose the trading strategy for auto mode</CardDescription>
         </CardHeader>
         <CardContent>
@@ -101,8 +101,8 @@ export const AutoModeConfig: React.FC<AutoModeConfigProps> = ({
                   className={cn(
                     'p-4 rounded-lg border-2 transition-all text-left hover:scale-105',
                     isSelected
-                      ? 'border-electric-blue bg-electric-blue/10 shadow-[0_0_15px_rgba(0,150,255,0.2)]'
-                      : 'border-white/10 hover:border-electric-blue/50'
+                      ? 'border-primary bg-primary/10 shadow-[0_0_15px_rgba(255,140,26,0.2)]'
+                      : 'border-white/10 hover:border-primary/50'
                   )}
                 >
                   <div className="flex items-start gap-3">
@@ -114,7 +114,7 @@ export const AutoModeConfig: React.FC<AutoModeConfigProps> = ({
                       </div>
                     </div>
                     {isSelected && (
-                      <Badge variant="default" className="ml-auto bg-electric-blue">
+                      <Badge variant="default" className="ml-auto bg-primary">
                         Selected
                       </Badge>
                     )}
@@ -127,11 +127,11 @@ export const AutoModeConfig: React.FC<AutoModeConfigProps> = ({
       </GlassCard>
 
       {/* Entry Value */}
-      <GlassCard className="border-golden-amber/30 shadow-[0_0_20px_rgba(217,119,6,0.15)]">
+      <GlassCard className="border-warning/30 shadow-[0_0_20px_rgba(217,119,6,0.15)]">
         <CardContent className="p-6">
           <div className="space-y-4">
             <div>
-              <Label htmlFor="entry-value" className="text-base font-semibold text-golden-amber">
+              <Label htmlFor="entry-value" className="text-base font-semibold text-warning">
                 Entry Value
               </Label>
               <p className="text-sm text-muted-foreground mt-1">
@@ -148,7 +148,7 @@ export const AutoModeConfig: React.FC<AutoModeConfigProps> = ({
                   onClick={() => onEntryValueChange(value)}
                   className={cn(
                     'transition-all',
-                    entryValue === value && 'bg-golden-amber hover:bg-golden-amber/90 text-white'
+                    entryValue === value && 'bg-warning hover:bg-warning/90 text-white'
                   )}
                 >
                   R$ {value}
@@ -158,7 +158,7 @@ export const AutoModeConfig: React.FC<AutoModeConfigProps> = ({
 
             {/* Custom Input */}
             <div className="space-y-2">
-              <Label htmlFor="entry-value" className="text-golden-amber">Custom amount (R$)</Label>
+              <Label htmlFor="entry-value" className="text-warning">Custom amount (R$)</Label>
               <Input
                 id="entry-value"
                 type="number"
@@ -176,7 +176,7 @@ export const AutoModeConfig: React.FC<AutoModeConfigProps> = ({
       </GlassCard>
 
       {/* Advanced Options */}
-      <GlassCard className="border-electric-blue/30 shadow-[0_0_20px_rgba(0,150,255,0.15)]">
+      <GlassCard className="border-primary/30 shadow-[0_0_20px_rgba(255,140,26,0.15)]">
         <CardHeader className="p-0">
           <button
             type="button"
@@ -186,12 +186,12 @@ export const AutoModeConfig: React.FC<AutoModeConfigProps> = ({
             className="w-full flex items-center justify-between gap-3 px-4 py-4 md:px-6 md:py-5 text-left hover:bg-white/5 transition-colors"
           >
             <div>
-              <CardTitle className="text-lg text-electric-blue">Advanced Options</CardTitle>
+              <CardTitle className="text-lg text-primary">Advanced Options</CardTitle>
               <CardDescription>Optional risk management settings</CardDescription>
             </div>
             <ChevronDown
               className={cn(
-                'w-5 h-5 text-electric-blue transition-transform duration-200',
+                'w-5 h-5 text-primary transition-transform duration-200',
                 showAdvancedOptions ? 'rotate-180' : 'rotate-0'
               )}
             />
@@ -212,7 +212,7 @@ export const AutoModeConfig: React.FC<AutoModeConfigProps> = ({
                   variant={leverageEnabled ? 'default' : 'outline'}
                   size="sm"
                   onClick={() => onLeverageEnabledChange(!leverageEnabled)}
-                  className={leverageEnabled ? 'bg-profit-green hover:bg-profit-green/90 text-white' : ''}
+                  className={leverageEnabled ? 'bg-positive hover:bg-positive/90 text-white' : ''}
                 >
                   {leverageEnabled ? 'ON' : 'OFF'}
                 </Button>
@@ -243,7 +243,7 @@ export const AutoModeConfig: React.FC<AutoModeConfigProps> = ({
                   variant={safetyStopEnabled ? 'default' : 'outline'}
                   size="sm"
                   onClick={() => onSafetyStopEnabledChange(!safetyStopEnabled)}
-                  className={safetyStopEnabled ? 'bg-golden-amber hover:bg-golden-amber/90 text-white' : ''}
+                  className={safetyStopEnabled ? 'bg-warning hover:bg-warning/90 text-white' : ''}
                 >
                   {safetyStopEnabled ? 'ON' : 'OFF'}
                 </Button>
@@ -265,7 +265,7 @@ export const AutoModeConfig: React.FC<AutoModeConfigProps> = ({
             <div className="space-y-3">
               <div className="flex items-center justify-between">
                 <div>
-                  <Label className="text-base font-semibold flex items-center gap-2 text-profit-green">
+                  <Label className="text-base font-semibold flex items-center gap-2 text-positive">
                     <TrendingUp className="w-4 h-4" />
                     Daily Goal
                   </Label>
@@ -277,7 +277,7 @@ export const AutoModeConfig: React.FC<AutoModeConfigProps> = ({
                   variant={dailyGoalEnabled ? 'default' : 'outline'}
                   size="sm"
                   onClick={() => onDailyGoalEnabledChange(!dailyGoalEnabled)}
-                  className={dailyGoalEnabled ? 'bg-profit-green hover:bg-profit-green/90 text-white' : ''}
+                  className={dailyGoalEnabled ? 'bg-positive hover:bg-positive/90 text-white' : ''}
                 >
                   {dailyGoalEnabled ? 'ON' : 'OFF'}
                 </Button>

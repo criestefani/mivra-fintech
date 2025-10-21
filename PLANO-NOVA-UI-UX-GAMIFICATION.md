@@ -27,13 +27,13 @@ Redesenhar completamente a interface do MivraTech com:
 
 **Tema**: **"Cyber Trading Arena"** - Fusão de cyberpunk futurista com interface diegética de HUD militar
 
-**Palette de Cores**:
+**Palette de Cores** (Original Mivra App):
 ```
-Primária: #0EA5E9 (Electric Blue) - Confiança, tecnologia
-Secundária: #F59E0B (Golden Amber) - Profit, premium, sofisticação
-Accent: #10B981 (Profit Green) - Ganhos, sucesso
-Danger: #EF4444 (Loss Red) - Perdas, alertas
-Background: #0F172A (Deep Space) - Profundidade, foco
+Primária: hsl(26, 100%, 55%) (#FF8C1A - Vibrant Orange) - Energia, ação, tecnologia
+Secundária: hsl(35, 96%, 52%) (#F5A623 - Golden Yellow) - Profit, premium, sofisticação
+Accent: hsl(152, 71%, 45%) (#2DC294 - Success Green) - Ganhos, sucesso
+Danger: hsl(0, 84%, 55%) (#EB2F2F - Alert Red) - Perdas, alertas
+Background: hsl(24, 10%, 10%) (#1C1917 - Solar Dusk) - Profundidade, foco
 Surface: rgba(255,255,255,0.05) com backdrop-blur - Glassmorphism
 ```
 
@@ -47,12 +47,12 @@ Surface: rgba(255,255,255,0.05) com backdrop-blur - Glassmorphism
 #### A. **Glassmorphism com Neon Glow**
 ```css
 .glass-card {
-  background: rgba(15, 23, 42, 0.7);
+  background: rgba(28, 25, 23, 0.7);
   backdrop-filter: blur(20px);
-  border: 1px solid rgba(245, 158, 11, 0.3);
+  border: 1px solid rgba(255, 140, 26, 0.3);
   box-shadow:
     0 8px 32px 0 rgba(31, 38, 135, 0.37),
-    0 0 20px rgba(245, 158, 11, 0.5); /* Golden glow */
+    0 0 20px rgba(255, 140, 26, 0.5); /* Orange glow */
   border-radius: 24px;
 }
 ```
@@ -80,17 +80,17 @@ Backgrounds animados com formas orgânicas:
 Elementos interativos com glow pulsante:
 ```css
 .active-trade {
-  border: 2px solid #10B981;
+  border: 2px solid hsl(152, 71%, 45%);
   box-shadow:
-    0 0 10px #10B981,
+    0 0 10px hsl(152, 71%, 45%),
     0 0 20px rgba(16, 185, 129, 0.5),
     0 0 30px rgba(16, 185, 129, 0.3);
   animation: pulse-glow 2s ease-in-out infinite;
 }
 
 @keyframes pulse-glow {
-  0%, 100% { box-shadow: 0 0 10px #10B981; }
-  50% { box-shadow: 0 0 30px #10B981, 0 0 60px rgba(16, 185, 129, 0.7); }
+  0%, 100% { box-shadow: 0 0 10px hsl(152, 71%, 45%); }
+  50% { box-shadow: 0 0 30px hsl(152, 71%, 45%), 0 0 60px rgba(16, 185, 129, 0.7); }
 }
 ```
 
