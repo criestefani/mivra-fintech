@@ -17,6 +17,9 @@ import { BotControlListener } from './bot-control-listener.mjs';
 import { STRATEGIES, TIMEFRAMES } from './constants.mjs';
 import { validateSignal, validatePerformance } from './schemas.mjs';
 
+// ✅ GAMIFICATION: Process trade completions
+import { processTradeCompletion } from '../gamification/gamification-service.mjs';
+
 
 // CONFIGURAÇÃO
 const STRATEGY = process.env.STRATEGY || 'balanced';
@@ -600,6 +603,34 @@ class MivraTecBot {
       timestamp: new Date().toISOString()
     })}`);
 
+    // ✅ GAMIFICATION: Process trade completion
+    if (this.currentUserId) {
+      try {
+        const isWin = resultado === 'WIN';
+        // TODO: Detect if trade is Demo or Real (currently assuming Real)
+        // For now, all bot trades are considered Real trades
+        const isDemo = false;
+
+        const gamificationResult = await processTradeCompletion(supabase, this.currentUserId, {
+          tradeId: positionId,
+          isDemo,
+          isWin,
+        });
+
+        if (gamificationResult.success) {
+          console.log(`✨ [GAMIFICATION] +${gamificationResult.xp_awarded} XP`);
+          if (gamificationResult.leveled_up) {
+            console.log(`🎉 [LEVEL UP] Nível ${gamificationResult.new_level}!`);
+          }
+          if (gamificationResult.badges_unlocked?.length > 0) {
+            console.log(`🏆 [BADGES] ${gamificationResult.badges_unlocked.length} novo(s) badge(s)!`);
+          }
+        }
+      } catch (gamificationError) {
+        console.error('⚠️ [GAMIFICATION] Erro ao processar:', gamificationError.message);
+        // Don't fail the trade if gamification fails
+      }
+    }
 
     return true;
   }

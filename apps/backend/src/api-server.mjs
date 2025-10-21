@@ -35,6 +35,9 @@ import crmRouter from './crm/crm.module.mjs';
 // Integrations Module
 import integrationsRouter from './integrations/integrations.mjs';
 
+// Gamification Module
+import gamificationRouter from './gamification/gamification-routes.mjs';
+
 // Avalon Auth Service
 import avalonAuthService from './services/avalon-auth.mjs';
 
@@ -3051,6 +3054,9 @@ app.use('/api/crm', crmRouter);
 
 // Mount Integrations module
 app.use('/api/crm/integrations', integrationsRouter);
+
+// Mount Gamification module
+app.use('/api/gamification', gamificationRouter);
 
 // ✅ Inicializar servidor de forma assíncrona
 (async () => {
