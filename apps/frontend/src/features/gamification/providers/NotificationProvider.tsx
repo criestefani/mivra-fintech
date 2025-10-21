@@ -5,7 +5,7 @@
  */
 
 import { ReactNode, useEffect } from 'react';
-import { useAuth } from '@clerk/clerk-react';
+import { useSupabaseUser } from '../../../hooks/useSupabaseUser';
 import { useGameificationNotifications, disconnectGameificationNotifications } from '../../../hooks/useGameificationNotifications';
 import { NotificationToast } from '../components/NotificationToast';
 
@@ -14,10 +14,10 @@ interface NotificationProviderProps {
 }
 
 export function NotificationProvider({ children }: NotificationProviderProps) {
-  const { userId } = useAuth();
+  const { userId } = useSupabaseUser();
 
   // Initialize notifications hook
-  useGameificationNotifications(userId || null);
+  useGameificationNotifications(userId);
 
   // Cleanup on unmount
   useEffect(() => {
