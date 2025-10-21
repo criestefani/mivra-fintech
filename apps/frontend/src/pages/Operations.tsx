@@ -26,6 +26,24 @@ import { Label } from "@/shared/components/ui/label";
 import { cn } from "@/shared/utils/cn";
 import { ChevronDown, TrendingUp } from "lucide-react";
 
+// ✅ Gamification Components
+import {
+  BotStatusBar,
+  LiveTradeFeed,
+  StreakOverlay,
+  NextTradePreview,
+  CommandCenter,
+  QuestTracker,
+  type Trade as TradeFeedTrade,
+} from "@/components/trading";
+import { XPBar, StreakBadge, FloatingXP } from "@/components/ui/gamification";
+import { BadgeUnlockModal, LevelUpModal } from "@/components/gamification";
+
+// ✅ Gamification Hooks
+import { useGamification, useStreaks, useQuests } from "@/hooks/useGamification";
+import { useFloatingXP } from "@/hooks/useFloatingXP";
+import { useSoundEffects } from "@/hooks/useSoundEffects";
+
 // ✅ New Hook
 import { useBotSocket } from "@/shared/hooks/useBotSocket";
 
@@ -108,6 +126,26 @@ const Operations = () => {
 
   // ✅ Realtime subscription status
   const [realtimeStatus, setRealtimeStatus] = useState<'connected' | 'connecting' | 'error'>('connecting');
+
+  // ✅ Gamification Hooks
+  const { progress, winRate: gamifiedWinRate } = useGamification(user?.id || null);
+  const { currentWinStreak, currentStreak } = useStreaks(user?.id || null);
+  const { dailyQuests } = useQuests(user?.id || null);
+  const { xpInstances, showXP } = useFloatingXP();
+  const sounds = useSoundEffects({ volume: 0.5, enabled: true });
+
+  // ✅ Session Timer
+  const [sessionTime, setSessionTime] = useState(0);
+  useEffect(() => {
+    if (isRunning) {
+      const interval = setInterval(() => {
+        setSessionTime((prev) => prev + 1);
+      }, 1000);
+      return () => clearInterval(interval);
+    } else {
+      setSessionTime(0);
+    }
+  }, [isRunning]);
 
   // ✅ Persist chart selections to localStorage
   useEffect(() => {
@@ -536,6 +574,19 @@ const Operations = () => {
     });
   }, [trades]);
 
+  // ✅ Play sounds and show XP when trade result changes
+  useEffect(() => {
+    if (trades.length === 0) return;
+
+    const latestTrade = trades[0];
+    if (latestTrade.result === "WIN") {
+      sounds.playWin();
+      showXP(20, window.innerWidth / 2, window.innerHeight / 2); // Show +20 XP
+    } else if (latestTrade.result === "LOSS") {
+      sounds.playLoss();
+    }
+  }, [trades.length, trades[0]?.result]);
+
   // START BOT handler
   const handleStartBot = async () => {
     if (!isConnected) {
@@ -732,6 +783,25 @@ const Operations = () => {
       {/* Mobile-First Layout */}
       <main className="lg:ml-64 container mx-auto px-4 py-6 space-y-6 animate-fade-in pb-20">
 
+        {/* ✅ Gamification: Bot Status Bar */}
+        <BotStatusBar
+          status={isRunning ? "RUNNING" : "STOPPED"}
+          sessionDuration={sessionTime}
+          pnlToday={metrics.pnl}
+          xpGained={progress?.total_xp}
+        />
+
+        {/* ✅ Gamification: XP Bar */}
+        {progress && (
+          <XPBar
+            level={progress.current_level}
+            currentXP={progress.xp_current_level}
+            nextLevelXP={progress.xp_next_level}
+            levelTitle={progress.level_title}
+            compact
+          />
+        )}
+
         {/* ✅ NEW HEADER */}
         <OperationsHeader
           botMode={botMode}
@@ -747,12 +817,27 @@ const Operations = () => {
         {botMode === "auto" ? (
           // AUTO MODE
           <>
+            {/* ✅ Gamification: Command Center (Auto Mode HUD) */}
+            <CommandCenter
+              botStatus={isRunning ? "SCANNING" : "STOPPED"}
+              currentAsset={trades[0]?.asset}
+              sessionTime={sessionTime}
+              userLevel={progress?.current_level || 1}
+            />
+
             {/* ✅ P&L Chart: Always visible (bot running or not) */}
             <AutoModeRunning
               pnlData={pnlData}
               currentStatus={currentStatus}
               currentAsset={trades[0]?.asset}
               currentAmount={trades[0]?.pnl ? Math.abs(trades[0].pnl) : undefined}
+            />
+
+            {/* ✅ Gamification: Metrics Grid (Enhanced Auto Mode Metrics) */}
+            <MetricsGrid
+              winRate={metrics.winRate}
+              profit={metrics.pnl}
+              totalTrades={metrics.totalTrades}
             />
 
             {/* ✅ Configuration Panel: Only show when bot is NOT running */}
@@ -793,6 +878,29 @@ const Operations = () => {
               tradeMarkers={tradeMarkers}
               currentStatus={currentStatus}
             />
+
+            {/* ✅ Gamification: Live Trade Feed (Manual Mode) */}
+            <LiveTradeFeed
+              trades={trades.slice(0, 5).map((t) => ({
+                id: t.id,
+                asset: t.asset,
+                direction: t.direction as 'CALL' | 'PUT',
+                result: t.result as 'WIN' | 'LOSS' | undefined,
+                pnl: t.pnl,
+                timestamp: new Date(t.created_at).getTime(),
+              }))}
+              position="right"
+              maxTrades={5}
+            />
+
+            {/* ✅ Gamification: Next Trade Preview (Manual Mode) */}
+            {isRunning && (
+              <NextTradePreview
+                secondsUntilNext={15}
+                nextAsset={asset}
+                isAnalyzing={currentStatus === 'analyzing'}
+              />
+            )}
 
             {/* ✅ MANUAL MODE: Entry Value */}
             <Card className="glass border-border">
@@ -977,6 +1085,47 @@ const Operations = () => {
         />
 
       </main>
+
+      {/* ✅ GAMIFICATION: Global Floating Overlays */}
+
+      {/* Quest Tracker - Left sidebar (both modes) */}
+      <QuestTracker
+        quests={dailyQuests}
+        position="left"
+        maxQuests={3}
+      />
+
+      {/* Streak Badge - Top-right fixed badge */}
+      <StreakBadge
+        streakCount={currentStreak}
+        position="top-right"
+        showParticles={currentStreak >= 7}
+      />
+
+      {/* Streak Overlay - Celebration for win streaks */}
+      <StreakOverlay
+        winStreak={currentWinStreak}
+        position="top-right"
+        minStreakToShow={3}
+      />
+
+      {/* Floating XP Instances - Animated XP numbers */}
+      {xpInstances.map((instance) => (
+        <FloatingXP
+          key={instance.id}
+          amount={instance.amount}
+          x={instance.x}
+          y={instance.y}
+          onComplete={() => {}}
+        />
+      ))}
+
+      {/* Badge Unlock Modal - Celebration for new badges */}
+      <BadgeUnlockModal />
+
+      {/* Level Up Modal - Celebration for level ups */}
+      <LevelUpModal />
+
     </div>
   );
 };
