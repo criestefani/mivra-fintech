@@ -1,5 +1,5 @@
 import { HTMLAttributes, ReactNode } from 'react';
-import { cn } from '../../../lib/utils';
+import { cn } from '@/shared/utils/cn';
 
 export interface DiagonalSectionProps extends HTMLAttributes<HTMLDivElement> {
   /** Direction of the diagonal */

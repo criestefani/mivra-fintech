@@ -1,6 +1,6 @@
 import { HTMLAttributes } from 'react';
 import { motion } from 'framer-motion';
-import { cn } from '../../../lib/utils';
+import { cn } from '@/shared/utils/cn';
 
 export interface XPBarProps extends HTMLAttributes<HTMLDivElement> {
   /** Current level */

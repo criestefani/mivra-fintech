@@ -1,5 +1,5 @@
 import { HTMLAttributes, forwardRef } from 'react';
-import { cn } from '../../../lib/utils';
+import { cn } from '@/shared/utils/cn';
 
 export interface GlassCardProps extends HTMLAttributes<HTMLDivElement> {
   /** Variant of the glass card */

@@ -1,6 +1,6 @@
 import { HTMLAttributes } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { cn } from '../../../lib/utils';
+import { cn } from '@/shared/utils/cn';
 
 export interface StreakBadgeProps extends HTMLAttributes<HTMLDivElement> {
   /** Current streak count (days operated) */

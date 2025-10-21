@@ -1,6 +1,6 @@
 import { ButtonHTMLAttributes, forwardRef } from 'react';
 import { motion } from 'framer-motion';
-import { cn } from '../../../lib/utils';
+import { cn } from '@/shared/utils/cn';
 
 export interface NeonButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   /** Variant of the neon button */
