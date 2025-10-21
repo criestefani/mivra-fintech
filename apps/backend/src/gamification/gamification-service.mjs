@@ -144,6 +144,14 @@ export async function awardXP(supabase, userId, amount, source, metadata = {}) {
           break;
         }
       }
+
+      // Create level up notification
+      await createNotification(supabase, userId, 'level_up', {
+        title: `🎉 Level ${newLevel}!`,
+        message: `Congrats! You reached Level ${newLevel} (${levelInfo.title})`,
+        icon: '⬆️',
+        metadata: { new_level: newLevel, old_level: oldLevel, level_title: levelInfo.title },
+      });
     }
 
     // Check for badge unlocks
@@ -212,6 +220,14 @@ export async function checkBadgeUnlocks(supabase, userId, progress) {
 
         if (!error) {
           badgesUnlocked.push(newBadge);
+
+          // Create badge unlock notification
+          await createNotification(supabase, userId, 'badge_unlock', {
+            title: `${badge.icon} ${badge.name} Unlocked!`,
+            message: `You earned the ${badge.name} badge (${badge.rarity})`,
+            icon: badge.icon,
+            metadata: { badge_id: badgeId, badge_name: badge.name, badge_rarity: badge.rarity },
+          });
 
           // Award badge XP (recursive, but safe since badges won't trigger more badges)
           if (badge.xp_reward > 0) {
@@ -662,6 +678,27 @@ export async function processDeposit(supabase, userId, amount, brokerTransaction
       xpAwarded += SCANNER_TIERS[scannerTierUnlocked].xp_bonus;
     }
 
+    // Create deposit notification
+    let depositMessage = `Deposit received: R$ ${amount.toFixed(2)}`;
+    if (streakFreezesGranted > 0) {
+      depositMessage += ` • +${streakFreezesGranted} Freezes`;
+    }
+    if (scannerTierUnlocked) {
+      depositMessage += ` • Scanner Tier ${scannerTierUnlocked} Unlocked`;
+    }
+
+    await createNotification(supabase, userId, 'deposit_received', {
+      title: isFirstDeposit ? '🎁 First Deposit!' : '💰 Deposit Received',
+      message: depositMessage,
+      icon: '💰',
+      metadata: {
+        amount,
+        streak_freezes: streakFreezesGranted,
+        scanner_tier: scannerTierUnlocked,
+        is_first: isFirstDeposit,
+      },
+    });
+
     return {
       success: true,
       data: {
@@ -716,6 +753,34 @@ export async function getXPHistory(supabase, userId, limit = 50) {
     return { success: true, data };
   } catch (error) {
     console.error('❌ Error getting XP history:', error);
+    return { success: false, error: error.message };
+  }
+}
+
+/**
+ * Create notification for user
+ */
+export async function createNotification(supabase, userId, eventType, { title, message, icon = null, metadata = {} }) {
+  try {
+    const { data, error } = await supabase
+      .from('notifications')
+      .insert({
+        user_id: userId,
+        event_type: eventType,
+        title,
+        message,
+        icon,
+        metadata,
+      })
+      .select()
+      .single();
+
+    if (error) throw error;
+
+    console.log(`📬 Notification created for ${userId}:`, title);
+    return { success: true, data };
+  } catch (error) {
+    console.error('❌ Error creating notification:', error);
     return { success: false, error: error.message };
   }
 }

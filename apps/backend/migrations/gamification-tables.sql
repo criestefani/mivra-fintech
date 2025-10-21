@@ -252,6 +252,35 @@ CREATE INDEX IF NOT EXISTS idx_deposit_tracking_user_id ON deposit_tracking(user
 CREATE INDEX IF NOT EXISTS idx_deposit_tracking_deposited_at ON deposit_tracking(deposited_at DESC);
 
 -- ============================================================
+-- 9. NOTIFICATIONS (Push notifications for gamification events)
+-- ============================================================
+CREATE TABLE IF NOT EXISTS notifications (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id VARCHAR NOT NULL,
+
+  -- Notification Details
+  event_type VARCHAR NOT NULL, -- 'badge_unlock', 'level_up', 'streak_milestone', 'quest_progress', 'leaderboard_rank', 'first_deposit', etc.
+  title VARCHAR NOT NULL,
+  message TEXT NOT NULL,
+  icon VARCHAR, -- Emoji or icon identifier
+
+  -- Event Data
+  metadata JSONB DEFAULT '{}', -- Context (badge_id, level, streak_days, quest_id, rank, etc.)
+
+  -- Status
+  is_read BOOLEAN DEFAULT false,
+  read_at TIMESTAMP,
+
+  -- Timestamps
+  created_at TIMESTAMP DEFAULT NOW()
+);
+
+-- Index for notifications
+CREATE INDEX IF NOT EXISTS idx_notifications_user_id ON notifications(user_id);
+CREATE INDEX IF NOT EXISTS idx_notifications_created_at ON notifications(created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_notifications_is_read ON notifications(user_id, is_read);
+
+-- ============================================================
 -- TRIGGERS: Auto-update timestamps
 -- ============================================================
 
@@ -328,6 +357,7 @@ COMMENT ON TABLE user_quests IS 'User progress on active quests';
 COMMENT ON TABLE leaderboards IS 'Cached leaderboard rankings by period and category';
 COMMENT ON TABLE streak_history IS 'Historical log of streak events';
 COMMENT ON TABLE deposit_tracking IS 'Tracks deposits for Demo Limits and Streak Freezes calculation';
+COMMENT ON TABLE notifications IS 'Push notifications for gamification events (badges, level-ups, streaks, quests)';
 
 -- ============================================================
 -- SUCCESS MESSAGE
@@ -335,6 +365,6 @@ COMMENT ON TABLE deposit_tracking IS 'Tracks deposits for Demo Limits and Streak
 DO $$
 BEGIN
   RAISE NOTICE '✅ Gamification tables created successfully!';
-  RAISE NOTICE '📊 Tables: user_gamification, user_badges, xp_transactions, quests, user_quests, leaderboards, streak_history, deposit_tracking';
+  RAISE NOTICE '📊 Tables: user_gamification, user_badges, xp_transactions, quests, user_quests, leaderboards, streak_history, deposit_tracking, notifications';
   RAISE NOTICE '🎮 Ready for Phase 2 implementation!';
 END $$;

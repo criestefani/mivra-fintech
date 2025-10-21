@@ -25,11 +25,11 @@ Redesenhar completamente a interface do MivraTech com:
 
 ### 1.1 Identidade Visual Core
 
-**Tema**: **"Cyber Trading Arena"** - Fusão de cyberpunk futurista com interface diegética de HUD militar
+**Tema**: **"MivraTech Original"** - Fusão de cyberpunk futurista com interface diegética de HUD militar
 
 **Palette de Cores** (Original Mivra App):
 ```
-Primária: hsl(26, 100%, 55%) (#FF8C1A - Vibrant Orange) - Energia, ação, tecnologia
+Primária: hsl(26, 100%, 55%) (#FF8C1A - Orange Primário) - Energia, ação, tecnologia
 Secundária: hsl(35, 96%, 52%) (#F5A623 - Golden Yellow) - Profit, premium, sofisticação
 Accent: hsl(152, 71%, 45%) (#2DC294 - Success Green) - Ganhos, sucesso
 Danger: hsl(0, 84%, 55%) (#EB2F2F - Alert Red) - Perdas, alertas
@@ -69,8 +69,8 @@ Backgrounds animados com formas orgânicas:
 ```jsx
 // Gradient mesh dinâmico
 <div className="absolute inset-0 -z-10">
-  <div className="blob blob-purple" /> {/* Morphing SVG */}
-  <div className="blob blob-blue" />
+  <div className="blob blob-orange" /> {/* Morphing SVG */}
+  <div className="blob blob-amber" />
   <div className="noise-overlay" /> {/* Textura sutil */}
 </div>
 ```
@@ -83,14 +83,14 @@ Elementos interativos com glow pulsante:
   border: 2px solid hsl(152, 71%, 45%);
   box-shadow:
     0 0 10px hsl(152, 71%, 45%),
-    0 0 20px rgba(16, 185, 129, 0.5),
-    0 0 30px rgba(16, 185, 129, 0.3);
+    0 0 20px hsl(152, 71%, 45%, 0.5),
+    0 0 30px hsl(152, 71%, 45%, 0.3);
   animation: pulse-glow 2s ease-in-out infinite;
 }
 
 @keyframes pulse-glow {
   0%, 100% { box-shadow: 0 0 10px hsl(152, 71%, 45%); }
-  50% { box-shadow: 0 0 30px hsl(152, 71%, 45%), 0 0 60px rgba(16, 185, 129, 0.7); }
+  50% { box-shadow: 0 0 30px hsl(152, 71%, 45%), 0 0 60px hsl(152, 71%, 45%, 0.7); }
 }
 ```
 
@@ -125,7 +125,7 @@ Cada área é uma "cena" com:
 // Divisão diagonal com informação sempre no lado iluminado
 <div className="relative overflow-hidden">
   <div className="diagonal-bg absolute inset-0
-                  bg-gradient-to-br from-purple-600/20 via-transparent"
+                  bg-gradient-to-br from-orange-600/20 via-transparent"
        style={{ clipPath: 'polygon(0 0, 100% 0, 100% 80%, 0 100%)' }} />
   <div className="content p-8 relative z-10">
     {/* Informação sempre legível */}
@@ -605,7 +605,7 @@ const addTradeMarker = (time: number, direction: 'CALL' | 'PUT', result?: 'WIN' 
     {
       time: time,
       position: direction === 'CALL' ? 'belowBar' : 'aboveBar',
-      color: direction === 'CALL' ? '#10B981' : '#EF4444',
+      color: direction === 'CALL' ? '#2DC294' : '#EB2F2F',
       shape: direction === 'CALL' ? 'arrowUp' : 'arrowDown',
       text: direction === 'CALL' ? '▲ CALL' : '▼ PUT',
     }
@@ -616,7 +616,7 @@ const addTradeMarker = (time: number, direction: 'CALL' | 'PUT', result?: 'WIN' 
     markers.push({
       time: time + timeframe, // Ponto exato da expiração
       position: result === 'WIN' ? 'aboveBar' : 'belowBar',
-      color: result === 'WIN' ? '#10B981' : '#EF4444',
+      color: result === 'WIN' ? '#2DC294' : '#EB2F2F',
       shape: 'circle',
       text: result === 'WIN' ? '✓ WIN' : '✗ LOSS'
     });
@@ -1065,12 +1065,12 @@ Auth → Onboarding → Operations (default) → Configurar Bot → START → Te
 
 ### 🎨 FASE 1: ARQUITETURA VISUAL & ESTÉTICA (2-3 semanas)
 
-**Objetivo**: Estabelecer identidade visual "Cyber Trading Arena" e componentes base.
+**Objetivo**: Estabelecer identidade visual "MivraTech Original" e componentes base.
 
 #### Semana 1: Design System & Componentes Base
 **Tasks**:
 1. ✅ Setup dependências: `framer-motion`, `gsap`, `canvas-confetti`, `howler`
-2. ✅ Tailwind config: Adicionar palette (Electric Blue, Golden Amber, Profit Green, Loss Red)
+2. ✅ Tailwind config: Adicionar palette (Orange Primário, Golden Yellow, Success Green, Alert Red)
 3. ✅ Criar componentes estéticos base:
    - `GlassCard` - Glassmorphism com golden glow
    - `NeonButton` - Botões com particle effects
@@ -1081,7 +1081,7 @@ Auth → Onboarding → Operations (default) → Configurar Bot → START → Te
    - `DepositButton` - Botão "Depositar no Broker" (abre popup)
    - `WithdrawButton` - Botão "Sacar do Broker" (abre popup)
    - **Localização**: Header (top-right), Sidebar, modais de conversão
-   - **Design**: Golden Amber com glow, sempre visível
+   - **Design**: Golden Yellow com glow, sempre visível
 
 **Entregável**: 6-7 componentes estéticos reutilizáveis + botões broker
 
@@ -1095,7 +1095,7 @@ Auth → Onboarding → Operations (default) → Configurar Bot → START → Te
     <WithdrawButton variant="ghost" icon="💰">
       Sacar
     </WithdrawButton>
-    <DepositButton variant="primary" glow icon="💎">
+    <DepositButton variant="primary" glow="amber" icon="💎">
       Depositar
     </DepositButton>
   </BrokerActions>

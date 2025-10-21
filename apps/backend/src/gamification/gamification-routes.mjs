@@ -397,4 +397,97 @@ router.get('/stats', async (req, res) => {
   }
 });
 
+/**
+ * GET /api/gamification/notifications/:userId
+ * Get user's notifications
+ * Query params: ?unread_only=true&limit=50
+ */
+router.get('/notifications/:userId', async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const unreadOnly = req.query.unread_only === 'true';
+    const limit = parseInt(req.query.limit) || 50;
+
+    let query = req.db
+      .from('notifications')
+      .select('*')
+      .eq('user_id', userId);
+
+    if (unreadOnly) {
+      query = query.eq('is_read', false);
+    }
+
+    const { data, error } = await query
+      .order('created_at', { ascending: false })
+      .limit(limit);
+
+    if (error) throw error;
+
+    res.json(data);
+  } catch (error) {
+    console.error('❌ Error in /notifications:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+/**
+ * POST /api/gamification/notifications/:notificationId/read
+ * Mark notification as read
+ * Body: { userId }
+ */
+router.post('/notifications/:notificationId/read', async (req, res) => {
+  try {
+    const { notificationId } = req.params;
+    const { userId } = req.body;
+
+    if (!userId) {
+      return res.status(400).json({ error: 'Missing required field: userId' });
+    }
+
+    const { data, error } = await req.db
+      .from('notifications')
+      .update({
+        is_read: true,
+        read_at: new Date().toISOString(),
+      })
+      .eq('id', notificationId)
+      .eq('user_id', userId)
+      .select()
+      .single();
+
+    if (error) throw error;
+
+    res.json(data);
+  } catch (error) {
+    console.error('❌ Error in /notifications/:notificationId/read:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+/**
+ * POST /api/gamification/notifications/:userId/read-all
+ * Mark all notifications as read
+ */
+router.post('/notifications/:userId/read-all', async (req, res) => {
+  try {
+    const { userId } = req.params;
+
+    const { error } = await req.db
+      .from('notifications')
+      .update({
+        is_read: true,
+        read_at: new Date().toISOString(),
+      })
+      .eq('user_id', userId)
+      .eq('is_read', false);
+
+    if (error) throw error;
+
+    res.json({ success: true, message: 'All notifications marked as read' });
+  } catch (error) {
+    console.error('❌ Error in /notifications/:userId/read-all:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
 export default router;

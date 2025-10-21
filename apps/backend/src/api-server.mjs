@@ -38,6 +38,9 @@ import integrationsRouter from './integrations/integrations.mjs';
 // Gamification Module
 import gamificationRouter from './gamification/gamification-routes.mjs';
 
+// Notification Service
+import notificationService from './notifications/notification-service.mjs';
+
 // Avalon Auth Service
 import avalonAuthService from './services/avalon-auth.mjs';
 
@@ -55,6 +58,9 @@ import { initializeConnectionPool, getConnectionPool } from './db/connection-poo
 
 // ✅ Scanner Aggregator - Populates scanner_performance table from strategy_trades
 import scannerAggregator from './services/scanner-aggregator.mjs';
+
+// ✅ PHASE 2: Cron Job Scheduler - Leaderboards, Quests, Notifications
+import cronScheduler from './cron/scheduler.mjs';
 
 const app = express();
 const httpServer = createServer(app);
@@ -187,6 +193,10 @@ const adminNamespace = setupAdminWebSocket(io, supabase, getMetricsContext);
 // ✅ Setup Bot WebSocket for real-time trading events
 const botWebSocket = setupBotWebSocket(io);
 console.log('✅ Bot WebSocket initialized');
+
+// ✅ Setup Notification Service for real-time gamification events
+notificationService.setSocketIO(io);
+console.log('✅ Notification Service initialized');
 
 // ===================================================================
 // ✅ ASSET MANAGEMENT: Using centralized fixed-assets.mjs module
@@ -363,6 +373,42 @@ function setupCandlesHandlers() {
         } catch (error) {
           console.error('❌ Unsubscribe error:', error.message);
         }
+      }
+    });
+
+    // ✅ GAMIFICATION: Subscribe to user notifications
+    socket.on('subscribe-notifications', async ({ userId }) => {
+      try {
+        if (!userId) {
+          socket.emit('error', { message: 'userId is required' });
+          return;
+        }
+
+        // Join a room with the user's ID for targeted notifications
+        socket.join(`notifications:${userId}`);
+        console.log(`🔔 User ${userId} subscribed to notifications (socket: ${socket.id})`);
+
+        // Send unread notifications count
+        const { data: unreadNotifications, error } = await supabase
+          .from('notifications')
+          .select('id')
+          .eq('user_id', userId)
+          .eq('is_read', false);
+
+        if (!error && unreadNotifications) {
+          socket.emit('unread-notifications-count', { count: unreadNotifications.length });
+        }
+      } catch (error) {
+        console.error('❌ Notification subscription error:', error);
+        socket.emit('error', { message: error.message });
+      }
+    });
+
+    // ✅ GAMIFICATION: Unsubscribe from notifications
+    socket.on('unsubscribe-notifications', ({ userId }) => {
+      if (userId) {
+        socket.leave(`notifications:${userId}`);
+        console.log(`🔔 User ${userId} unsubscribed from notifications`);
       }
     });
 
@@ -3104,6 +3150,14 @@ app.use('/api/gamification', gamificationRouter);
       console.log('📊 Connection Pool initialized:', pool.getStats());
     } catch (error) {
       console.warn('⚠️ Failed to initialize connection pool:', error.message);
+    }
+
+    // ✅ PHASE 2: Initialize Cron Job Scheduler
+    try {
+      cronScheduler.initializeCronJobs();
+      console.log('✅ Cron scheduler initialized');
+    } catch (error) {
+      console.warn('⚠️ Failed to initialize cron scheduler:', error.message);
     }
 
     // 5️⃣ Iniciar servidor HTTP
