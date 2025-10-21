@@ -3,7 +3,7 @@
  * Main hook for gamification system
  */
 
-import { useEffect, useCallback } from 'react';
+import { useEffect, useCallback, useMemo } from 'react';
 import {
   useGamificationStore,
   selectProgress,
@@ -24,6 +24,11 @@ export function useGamification(userId: string | null) {
   const { currentStreak, fetchQuests } = useStreaksStore();
   const { dailyQuests } = useQuestsStore();
 
+  // Computed values (before return to avoid recreating on every render)
+  const winRate = useGamificationStore(selectWinRate);
+  const xpProgress = useGamificationStore(selectXPProgress);
+  const streakBonusXP = useStreaksStore(selectStreakBonusXP);
+
   // Fetch initial data when userId changes
   useEffect(() => {
     if (userId) {
@@ -31,7 +36,8 @@ export function useGamification(userId: string | null) {
       fetchBadges(userId);
       fetchQuests(userId);
     }
-  }, [userId, fetchProgress, fetchBadges, fetchQuests]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [userId]); // Only depend on userId, not on functions
 
   // Refresh function
   const refresh = useCallback(async () => {
@@ -40,7 +46,8 @@ export function useGamification(userId: string | null) {
       await fetchBadges(userId);
       await fetchQuests(userId);
     }
-  }, [userId, fetchProgress, fetchBadges, fetchQuests]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [userId]); // Only depend on userId, not on functions
 
   return {
     // User Progress
@@ -50,9 +57,9 @@ export function useGamification(userId: string | null) {
     dailyQuests,
 
     // Computed values
-    winRate: useGamificationStore(selectWinRate),
-    xpProgress: useGamificationStore(selectXPProgress),
-    streakBonusXP: useStreaksStore(selectStreakBonusXP),
+    winRate,
+    xpProgress,
+    streakBonusXP,
 
     // State
     isLoading,
@@ -73,23 +80,32 @@ export function useBadges(userId: string | null) {
     if (userId) {
       fetchBadges(userId);
     }
-  }, [userId, fetchBadges]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [userId]); // Only depend on userId, not on functions
 
-  // Group badges by category
-  const badgesByCategory = badges.reduce((acc, badge) => {
-    const category = badge.badge_category || 'other';
-    if (!acc[category]) acc[category] = [];
-    acc[category].push(badge);
-    return acc;
-  }, {} as Record<string, typeof badges>);
+  // Group badges by category (memoized)
+  const badgesByCategory = useMemo(
+    () =>
+      badges.reduce((acc, badge) => {
+        const category = badge.badge_category || 'other';
+        if (!acc[category]) acc[category] = [];
+        acc[category].push(badge);
+        return acc;
+      }, {} as Record<string, typeof badges>),
+    [badges]
+  );
 
-  // Group badges by rarity
-  const badgesByRarity = badges.reduce((acc, badge) => {
-    const rarity = badge.badge_rarity || 'common';
-    if (!acc[rarity]) acc[rarity] = [];
-    acc[rarity].push(badge);
-    return acc;
-  }, {} as Record<string, typeof badges>);
+  // Group badges by rarity (memoized)
+  const badgesByRarity = useMemo(
+    () =>
+      badges.reduce((acc, badge) => {
+        const rarity = badge.badge_rarity || 'common';
+        if (!acc[rarity]) acc[rarity] = [];
+        acc[rarity].push(badge);
+        return acc;
+      }, {} as Record<string, typeof badges>),
+    [badges]
+  );
 
   return {
     badges,
@@ -113,21 +129,21 @@ export function useStreaks(userId: string | null) {
     freezesAvailable,
     streakIncreased,
     milestoneReached,
+    lastTradeDate,
   } = useStreaksStore();
 
   const streakBonusXP = useStreaksStore(selectStreakBonusXP);
 
-  // Check if streak is in danger (last trade was yesterday)
-  const isInDanger = useStreaksStore((state) => {
-    const lastTradeDate = state.lastTradeDate;
+  // Check if streak is in danger (last trade was yesterday) - memoized
+  const isInDanger = useMemo(() => {
     if (!lastTradeDate) return false;
 
     const yesterday = new Date();
     yesterday.setDate(yesterday.getDate() - 1);
     const yesterdayStr = yesterday.toISOString().split('T')[0];
 
-    return lastTradeDate === yesterdayStr && state.currentStreak > 0;
-  });
+    return lastTradeDate === yesterdayStr && currentStreak > 0;
+  }, [lastTradeDate, currentStreak]);
 
   return {
     // Daily Streak
@@ -166,11 +182,14 @@ export function useQuests(userId: string | null) {
     if (userId) {
       fetchQuests(userId);
     }
-  }, [userId, fetchQuests]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [userId]); // Only depend on userId, not on functions
 
-  // Get quests that can be claimed
-  const claimableQuests = useQuestsStore(selectActiveQuests).filter(
-    (q) => q.current_progress >= q.target_value
+  // Get quests that can be claimed (memoized to avoid infinite re-renders)
+  const activeQuests = useQuestsStore(selectActiveQuests);
+  const claimableQuests = useMemo(
+    () => activeQuests.filter((q) => q.current_progress >= q.target_value),
+    [activeQuests]
   );
 
   // Claim quest handler
@@ -180,7 +199,8 @@ export function useQuests(userId: string | null) {
         await claimQuest(userId, questId);
       }
     },
-    [userId, claimQuest]
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [userId] // Only depend on userId, not on functions
   );
 
   return {
@@ -211,32 +231,35 @@ export function useQuests(userId: string | null) {
 export function useDemoLimits(userId: string | null) {
   const progress = useGamificationStore(selectProgress);
 
-  const demoLimit = progress?.demo_daily_limit || 0;
-  const demoUsed = progress?.demo_trades_today || 0;
-  const demoRemaining = Math.max(0, demoLimit - demoUsed);
-  const isExploration = progress?.demo_phase === 'exploration';
+  // Memoize calculated values to avoid recalculation on every render
+  return useMemo(() => {
+    const demoLimit = progress?.demo_daily_limit || 0;
+    const demoUsed = progress?.demo_trades_today || 0;
+    const demoRemaining = Math.max(0, demoLimit - demoUsed);
+    const isExploration = progress?.demo_phase === 'exploration';
 
-  // Calculate days remaining in exploration
-  const explorationDaysRemaining = isExploration
-    ? Math.max(
-        0,
-        7 -
-          Math.floor(
-            (Date.now() - new Date(progress?.demo_started_at || Date.now()).getTime()) /
-              (1000 * 60 * 60 * 24)
-          )
-      )
-    : 0;
+    // Calculate days remaining in exploration
+    const explorationDaysRemaining = isExploration
+      ? Math.max(
+          0,
+          7 -
+            Math.floor(
+              (Date.now() - new Date(progress?.demo_started_at || Date.now()).getTime()) /
+                (1000 * 60 * 60 * 24)
+            )
+        )
+      : 0;
 
-  return {
-    demoLimit,
-    demoUsed,
-    demoRemaining,
-    isExploration,
-    explorationDaysRemaining,
-    isUnlimited: isExploration || demoLimit >= 999999,
-    canTrade: isExploration || demoRemaining > 0,
-  };
+    return {
+      demoLimit,
+      demoUsed,
+      demoRemaining,
+      isExploration,
+      explorationDaysRemaining,
+      isUnlimited: isExploration || demoLimit >= 999999,
+      canTrade: isExploration || demoRemaining > 0,
+    };
+  }, [progress]);
 }
 
 /**
@@ -245,33 +268,36 @@ export function useDemoLimits(userId: string | null) {
 export function useScannerTier(userId: string | null) {
   const progress = useGamificationStore(selectProgress);
 
-  const currentTier = progress?.scanner_tier || 1;
+  // Memoize calculated values to avoid recalculation on every render
+  return useMemo(() => {
+    const currentTier = progress?.scanner_tier || 1;
 
-  // Scanner tier configuration
-  const tierConfig = {
-    1: { name: 'FREE', visible: 20, blocked: 10 },
-    2: { name: 'INTERMEDIATE', visible: 26, blocked: 4 },
-    3: { name: 'PRO', visible: 28, blocked: 2 },
-    4: { name: 'ELITE', visible: 30, blocked: 0 },
-  }[currentTier] || { name: 'FREE', visible: 20, blocked: 10 };
+    // Scanner tier configuration
+    const tierConfig = {
+      1: { name: 'FREE', visible: 20, blocked: 10 },
+      2: { name: 'INTERMEDIATE', visible: 26, blocked: 4 },
+      3: { name: 'PRO', visible: 28, blocked: 2 },
+      4: { name: 'ELITE', visible: 30, blocked: 0 },
+    }[currentTier] || { name: 'FREE', visible: 20, blocked: 10 };
 
-  // Calculate next tier
-  const nextTier = currentTier < 4 ? currentTier + 1 : null;
-  const nextTierRequirements = {
-    2: { level: 5, deposit: 200 },
-    3: { level: 10, deposit: 500 },
-    4: { level: 20, deposit: 1500 },
-  }[nextTier || 0];
+    // Calculate next tier
+    const nextTier = currentTier < 4 ? currentTier + 1 : null;
+    const nextTierRequirements = {
+      2: { level: 5, deposit: 200 },
+      3: { level: 10, deposit: 500 },
+      4: { level: 20, deposit: 1500 },
+    }[nextTier || 0];
 
-  return {
-    currentTier,
-    tierName: tierConfig.name,
-    visibleAssets: tierConfig.visible,
-    blockedAssets: tierConfig.blocked,
-    nextTier,
-    nextTierRequirements,
-    isMaxTier: currentTier === 4,
-  };
+    return {
+      currentTier,
+      tierName: tierConfig.name,
+      visibleAssets: tierConfig.visible,
+      blockedAssets: tierConfig.blocked,
+      nextTier,
+      nextTierRequirements,
+      isMaxTier: currentTier === 4,
+    };
+  }, [progress?.scanner_tier]);
 }
 
 /**
