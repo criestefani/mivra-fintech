@@ -168,6 +168,6 @@ export const TradeHistory: React.FC<TradeHistoryProps> = ({
           </div>
         )}
       </CardContent>
-    </Card>
+    </GlassCard>
   )
 }

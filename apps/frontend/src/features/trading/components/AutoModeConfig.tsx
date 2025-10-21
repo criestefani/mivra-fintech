@@ -297,7 +297,7 @@ export const AutoModeConfig: React.FC<AutoModeConfigProps> = ({
             </div>
           </CardContent>
         )}
-      </Card>
+      </GlassCard>
     </div>
   )
 }

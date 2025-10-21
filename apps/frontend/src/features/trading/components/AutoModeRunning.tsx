@@ -128,7 +128,7 @@ export const AutoModeRunning: React.FC<AutoModeRunningProps> = ({
             </div>
           )}
         </CardContent>
-      </Card>
+      </GlassCard>
     </div>
   )
 }

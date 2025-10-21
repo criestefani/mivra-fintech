@@ -320,6 +320,6 @@ export const TradingChart: React.FC<TradingChartProps> = ({
           <div ref={chartContainerRef} className="w-full h-[400px] rounded-lg overflow-hidden" />
         </div>
       </CardContent>
-    </Card>
+    </GlassCard>
   )
 }
