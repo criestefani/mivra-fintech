@@ -4,6 +4,7 @@
  */
 
 import { useEffect, useCallback, useMemo } from 'react';
+import { useShallow } from 'zustand/react/shallow';
 import {
   useGamificationStore,
   selectProgress,
@@ -19,10 +20,28 @@ import { useQuestsStore, selectActiveQuests } from '../stores/questsStore';
  * Provides access to all gamification data and actions
  */
 export function useGamification(userId: string | null) {
-  // Stores
-  const { progress, badges, isLoading, error, fetchProgress, fetchBadges } = useGamificationStore();
-  const { currentStreak, fetchQuests } = useStreaksStore();
-  const { dailyQuests } = useQuestsStore();
+  // Stores (useShallow to prevent infinite loops from object destructuring)
+  const { progress, badges, isLoading, error, fetchProgress, fetchBadges } = useGamificationStore(
+    useShallow((state) => ({
+      progress: state.progress,
+      badges: state.badges,
+      isLoading: state.isLoading,
+      error: state.error,
+      fetchProgress: state.fetchProgress,
+      fetchBadges: state.fetchBadges,
+    }))
+  );
+  const { currentStreak, fetchQuests } = useStreaksStore(
+    useShallow((state) => ({
+      currentStreak: state.currentStreak,
+      fetchQuests: state.fetchQuests,
+    }))
+  );
+  const { dailyQuests } = useQuestsStore(
+    useShallow((state) => ({
+      dailyQuests: state.dailyQuests,
+    }))
+  );
 
   // Computed values (before return to avoid recreating on every render)
   const winRate = useGamificationStore(selectWinRate);
@@ -74,7 +93,14 @@ export function useGamification(userId: string | null) {
  * Hook specifically for badges
  */
 export function useBadges(userId: string | null) {
-  const { badges, isLoading, error, fetchBadges } = useGamificationStore();
+  const { badges, isLoading, error, fetchBadges } = useGamificationStore(
+    useShallow((state) => ({
+      badges: state.badges,
+      isLoading: state.isLoading,
+      error: state.error,
+      fetchBadges: state.fetchBadges,
+    }))
+  );
 
   useEffect(() => {
     if (userId) {
@@ -130,7 +156,18 @@ export function useStreaks(userId: string | null) {
     streakIncreased,
     milestoneReached,
     lastTradeDate,
-  } = useStreaksStore();
+  } = useStreaksStore(
+    useShallow((state) => ({
+      currentStreak: state.currentStreak,
+      bestStreak: state.bestStreak,
+      currentWinStreak: state.currentWinStreak,
+      bestWinStreak: state.bestWinStreak,
+      freezesAvailable: state.freezesAvailable,
+      streakIncreased: state.streakIncreased,
+      milestoneReached: state.milestoneReached,
+      lastTradeDate: state.lastTradeDate,
+    }))
+  );
 
   const streakBonusXP = useStreaksStore(selectStreakBonusXP);
 
@@ -176,7 +213,18 @@ export function useQuests(userId: string | null) {
     fetchQuests,
     claimQuest,
     recentQuestCompleted,
-  } = useQuestsStore();
+  } = useQuestsStore(
+    useShallow((state) => ({
+      dailyQuests: state.dailyQuests,
+      weeklyQuests: state.weeklyQuests,
+      specialQuests: state.specialQuests,
+      isLoading: state.isLoading,
+      error: state.error,
+      fetchQuests: state.fetchQuests,
+      claimQuest: state.claimQuest,
+      recentQuestCompleted: state.recentQuestCompleted,
+    }))
+  );
 
   useEffect(() => {
     if (userId) {
@@ -185,8 +233,8 @@ export function useQuests(userId: string | null) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [userId]); // Only depend on userId, not on functions
 
-  // Get quests that can be claimed (memoized to avoid infinite re-renders)
-  const activeQuests = useQuestsStore(selectActiveQuests);
+  // Get quests that can be claimed (useShallow prevents infinite re-renders from array selector)
+  const activeQuests = useQuestsStore(useShallow(selectActiveQuests));
   const claimableQuests = useMemo(
     () => activeQuests.filter((q) => q.current_progress >= q.target_value),
     [activeQuests]
@@ -305,7 +353,14 @@ export function useScannerTier(userId: string | null) {
  */
 export function useXPAnimations() {
   const { recentXPGain, recentLevelUp, recentBadgeUnlock, clearRecentEvents } =
-    useGamificationStore();
+    useGamificationStore(
+      useShallow((state) => ({
+        recentXPGain: state.recentXPGain,
+        recentLevelUp: state.recentLevelUp,
+        recentBadgeUnlock: state.recentBadgeUnlock,
+        clearRecentEvents: state.clearRecentEvents,
+      }))
+    );
 
   return {
     recentXPGain,
