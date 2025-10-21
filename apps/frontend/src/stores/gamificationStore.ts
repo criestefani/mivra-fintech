@@ -92,6 +92,17 @@ export interface BadgeUnlockData {
   xp_reward: number;
 }
 
+export interface GameificationNotification {
+  id?: string;
+  event_type: string;
+  title: string;
+  message: string;
+  icon?: string;
+  data?: Record<string, any>;
+  timestamp: string;
+  is_read?: boolean;
+}
+
 // ============================================================
 // STORE STATE
 // ============================================================
@@ -101,6 +112,9 @@ interface GamificationState {
   progress: UserProgress | null;
   badges: Badge[];
   xpHistory: XPTransaction[];
+
+  // Notifications
+  recentNotification: GameificationNotification | null;
 
   // UI State
   isLoading: boolean;
@@ -123,6 +137,7 @@ interface GamificationState {
   triggerXPGain: (amount: number) => void;
   triggerLevelUp: (levelUpData: LevelUpData) => void;
   triggerBadgeUnlock: (badgeData: BadgeUnlockData) => void;
+  addNotification: (notification: GameificationNotification) => void;
   clearRecentEvents: () => void;
 
   // API Actions
@@ -142,6 +157,7 @@ const initialState = {
   progress: null,
   badges: [],
   xpHistory: [],
+  recentNotification: null,
   isLoading: false,
   error: null,
   recentXPGain: null,
@@ -193,11 +209,20 @@ export const useGamificationStore = create<GamificationState>()(
           }, 5000);
         },
 
+        addNotification: (notification) => {
+          set({ recentNotification: notification });
+          // Auto-clear after 6 seconds
+          setTimeout(() => {
+            set({ recentNotification: null });
+          }, 6000);
+        },
+
         clearRecentEvents: () => {
           set({
             recentXPGain: null,
             recentLevelUp: null,
             recentBadgeUnlock: null,
+            recentNotification: null,
           });
         },
 

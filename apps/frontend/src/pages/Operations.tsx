@@ -48,6 +48,9 @@ import { useSoundEffects } from "@/hooks/useSoundEffects";
 // ✅ New Hook
 import { useBotSocket } from "@/shared/hooks/useBotSocket";
 
+// ✅ Phase 3 Gamification Components
+import { QuestTracker as QuestTrackerWidget } from "@/features/gamification/components/QuestTracker";
+
 interface TradeMarker {
   time: number;
   direction: "CALL" | "PUT";
@@ -1085,6 +1088,34 @@ const Operations = () => {
 
         {/* ✅ METRICS CARDS - Always visible */}
         <MetricsCards {...metrics} />
+
+        {/* ✅ GAMIFICATION WIDGETS */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          {/* Quests Widget */}
+          <div className="lg:col-span-1 backdrop-blur-xl bg-card/50 border border-card-border rounded-lg p-4">
+            <QuestTrackerWidget userId={user?.id || null} maxQuests={4} />
+          </div>
+
+          {/* Leaderboard Widget */}
+          <div className="lg:col-span-1 backdrop-blur-xl bg-card/50 border border-card-border rounded-lg p-4">
+            <div className="space-y-3">
+              <h3 className="text-lg font-bold text-white">Top Rankings</h3>
+              <p className="text-xs text-muted-foreground">
+                View full <a href="/gamification/leaderboard" className="text-primary hover:underline">rankings →</a>
+              </p>
+            </div>
+          </div>
+
+          {/* Badges Widget */}
+          <div className="lg:col-span-1 backdrop-blur-xl bg-card/50 border border-card-border rounded-lg p-4">
+            <div className="space-y-3">
+              <h3 className="text-lg font-bold text-white">Badges</h3>
+              <p className="text-xs text-muted-foreground">
+                View your <a href="/gamification/badges" className="text-primary hover:underline">achievements →</a>
+              </p>
+            </div>
+          </div>
+        </div>
 
         {/* ✅ TRADE HISTORY - Always visible */}
         <TradeHistory

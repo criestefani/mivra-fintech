@@ -5,6 +5,8 @@ import {
   TrendingUp,
   Clock,
   Settings,
+  Trophy,
+  Award,
 } from 'lucide-react'
 
 interface SidebarLink {
@@ -29,6 +31,16 @@ const links: SidebarLink[] = [
     to: '/history',
     icon: <Clock className="w-5 h-5" />,
     label: 'History',
+  },
+  {
+    to: '/gamification/leaderboard',
+    icon: <Trophy className="w-5 h-5" />,
+    label: 'Leaderboard',
+  },
+  {
+    to: '/gamification/badges',
+    icon: <Award className="w-5 h-5" />,
+    label: 'Badges',
   },
   {
     to: '/settings',
