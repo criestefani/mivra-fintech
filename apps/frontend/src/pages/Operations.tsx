@@ -190,8 +190,9 @@ const Operations = () => {
       if (data && data.length > 0) {
         console.log(`[Operations] Loaded ${data.length} trades from today`);
 
-        // Convert to Trade format
+        // Convert to Trade format - KEEP ALL FIELDS FROM SUPABASE
         const formattedTrades: Trade[] = data.map(trade => ({
+          ...trade,  // ✅ SPREAD: Pass ALL fields from Supabase
           id: trade.id,
           timestamp: trade.data_abertura,
           asset: trade.ativo_nome || `ID-${trade.active_id}`,
