@@ -974,6 +974,14 @@ const Operations = () => {
               currentAsset={trades[0]?.asset}
               currentAmount={trades[0]?.pnl ? Math.abs(trades[0].pnl) : undefined}
               isRunning={isRunning}
+              trades={trades.slice(0, 8).map((t) => ({
+                id: t.id,
+                asset: t.asset,
+                direction: t.direction as 'CALL' | 'PUT',
+                result: t.result as 'WIN' | 'LOSS' | undefined,
+                pnl: t.pnl,
+                timestamp: new Date(t.created_at).getTime(),
+              }))}
             />
 
             {/* ✅ Start/Stop Bot Button + Advanced Settings Icon */}
@@ -1193,6 +1201,14 @@ const Operations = () => {
               onTimeframeChange={setTimeframe}
               tradeMarkers={tradeMarkers}
               currentStatus={currentStatus}
+              trades={trades.slice(0, 8).map((t) => ({
+                id: t.id,
+                asset: t.asset,
+                direction: t.direction as 'CALL' | 'PUT',
+                result: t.result as 'WIN' | 'LOSS' | undefined,
+                pnl: t.pnl,
+                timestamp: new Date(t.created_at).getTime(),
+              }))}
             />
 
             {/* ✅ Start/Stop Bot Button + Advanced Settings Icon */}
@@ -1348,19 +1364,6 @@ const Operations = () => {
                 </Button>
               </DialogContent>
             </Dialog>
-
-            {/* ✅ Gamification: Live Trade Feed (Manual Mode) - Floating Button */}
-            <LiveTradeFeed
-              trades={trades.slice(0, 5).map((t) => ({
-                id: t.id,
-                asset: t.asset,
-                direction: t.direction as 'CALL' | 'PUT',
-                result: t.result as 'WIN' | 'LOSS' | undefined,
-                pnl: t.pnl,
-                timestamp: new Date(t.created_at).getTime(),
-              }))}
-              maxTrades={5}
-            />
 
             {/* ✅ Gamification: Next Trade Preview (Manual Mode) */}
             {isRunning && (

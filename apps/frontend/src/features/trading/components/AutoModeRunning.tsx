@@ -7,6 +7,7 @@ import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, ReferenceL
 import { Activity, TrendingUp, TrendingDown } from 'lucide-react'
 import { GlassCard } from '@/components/ui/gamification'
 import { CHART_COLORS } from '@/utils/chartColors'
+import { LiveTradeFeed, Trade } from '@/components/trading'
 
 interface PnlDataPoint {
   time: string
@@ -19,13 +20,15 @@ interface AutoModeRunningProps {
   currentAsset?: string
   currentAmount?: number
   isRunning?: boolean
+  trades?: Trade[]
 }
 
 export const AutoModeRunning: React.FC<AutoModeRunningProps> = ({
   pnlData,
   currentStatus,
   currentAsset,
-  isRunning = false
+  isRunning = false,
+  trades
 }) => {
   const currentPnl = pnlData.length > 0 ? pnlData[pnlData.length - 1].value : 0
   const isProfitable = currentPnl >= 0
@@ -79,7 +82,7 @@ export const AutoModeRunning: React.FC<AutoModeRunningProps> = ({
       </CardHeader>
 
       <CardContent>
-          <div className="w-full h-64 md:h-80">
+          <div className="relative w-full h-64 md:h-80">
             <ResponsiveContainer width="100%" height="100%">
               <LineChart data={pnlData}>
                 <XAxis
@@ -119,13 +122,18 @@ export const AutoModeRunning: React.FC<AutoModeRunningProps> = ({
                 />
               </LineChart>
             </ResponsiveContainer>
-          </div>
 
-          {pnlData.length === 0 && (
-            <div className="absolute inset-0 flex items-center justify-center">
-              <p className="text-muted-foreground text-sm">Waiting for trades...</p>
-            </div>
-          )}
+            {pnlData.length === 0 && (
+              <div className="absolute inset-0 flex items-center justify-center">
+                <p className="text-muted-foreground text-sm">Waiting for trades...</p>
+              </div>
+            )}
+
+            {/* ✅ Floating Button for Recent Trades */}
+            {trades && trades.length > 0 && (
+              <LiveTradeFeed trades={trades} maxTrades={8} />
+            )}
+          </div>
         </CardContent>
       </GlassCard>
   )

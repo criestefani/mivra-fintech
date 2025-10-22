@@ -14,6 +14,7 @@ import { GlassCard } from '@/components/ui/gamification'
 import { CHART_COLORS } from '@/utils/chartColors'
 import { cn } from '@/shared/utils/cn'
 import { getApiUrl } from '@/shared/utils/getApiUrl'
+import { LiveTradeFeed, Trade } from '@/components/trading'
 
 const API_URL = getApiUrl()
 
@@ -33,6 +34,7 @@ interface TradingChartProps {
   onTimeframeChange: (timeframe: string) => void
   tradeMarkers: TradeMarker[]
   currentStatus: string | null
+  trades?: Trade[]
 }
 
 const categories = [
@@ -478,6 +480,11 @@ export const TradingChart: React.FC<TradingChartProps> = ({
           )}
 
           <div ref={chartContainerRef} className="w-full h-[400px] rounded-lg overflow-hidden" />
+
+          {/* ✅ Floating Button for Recent Trades */}
+          {trades && trades.length > 0 && (
+            <LiveTradeFeed trades={trades} maxTrades={8} />
+          )}
         </div>
       </CardContent>
     </GlassCard>

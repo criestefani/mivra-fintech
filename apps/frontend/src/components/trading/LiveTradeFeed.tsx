@@ -1,12 +1,13 @@
 /**
  * LiveTradeFeed Component
- * Floating button that opens a drawer with recent trades
+ * Floating button that opens a modal popup with recent trades
  */
 
 import { motion, AnimatePresence } from 'framer-motion';
 import confetti from 'canvas-confetti';
 import { useEffect, useState } from 'react';
 import { X, TrendingUp } from 'lucide-react';
+import { GlassCard } from '@/components/ui/gamification';
 
 export interface Trade {
   id: string;
@@ -25,7 +26,7 @@ interface LiveTradeFeedProps {
 
 export function LiveTradeFeed({
   trades,
-  maxTrades = 5,
+  maxTrades = 8,
   className = ''
 }: LiveTradeFeedProps) {
   const [isOpen, setIsOpen] = useState(false);
@@ -34,26 +35,26 @@ export function LiveTradeFeed({
 
   return (
     <>
-      {/* ✅ Floating Button (Small) - Positioned at bottom-right of chart */}
+      {/* ✅ Floating Button - Absolute positioned (relative to parent chart) */}
       <motion.button
         onClick={() => setIsOpen(!isOpen)}
-        className={`fixed bottom-32 right-6 w-11 h-11 rounded-full bg-gradient-to-r from-primary to-neon-cyan shadow-2xl flex items-center justify-center z-40 hover:scale-110 transition-transform ${className}`}
-        whileHover={{ scale: 1.1 }}
-        whileTap={{ scale: 0.95 }}
+        className={`absolute bottom-4 right-4 w-12 h-12 rounded-full bg-gradient-to-r from-primary to-neon-cyan shadow-lg hover:shadow-xl flex items-center justify-center z-20 transition-all ${className}`}
+        whileHover={{ scale: 1.15 }}
+        whileTap={{ scale: 0.9 }}
       >
         <TrendingUp className="w-5 h-5 text-white" />
         {winCount > 0 && (
           <motion.div
             initial={{ scale: 0 }}
             animate={{ scale: 1 }}
-            className="absolute -top-2 -right-2 bg-positive text-white text-xs font-bold rounded-full w-6 h-6 flex items-center justify-center"
+            className="absolute -top-2 -right-2 bg-positive text-white text-xs font-bold rounded-full w-6 h-6 flex items-center justify-center shadow-lg"
           >
             {winCount}
           </motion.div>
         )}
       </motion.button>
 
-      {/* ✅ Drawer Modal */}
+      {/* ✅ Modal Popup */}
       <AnimatePresence>
         {isOpen && (
           <>
@@ -63,46 +64,50 @@ export function LiveTradeFeed({
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               onClick={() => setIsOpen(false)}
-              className="fixed inset-0 bg-black/50 z-40 backdrop-blur-sm"
+              className="fixed inset-0 bg-black/60 z-40 backdrop-blur-md"
             />
 
-            {/* Drawer from right */}
+            {/* Centered Modal Popup */}
             <motion.div
-              initial={{ x: 400, opacity: 0 }}
-              animate={{ x: 0, opacity: 1 }}
-              exit={{ x: 400, opacity: 0 }}
-              transition={{ type: 'spring', damping: 25, stiffness: 300 }}
-              className="fixed right-0 top-0 h-full w-96 bg-deep-space border-l border-white/10 shadow-2xl z-50 overflow-y-auto"
+              initial={{ opacity: 0, scale: 0.9, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.9, y: 20 }}
+              transition={{ type: 'spring', damping: 30, stiffness: 400 }}
+              className="fixed inset-0 flex items-center justify-center z-50 p-4"
             >
-              {/* Header */}
-              <div className="sticky top-0 bg-deep-space/95 backdrop-blur-lg border-b border-white/10 p-4 flex items-center justify-between">
-                <h2 className="text-lg font-bold text-white flex items-center gap-2">
-                  <TrendingUp className="w-5 h-5 text-primary" />
-                  Trades Recentes
-                </h2>
-                <button
-                  onClick={() => setIsOpen(false)}
-                  className="p-1 hover:bg-white/10 rounded-lg transition-colors"
-                >
-                  <X className="w-5 h-5 text-gray-400" />
-                </button>
-              </div>
+              <GlassCard className="border-primary/30 shadow-2xl max-h-96 w-full max-w-md overflow-hidden flex flex-col">
+                {/* Header */}
+                <div className="border-b border-slate-700/50 p-5 flex items-center justify-between flex-shrink-0">
+                  <h2 className="text-lg font-semibold text-white flex items-center gap-2">
+                    <TrendingUp className="w-5 h-5 text-primary" />
+                    Recent Trades
+                  </h2>
+                  <motion.button
+                    onClick={() => setIsOpen(false)}
+                    whileHover={{ rotate: 90 }}
+                    whileTap={{ scale: 0.9 }}
+                    className="p-1.5 hover:bg-slate-800/50 rounded-lg transition-colors"
+                  >
+                    <X className="w-5 h-5 text-slate-400" />
+                  </motion.button>
+                </div>
 
-              {/* Trades List */}
-              <div className="p-4 space-y-3">
-                <AnimatePresence mode="popLayout">
-                  {recentTrades.length > 0 ? (
-                    recentTrades.map((trade, index) => (
-                      <TradeCard key={trade.id} trade={trade} index={index} />
-                    ))
-                  ) : (
-                    <div className="text-center py-12 text-gray-500">
-                      <TrendingUp className="w-8 h-8 mx-auto mb-2 opacity-50" />
-                      <p>Nenhum trade ainda</p>
-                    </div>
-                  )}
-                </AnimatePresence>
-              </div>
+                {/* Trades List */}
+                <div className="overflow-y-auto flex-1 p-4 space-y-3">
+                  <AnimatePresence mode="popLayout">
+                    {recentTrades.length > 0 ? (
+                      recentTrades.map((trade, index) => (
+                        <TradeCard key={trade.id} trade={trade} index={index} />
+                      ))
+                    ) : (
+                      <div className="text-center py-12 text-slate-400">
+                        <TrendingUp className="w-8 h-8 mx-auto mb-2 opacity-50" />
+                        <p className="text-sm">No trades yet</p>
+                      </div>
+                    )}
+                  </AnimatePresence>
+                </div>
+              </GlassCard>
             </motion.div>
           </>
         )}
