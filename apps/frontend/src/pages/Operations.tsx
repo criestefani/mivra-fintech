@@ -790,7 +790,7 @@ const Operations = () => {
   if (!user) return null;
 
   return (
-    <div className="min-h-screen bg-slate-900 relative overflow-hidden pt-16">
+    <div className="min-h-screen bg-black relative overflow-hidden pt-16">
       {/* Organic Background Animation */}
       {/* <OrganicBackground
         blobCount={3}
