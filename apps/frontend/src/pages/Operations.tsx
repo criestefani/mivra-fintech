@@ -23,8 +23,9 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/sha
 import { Button } from "@/shared/components/ui/button";
 import { Input } from "@/shared/components/ui/input";
 import { Label } from "@/shared/components/ui/label";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/shared/components/ui/dialog";
 import { cn } from "@/shared/utils/cn";
-import { ChevronDown, TrendingUp, Play, Square, Loader2 } from "lucide-react";
+import { ChevronDown, TrendingUp, Play, Square, Loader2, Settings } from "lucide-react";
 
 // ✅ Gamification Components
 import {
@@ -906,14 +907,26 @@ const Operations = () => {
               currentStatus={currentStatus}
             />
 
-            {/* ✅ Start/Stop Bot Button */}
-            <div className="flex items-center justify-center">
+            {/* ✅ Start/Stop Bot Button + Advanced Settings Icon */}
+            <div className="flex items-center justify-center gap-2">
+              {/* Advanced Settings Icon Button */}
+              <Button
+                variant="outline"
+                size="lg"
+                onClick={() => setShowManualAdvanced(true)}
+                className="gap-2 border-slate-700/50 hover:bg-slate-800/50 px-3 flex-shrink-0"
+                title="Advanced Settings"
+              >
+                <Settings className="w-5 h-5" />
+              </Button>
+
+              {/* Start/Stop Bot Button */}
               {isRunning ? (
                 <Button
                   onClick={handleStopBot}
                   disabled={botLoading}
                   size="lg"
-                  className="gap-2 bg-negative hover:bg-negative/90 text-white shadow-lg shadow-negative/30 px-12"
+                  className="gap-2 bg-negative hover:bg-negative/90 text-white shadow-lg shadow-negative/30 flex-1"
                 >
                   {botLoading ? (
                     <Loader2 className="w-5 h-5 animate-spin" />
@@ -927,7 +940,7 @@ const Operations = () => {
                   onClick={handleStartBot}
                   disabled={!isConnected || botLoading}
                   size="lg"
-                  className="gap-2 bg-positive text-white hover:bg-positive/90 shadow-lg shadow-positive/30 px-12"
+                  className="gap-2 bg-positive text-white hover:bg-positive/90 shadow-lg shadow-positive/30 flex-1"
                 >
                   {botLoading ? (
                     <Loader2 className="w-5 h-5 animate-spin" />
@@ -938,6 +951,115 @@ const Operations = () => {
                 </Button>
               )}
             </div>
+
+            {/* ✅ Advanced Settings Dialog */}
+            <Dialog open={showManualAdvanced} onOpenChange={setShowManualAdvanced}>
+              <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+                <DialogHeader>
+                  <DialogTitle>Advanced Options</DialogTitle>
+                  <DialogDescription>Optional risk management settings for manual trading</DialogDescription>
+                </DialogHeader>
+
+                <div className="space-y-6 py-4">
+                  {/* Leverage (Martingale) */}
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <Label className="text-base font-semibold">Leverage (Martingale)</Label>
+                        <p className="text-xs text-muted-foreground mt-1">
+                          Multiply entry after loss
+                        </p>
+                      </div>
+                      <Button
+                        variant={leverageEnabled ? "default" : "outline"}
+                        size="sm"
+                        onClick={() => setLeverageEnabled((prev) => !prev)}
+                      >
+                        {leverageEnabled ? "ON" : "OFF"}
+                      </Button>
+                    </div>
+                    {leverageEnabled && (
+                      <Input
+                        type="number"
+                        min="1.5"
+                        max="5"
+                        step="0.5"
+                        value={leverage}
+                        onChange={(e) => setLeverage(Number(e.target.value))}
+                        className="bg-card"
+                      />
+                    )}
+                  </div>
+
+                  {/* Safety Stop */}
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <Label className="text-base font-semibold">Safety Stop</Label>
+                        <p className="text-xs text-muted-foreground mt-1">
+                          Stop after consecutive losses
+                        </p>
+                      </div>
+                      <Button
+                        variant={safetyStopEnabled ? "default" : "outline"}
+                        size="sm"
+                        onClick={() => setSafetyStopEnabled((prev) => !prev)}
+                      >
+                        {safetyStopEnabled ? "ON" : "OFF"}
+                      </Button>
+                    </div>
+                    {safetyStopEnabled && (
+                      <Input
+                        type="number"
+                        min="1"
+                        max="10"
+                        step="1"
+                        value={safetyStop}
+                        onChange={(e) => setSafetyStop(Number(e.target.value))}
+                        className="bg-card"
+                      />
+                    )}
+                  </div>
+
+                  {/* Daily Goal */}
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <Label className="text-base font-semibold">Daily Goal</Label>
+                        <p className="text-xs text-muted-foreground mt-1">
+                          Target profit for the day
+                        </p>
+                      </div>
+                      <Button
+                        variant={dailyGoalEnabled ? "default" : "outline"}
+                        size="sm"
+                        onClick={() => setDailyGoalEnabled((prev) => !prev)}
+                      >
+                        {dailyGoalEnabled ? "ON" : "OFF"}
+                      </Button>
+                    </div>
+                    {dailyGoalEnabled && (
+                      <Input
+                        type="number"
+                        min="1"
+                        max="10000"
+                        step="10"
+                        value={dailyGoal}
+                        onChange={(e) => setDailyGoal(Number(e.target.value))}
+                        className="bg-card"
+                      />
+                    )}
+                  </div>
+                </div>
+
+                <Button
+                  onClick={() => setShowManualAdvanced(false)}
+                  className="w-full mt-4 bg-primary hover:bg-primary/90"
+                >
+                  Close
+                </Button>
+              </DialogContent>
+            </Dialog>
 
             {/* ✅ Gamification: Live Trade Feed (Manual Mode) - Floating Button */}
             <LiveTradeFeed
@@ -1008,126 +1130,6 @@ const Operations = () => {
                   </div>
                 </div>
               </CardContent>
-            </Card>
-
-            <Card className="glass backdrop-blur-xl bg-slate-900/50 border-slate-700/50">
-              <CardHeader className="p-0">
-                <button
-                  type="button"
-                  onClick={() => setShowManualAdvanced((prev) => !prev)}
-                  aria-expanded={showManualAdvanced}
-                  aria-controls="manual-advanced-options"
-                  className="w-full flex items-center justify-between gap-3 px-4 py-4 md:px-6 md:py-5 text-left"
-                >
-                  <div>
-                    <CardTitle className="text-lg">Advanced Options</CardTitle>
-                    <CardDescription>Optional risk management settings</CardDescription>
-                  </div>
-                  <ChevronDown
-                    className={cn(
-                      "w-5 h-5 text-muted-foreground transition-transform duration-200",
-                      showManualAdvanced ? "rotate-180" : "rotate-0"
-                    )}
-                  />
-                </button>
-              </CardHeader>
-              {showManualAdvanced && (
-                <CardContent id="manual-advanced-options" className="space-y-6 pt-0">
-                  {/* Leverage (Martingale) */}
-                  <div className="space-y-3">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <Label className="text-base font-semibold">Leverage (Martingale)</Label>
-                        <p className="text-xs text-muted-foreground mt-1">
-                          Multiply entry after loss
-                        </p>
-                      </div>
-                      <Button
-                        variant={leverageEnabled ? "default" : "outline"}
-                        size="sm"
-                        onClick={() => setLeverageEnabled((prev) => !prev)}
-                      >
-                        {leverageEnabled ? "ON" : "OFF"}
-                      </Button>
-                    </div>
-                    {leverageEnabled && (
-                      <Input
-                        type="number"
-                        min="1.5"
-                        max="5"
-                        step="0.5"
-                        value={leverage}
-                        onChange={(e) => setLeverage(Number(e.target.value))}
-                        className="bg-card"
-                      />
-                    )}
-                  </div>
-
-                  {/* Safety Stop */}
-                  <div className="space-y-3">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <Label className="text-base font-semibold">Safety Stop</Label>
-                        <p className="text-xs text-muted-foreground mt-1">
-                          Stop after consecutive losses
-                        </p>
-                      </div>
-                      <Button
-                        variant={safetyStopEnabled ? "default" : "outline"}
-                        size="sm"
-                        onClick={() => setSafetyStopEnabled((prev) => !prev)}
-                      >
-                        {safetyStopEnabled ? "ON" : "OFF"}
-                      </Button>
-                    </div>
-                    {safetyStopEnabled && (
-                      <Input
-                        type="number"
-                        min="1"
-                        max="10"
-                        step="1"
-                        value={safetyStop}
-                        onChange={(e) => setSafetyStop(Number(e.target.value))}
-                        className="bg-card"
-                      />
-                    )}
-                  </div>
-
-                  {/* Daily Goal */}
-                  <div className="space-y-3">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <Label className="text-base font-semibold flex items-center gap-2">
-                          <TrendingUp className="w-4 h-4 text-positive" />
-                          Daily Goal
-                        </Label>
-                        <p className="text-xs text-muted-foreground mt-1">
-                          Stop when profit reaches target
-                        </p>
-                      </div>
-                      <Button
-                        variant={dailyGoalEnabled ? "default" : "outline"}
-                        size="sm"
-                        onClick={() => setDailyGoalEnabled((prev) => !prev)}
-                      >
-                        {dailyGoalEnabled ? "ON" : "OFF"}
-                      </Button>
-                    </div>
-                    {dailyGoalEnabled && (
-                      <Input
-                        type="number"
-                        min="10"
-                        max="10000"
-                        step="10"
-                        value={dailyGoal}
-                        onChange={(e) => setDailyGoal(Number(e.target.value))}
-                        placeholder="e.g., 100"
-                        className="bg-card"
-                      />
-                    )}
-                  </div>
-                </CardContent>
-              )}
             </Card>
           </>
         )}
