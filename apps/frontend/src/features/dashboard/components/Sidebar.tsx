@@ -4,7 +4,6 @@ import {
   Activity,
   TrendingUp,
   Clock,
-  Settings,
   User,
 } from 'lucide-react'
 
@@ -35,11 +34,6 @@ const links: SidebarLink[] = [
     to: '/profile',
     icon: <User className="w-5 h-5" />,
     label: 'Profile',
-  },
-  {
-    to: '/settings',
-    icon: <Settings className="w-5 h-5" />,
-    label: 'Settings',
   },
 ]
 
