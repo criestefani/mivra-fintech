@@ -1,29 +1,27 @@
-// Market Scanner - Real-time market analysis using Aggressive Hybrid Strategy
+//—----V1—----
 
 
-// Load environment variables first
-import dotenv from 'dotenv';
-import path from 'path';
-import { fileURLToPath } from 'url';
-
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-dotenv.config({ path: path.resolve(__dirname, '../../.env') });
-
-
+// src/scanner/market-scanner.mjs
 import { ClientSdk, SsidAuthMethod } from '@quadcode-tech/client-sdk-js';
 import { createClient } from '@supabase/supabase-js';
-import { analyzeAggressive } from './strategies/strategy-aggressive.mjs';
-import { getAvailableAssets, getAssetName } from '../constants/fixed-assets.mjs';
-import ssidManager from '../services/ssid-manager.mjs';
+import { calculateRSI } from '../bot/indicators/rsi.mjs';
+import { calculateMACD } from '../bot/indicators/macd.mjs';
+import { calculateBollinger } from '../bot/indicators/bollinger.mjs';
+import { analyzeHybrid } from '../bot/strategies/strategy-hybrid.mjs';
+// ✅ NOVA IMPORTAÇÃO: Lista fixa de ativos (140 ativos oficiais)
+import { getAvailableAssets, resolveAssetById, getAssetName } from '../constants/fixed-assets.mjs';
 
 
-const TIMEFRAMES = [10, 30, 60, 300]; // ✅ 10s, 30s, 1min, 5min
-const CONCURRENT_LIMIT = 2; // 🚀 2-CONCURRENT: Safe API-friendly parallelism
-const INITIAL_SCAN_DELAY = 5000; // 5s before first scan
-const AVALON_WS_URL = process.env.AVALON_WS_URL || 'wss://ws.trade.avalonbroker.com/echo/websocket';
-const AVALON_API_HOST = process.env.AVALON_API_HOST || 'https://trade.avalonbroker.com';
+const SSID = "128a3cf5b3857595e14391d79230a42s";
+const TIMEFRAMES = [10, 30, 60, 300]; // ✅ 10s, 30s, 1min, 3min, 5min
+const SCAN_INTERVAL = 10000;
+const MIN_CONSENSUS = 2;
+
+
+const supabase = createClient(
+  'https://vecofrvxrepogtigmeyj.supabase.co',
+  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZlY29mcnZ4cmVwb2d0aWdtZXlqIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc1OTI1NzQ1NSwiZXhwIjoyMDc0ODMzNDU1fQ.XQ57yvXp8mJc4ZE_cYnailskaPDFAhUSaUHNDbRZaOc'
+);
 
 
 class MarketScanner {
@@ -32,254 +30,183 @@ class MarketScanner {
     this.blitz = null;
     this.candlesService = null;
     this.signalsCount = 0;
-    this.systemSSID = null;
-    this.scanCount = 0;
-    this.scanStartTime = null;
-    this.SCAN_TIMEOUT = 180000;
-
-
-    // ✅ SUPABASE AS CLASS PROPERTY: Can be managed/reset
-    this.supabase = createClient(
-      process.env.SUPABASE_URL || 'https://vecofrvxrepogtigmeyj.supabase.co',
-      process.env.SUPABASE_SERVICE_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY,
-      {
-        db: { pool: { min: 5, max: 30 } },  // ✅ Increased from 10 to 30
-        auth: { persistSession: false }
-      }
-    );
   }
 
 
   async connect() {
-    console.log('🔐 Market Scanner conectando ao Avalon...');
-
-
-    // ✅ Initialize system SSID if not available
-    this.systemSSID = ssidManager.getSystemSSID();
-
-
-    if (!this.systemSSID) {
-      console.log('⏳ Inicializando System SSID...');
-      try {
-        this.systemSSID = await ssidManager.initializeSystemSSID();
-      } catch (error) {
-        console.error('❌ Failed to initialize System SSID:', error.message);
-        throw new Error('System SSID initialization failed. Cannot connect to Avalon.');
-      }
-    }
-
-
-    if (!this.systemSSID) {
-      throw new Error('System SSID not available. Cannot connect to Avalon.');
-    }
-
-
-    console.log(`✅ Using System SSID: ${this.systemSSID.substring(0, 15)}...`);
-
-
     this.sdk = await ClientSdk.create(
-      AVALON_WS_URL,
-      parseInt(ssidManager.AVALON_SYSTEM_USER_ID),
-      new SsidAuthMethod(this.systemSSID),
-      { host: AVALON_API_HOST }
+      'wss://ws.trade.avalonbroker.com/echo/websocket',
+      82,
+      new SsidAuthMethod(SSID),
+      { host: 'https://trade.avalonbroker.com' }
     );
-
-
     this.blitz = await this.sdk.blitzOptions();
     this.candlesService = await this.sdk.candles();
+    console.log('✅ Conectado ao Avalon\n');
+  }
 
 
-    console.log('✅ Market Scanner conectado ao Avalon\n');
+  analyzeBalanced(candlesFormatted) {
+    if (candlesFormatted.length < 35) return null;
+
+
+    try {
+      const rsi = calculateRSI(candlesFormatted);
+      const macd = calculateMACD(candlesFormatted);
+      const bb = calculateBollinger(candlesFormatted);
+
+
+      const signals = [];
+      if (rsi.signal !== 'NEUTRO') signals.push(rsi.signal);
+      if (macd.trend !== 'NEUTRO') signals.push(macd.trend);
+      if (bb.signal !== 'NEUTRO' && bb.signal !== 'SQUEEZE') signals.push(bb.signal);
+
+
+      const callCount = signals.filter(s => s === 'CALL').length;
+      const putCount = signals.filter(s => s === 'PUT').length;
+
+
+      if (callCount >= MIN_CONSENSUS) {
+        return { consensus: 'CALL', strength: callCount * 25 };
+      } else if (putCount >= MIN_CONSENSUS) {
+        return { consensus: 'PUT', strength: putCount * 25 };
+      }
+    } catch (err) {
+      return null;
+    }
+
+
+    return null;
   }
 
 
   async scanLoop() {
-    console.log('🚀 FAST SEQUENTIAL SCANNER: Proven High-Performance Pattern\n');
-    console.log('📊 Monitorando: 141 ativos × 4 timeframes = 564 combinações\n');
+    console.log('🔄 Scanner tempo real iniciado (scan a cada 10s)\n');
+    console.log('📊 Monitorando: 140 ativos × 5 timeframes = 700 combinações (Estratégia Híbrida)\n');
 
 
-    let totalScans = 0;
+    setInterval(async () => {
+      const startTime = Date.now();
+      let analyzed = 0;
+      let signalsFound = 0;
 
 
-    const performScan = async () => {
-      totalScans++;
-      const scanStartTime = Date.now();
+      // ✅ MUDANÇA: Usar lista fixa ao invés de blitz.getActives()
+      const fixedAssets = getAvailableAssets();
 
 
-      try {
-        console.log(`\n🟢 SCAN #${totalScans} INICIADO`);
+      // ✅ Obter ativos disponíveis do SDK apenas para validação
+      const availableFromSDK = this.blitz.getActives();
+      const availableIds = new Set(availableFromSDK.map(a => a.id));
 
 
-        // Get available actives
-        const fixedAssets = getAvailableAssets();
-        const availableFromSDK = this.blitz.getActives();
-        const availableIds = new Set(availableFromSDK.map(a => a.id));
-        const actives = fixedAssets
-          .filter(a => availableIds.has(a.id))
-          .map(a => availableFromSDK.find(sdk => sdk.id === a.id))
-          .filter(a => a !== undefined);
+      // ✅ Filtrar apenas ativos que estão disponíveis no SDK agora
+      const actives = fixedAssets
+        .filter(fixedAsset => availableIds.has(fixedAsset.id))
+        .map(fixedAsset => {
+          // Encontrar o objeto SDK correspondente para ter acesso aos métodos
+          return availableFromSDK.find(sdkActive => sdkActive.id === fixedAsset.id);
+        })
+        .filter(active => active !== undefined);
 
 
-        console.log(`🔄 Processing ${actives.length} actives × ${TIMEFRAMES.length} timeframes = ${actives.length * TIMEFRAMES.length} combinations...`);
+      console.log(`✅ ${actives.length}/${fixedAssets.length} ativos disponíveis agora\n`);
 
 
-        // ✅ SIMPLE SEQUENTIAL: No Promise.all, no batch accumulation
-        let signalsFound = 0;
-        let totalCombinations = 0;
+      for (const active of actives) {
+        for (const timeframe of TIMEFRAMES) {
+          try {
+            const candles = await this.candlesService.getCandles(active.id, timeframe, { count: 50 });
+            if (!candles || candles.length < 50) continue;
 
 
-        // Simple nested loops: actives → timeframes
-        for (const active of actives) {
-          for (const timeframe of TIMEFRAMES) {
-            totalCombinations++;
+            const candlesFormatted = candles.map(c => ({
+              open: parseFloat(c.open),
+              high: parseFloat(c.max),
+              low: parseFloat(c.min),
+              close: parseFloat(c.close),
+              timestamp: c.from
+            }));
 
 
-            try {
-              // Fetch candles
-              const candles = await this.candlesService.getCandles(active.id, timeframe, { count: 50 });
+            // ✅ Use ONLY hybrid strategy (combines all 4 signals with weighted voting)
+            analyzed++;
+            const result = analyzeHybrid(candlesFormatted);
 
 
-              if (!candles || candles.length < 50) {
-                // Not enough data, skip
-              } else {
-                // Format candles
-                const candlesFormatted = candles.map(c => ({
-                  open: +c.open,
-                  high: +c.max,
-                  low: +c.min,
-                  close: +c.close,
-                  timestamp: c.from
-                }));
+            if (result?.consensus && result.consensus !== 'NEUTRAL') {
+              signalsFound++;
+              await this.registrarSinalSimulado(active, timeframe, result.consensus, candles[candles.length - 1]);
 
 
-                // Analyze
-                const result = analyzeAggressive(candlesFormatted);
-
-
-                // If signal found, register immediately (fire-and-forget for speed)
-                if (result?.consensus && result.consensus !== 'NEUTRAL') {
-                  const lastCandle = candles[candles.length - 1];
-                  // ✅ FIRE-AND-FORGET: Don't await, let it save in background
-                  this.registrarSinalSimulado(active, timeframe, result.consensus, lastCandle, result)
-                    .catch(err => console.error(`❌ Save error: ${active.id}`, err.message));
-                  signalsFound++;
-                  this.signalsCount++;
-                }
-              }
-            } catch (err) {
-              // Log error but continue to next combination
-              console.error(`❌ Error processing ${active.id} × ${timeframe}s: ${err.message}`);
+              console.log(`✅ ${active.ticker || active.id} | ${timeframe}s | Híbrida → ${result.consensus} (${result.confidence}%)`);
             }
 
 
-            // ✅ RATE LIMITING: 50ms delay between iterations (natural pacing)
             await new Promise(r => setTimeout(r, 50));
+          } catch (err) {
+            // Silencioso
           }
         }
-
-
-        const scanDuration = Date.now() - scanStartTime;
-        const scanSeconds = (scanDuration / 1000).toFixed(1);
-
-
-        console.log(`\n📊 Scan complete:`);
-        console.log(`   Time: ${scanSeconds}s`);
-        console.log(`   Combinations: ${totalCombinations}`);
-        console.log(`   Signals found: ${signalsFound}`);
-        console.log(`   Total accumulated: ${this.signalsCount}\n`);
-
-
-        // ✅ BACKGROUND TASKS: Fire-and-forget (every 6 scans)
-        if (this.scanCount % 6 === 0) {
-          this.recuperarTradesPendentes().catch(err => console.error(`Recovery error: ${err.message}`));
-          this.limparDadosAntigos().catch(err => console.error(`Cleanup error: ${err.message}`));
-        }
-        this.scanCount++;
-
-
-      } catch (err) {
-        console.error(`❌ SCAN ERROR: ${err.message}`);
-        console.error(`   Stack: ${err.stack}`);
       }
-    };
 
 
-    // ✅ Start with fixed interval (10 seconds) - fire-and-forget saves handle throughput
-    console.log(`⏰ Starting scan loop with fixed 10-second interval\n`);
-    setInterval(performScan, 10000);
+      const elapsed = ((Date.now() - startTime) / 1000).toFixed(1);
+      this.signalsCount += signalsFound;
 
 
-    // Run initial scan immediately
-    performScan();
+      console.log(`\n⏱️ Scan completo: ${analyzed} combinações | ${signalsFound} sinais | ${elapsed}s`);
+      console.log(`📈 Total acumulado: ${this.signalsCount} sinais\n`);
+
+
+      // ✅ Recover orphaned PENDING trades from previous runs
+      await this.recuperarTradesPendentes();
+      await this.limparDadosAntigos();
+    }, SCAN_INTERVAL);
   }
 
 
-  async registrarSinalSimulado(active, timeframe, direction, lastCandle, strategyResult, maxRetries = 2) {
+  async registrarSinalSimulado(active, timeframe, direction, lastCandle) {
     const signalTime = new Date();
-    const signalPrice = +lastCandle.close;
+    const signalPrice = parseFloat(lastCandle.close);
+
+
+    // ✅ MUDANÇA: Usar getAssetName da lista fixa para nome consistente
     const ativoNome = getAssetName(active.id);
 
 
-    let retries = 0;
-    while (retries < maxRetries) {
-      try {
-        // ✅ Save signal to strategy_trades (only columns that exist)
-        const { data, error } = await this.supabase.from('strategy_trades').insert({
-          active_id: active.id.toString(),
-          ativo_nome: ativoNome,
-          timeframe: timeframe,
-          signal_timestamp: signalTime.toISOString(),
-          signal_direction: direction,
-          signal_price: signalPrice,
-          result: 'PENDING'
-        }).select('id').single();
+    // ✅ Get the inserted record ID for reliable UPDATE
+    const { data, error } = await supabase.from('strategy_trades').insert({
+      active_id: active.id.toString(),
+      ativo_nome: ativoNome,
+      timeframe: timeframe,
+      signal_timestamp: signalTime.toISOString(),
+      signal_direction: direction,
+      signal_price: signalPrice,
+      result: 'PENDING'
+    }).select('id').single();
 
 
-        if (error) {
-          // Retry on fetch failed, give up on other errors
-          if (error?.message?.includes?.('fetch failed') && retries < maxRetries - 1) {
-            retries++;
-            console.warn(`⚠️  Supabase fetch failed (retry ${retries}/${maxRetries})...`);
-            await new Promise(r => setTimeout(r, 500)); // Wait 500ms before retry
-            continue;
-          }
-          console.error(`❌ Erro ao inserir trade: ${error?.message}`);
-          return false;
-        }
-
-
-        if (!data) {
-          console.error(`❌ Erro ao inserir trade: No data returned`);
-          return false;
-        }
-
-
-        const tradeId = data.id;
-        const delay = timeframe * 1000 + 2000;
-
-
-        // ✅ Schedule verification using unique ID
-        setTimeout(async () => {
-          await this.verificarResultado(tradeId, active.id, timeframe, signalPrice, direction);
-        }, delay);
-
-
-        return true; // ✅ SUCCESS
-      } catch (err) {
-        console.error(`❌ Erro ao inserir trade: ${err.message}`);
-        return false;
-      }
+    if (error || !data) {
+      console.log(`❌ Erro ao inserir trade: ${error?.message}`);
+      return;
     }
 
 
-    return false; // Failed after all retries
+    const tradeId = data.id;
+    const delay = timeframe * 1000 + 2000;
+
+
+    // ✅ Schedule verification using unique ID
+    console.log(`⏰ Agendando verificação do trade ${tradeId.substring(0, 8)} em ${delay}ms`);
+    setTimeout(async () => {
+      console.log(`🔍 Verificando resultado do trade ${tradeId.substring(0, 8)}...`);
+      await this.verificarResultado(tradeId, active.id, timeframe, signalPrice, direction);
+    }, delay);
   }
 
 
-  async verificarResultado(tradeId, activeId, timeframe, signalPrice, direction, retryCount = 0) {
-    const maxRetries = 2;
-
-
+  async verificarResultado(tradeId, activeId, timeframe, signalPrice, direction) {
     try {
       const candles = await this.candlesService.getCandles(activeId, timeframe, { count: 5 });
       if (!candles || candles.length === 0) {
@@ -288,13 +215,13 @@ class MarketScanner {
       }
 
 
-      const resultPrice = +candles[candles.length - 1].close;
+      const resultPrice = parseFloat(candles[candles.length - 1].close);
       const isWin = (direction === 'CALL' && resultPrice > signalPrice) ||
                     (direction === 'PUT' && resultPrice < signalPrice);
 
 
-      // ✅ Update by unique ID
-      const { error } = await this.supabase
+      // ✅ Update by unique ID - much more reliable
+      const { error } = await supabase
         .from('strategy_trades')
         .update({
           result_timestamp: new Date().toISOString(),
@@ -306,280 +233,61 @@ class MarketScanner {
 
 
       if (error) {
-        // Retry on fetch failed
-        if (error?.message?.includes?.('fetch failed') && retryCount < maxRetries) {
-          console.warn(`⚠️  Supabase fetch failed on UPDATE (retry ${retryCount + 1}/${maxRetries})...`);
-          await new Promise(r => setTimeout(r, 500));
-          return this.verificarResultado(tradeId, activeId, timeframe, signalPrice, direction, retryCount + 1);
-        }
-        console.error(`❌ Erro ao atualizar trade ${tradeId}: ${error?.message}`);
+        console.log(`❌ Erro ao atualizar trade ${tradeId}: ${error.message}`);
       } else {
-        console.log(`✅ Trade ${tradeId.substring(0, 8)} | ${isWin ? 'WIN' : 'LOSS'} | ${resultPrice.toFixed(4)}`);
+        console.log(`✅ Trade ${tradeId.substring(0, 8)} | ${isWin ? 'WIN' : 'LOSS'} | ${resultPrice.toFixed(2)}`);
       }
     } catch (err) {
-      console.error(`❌ Erro ao verificar resultado: ${err.message}`);
+      console.log(`❌ Erro ao verificar resultado: ${err.message}`);
     }
   }
 
 
-  async recuperarTradesPendentes(retryCount = 0) {
-    const maxRetries = 2;
-
-
+  async recuperarTradesPendentes() {
     try {
-      const recoveryStartTime = Date.now();
-      console.log(`🔧 [RECOVERY] Starting pending trades recovery...`);
-
-
-      const { data: pendingTrades, error } = await this.supabase
+      // ✅ Find PENDING trades older than their timeframe + grace period
+      const { data: pendingTrades, error } = await supabase
         .from('strategy_trades')
         .select('*')
         .eq('result', 'PENDING')
-        .lt('signal_timestamp', new Date(Date.now() - 15 * 1000).toISOString())
-        .limit(10);
+        .lt('signal_timestamp', new Date(Date.now() - 15 * 1000).toISOString()) // Older than 15 seconds
+        .limit(50);
 
 
-      if (error) {
-        // Retry on fetch failed
-        if (error?.message?.includes?.('fetch failed') && retryCount < maxRetries) {
-          console.warn(`⚠️  [RECOVERY] Supabase fetch failed (retry ${retryCount + 1}/${maxRetries})...`);
-          await new Promise(r => setTimeout(r, 1000));
-          return this.recuperarTradesPendentes(retryCount + 1);
-        }
-        console.error(`❌ [RECOVERY] Error fetching pending trades: ${error?.message}`);
-        console.error(`   Code: ${error?.code}, Details: ${JSON.stringify(error?.details)}`);
-        return;
-      }
+      if (error || !pendingTrades || pendingTrades.length === 0) return;
 
 
-      if (!pendingTrades || pendingTrades.length === 0) {
-        console.log(`✅ [RECOVERY] No pending trades to recover`);
-        return;
-      }
+      console.log(`🔧 Recuperando ${pendingTrades.length} trades PENDING órfãos...`);
 
 
-      console.log(`🔧 [RECOVERY] Found ${pendingTrades.length} orphaned PENDING trades. Verifying results...`);
-
-
-      let verified = 0;
       for (const trade of pendingTrades) {
-        try {
-          const timeSinceSignal = Date.now() - new Date(trade.signal_timestamp).getTime();
+        const timeSinceSignal = Date.now() - new Date(trade.signal_timestamp).getTime();
 
 
-          if (timeSinceSignal >= (trade.timeframe * 1000 + 2000)) {
-            await this.verificarResultado(
-              trade.id,
-              parseInt(trade.active_id),
-              trade.timeframe,
-              trade.signal_price,
-              trade.signal_direction
-            );
-            verified++;
+        // Only process if enough time has passed for this timeframe
+        if (timeSinceSignal >= (trade.timeframe * 1000 + 2000)) {
+          await this.verificarResultado(
+            trade.id,
+            parseInt(trade.active_id),
+            trade.timeframe,
+            trade.signal_price,
+            trade.signal_direction
+          );
 
 
-            await new Promise(r => setTimeout(r, 200)); // Rate limiting (increased to 200ms)
-          }
-        } catch (err) {
-          console.error(`❌ [RECOVERY] Error verifying trade ${trade.id}: ${err.message}`);
+          await new Promise(r => setTimeout(r, 100)); // Rate limiting
         }
       }
-
-
-      const recoveryTime = Date.now() - recoveryStartTime;
-      console.log(`✅ [RECOVERY] Completed in ${recoveryTime}ms. Verified: ${verified}/${pendingTrades.length}`);
     } catch (err) {
-      console.error(`❌ [RECOVERY] Fatal error: ${err.message}`);
-      console.error(`   Stack: ${err.stack}`);
+      console.log(`⚠️ Erro na recuperação: ${err.message}`);
     }
   }
 
 
   async limparDadosAntigos() {
-    try {
-      const cleanupStartTime = Date.now();
-      console.log(`🧹 [CLEANUP] Starting old data cleanup...`);
-
-
-      // ✅ 30-minute TTL (Time To Live) for fresh signals
-      const thirtyMinutesAgo = new Date(Date.now() - 30 * 60 * 1000).toISOString();
-
-
-      const { count, error } = await this.supabase
-        .from('strategy_trades')
-        .delete()
-        .lt('signal_timestamp', thirtyMinutesAgo);
-
-
-      if (error) {
-        console.error(`❌ [CLEANUP] Error deleting old data: ${error.message}`);
-        console.error(`   Code: ${error.code}, Details: ${JSON.stringify(error.details)}`);
-        return;
-      }
-
-
-      const cleanupTime = Date.now() - cleanupStartTime;
-      console.log(`✅ [CLEANUP] Completed in ${cleanupTime}ms. Deleted: ${count} old trades`);
-    } catch (err) {
-      console.error(`❌ [CLEANUP] Fatal error: ${err.message}`);
-      console.error(`   Stack: ${err.stack}`);
-    }
-  }
-
-
-  /**
-   * Batch save signals and schedule verifications
-   * @param {Array} signals - Array of signals (up to 20)
-   */
-  async saveBatch(signals) {
-    const batchStartTime = Date.now();
-
-
-    if (!signals || signals.length === 0) {
-      return;
-    }
-
-
-    try {
-      // ✅ BATCH INSERT: All signals in one query
-      const { data: insertedSignals, error } = await this.supabase
-        .from('strategy_trades')
-        .insert(signals)
-        .select('id');
-
-
-      if (error) {
-        console.error(`❌ Batch insert error: ${error.message}`);
-        // ⚠️ FALLBACK: If batch fails, try individual inserts
-        console.log(`⚠️ Attempting fallback: individual inserts for ${signals.length} signals`);
-        let successCount = 0;
-        for (const signal of signals) {
-          try {
-            const { data: result, error: err } = await this.supabase
-              .from('strategy_trades')
-              .insert(signal)
-              .select('id')
-              .single();
-
-
-            if (err) {
-              console.error(`❌ Individual insert failed: ${err.message}`);
-              continue;
-            }
-
-
-            if (result?.id) {
-              successCount++;
-              // Schedule verification for this individual signal
-              const delay = signal.timeframe * 1000 + 2000;
-              setTimeout(async () => {
-                await this.verificarResultado(
-                  result.id,
-                  +signal.active_id,
-                  signal.timeframe,
-                  signal.signal_price,
-                  signal.signal_direction
-                );
-              }, delay);
-            }
-          } catch (err) {
-            console.error(`❌ Fallback insert exception: ${err.message}`);
-          }
-        }
-        console.log(`⚠️ Fallback complete: ${successCount}/${signals.length} signals inserted`);
-        return;
-      }
-
-
-      if (!insertedSignals || insertedSignals.length === 0) {
-        console.error(`❌ Batch insert returned no IDs`);
-        return;
-      }
-
-
-      const batchTime = Date.now() - batchStartTime;
-      console.log(`✅ Batch saved: ${signals.length} signals in ${batchTime}ms`);
-
-
-      // ✅ SCHEDULE VERIFICATIONS: Direct setTimeout for each signal
-      insertedSignals.forEach((inserted, index) => {
-        const signal = signals[index];
-        if (!inserted?.id) return;
-
-
-        const delay = signal.timeframe * 1000 + 2000;
-
-
-        // Direct setTimeout (proven pattern - no queue overhead)
-        setTimeout(async () => {
-          await this.verificarResultado(
-            inserted.id,
-            +signal.active_id,
-            signal.timeframe,
-            signal.signal_price,
-            signal.signal_direction
-          );
-        }, delay);
-      });
-
-
-    } catch (err) {
-      console.error(`❌ Batch save exception: ${err.message}`);
-      console.error(`   Stack: ${err.stack}`);
-    }
-  }
-
-
-  async saveMicroBatch(signals) {
-    const batchStartTime = Date.now();
-
-
-    try {
-      const { data: insertedSignals, error } = await this.supabase
-        .from('strategy_trades')
-        .insert(signals)
-        .select('id');
-
-
-      if (error) {
-        console.error(`❌ Batch error: ${error.message}`);
-        return;
-      }
-
-
-      if (!insertedSignals) {
-        console.error(`❌ Batch returned no data`);
-        return;
-      }
-
-
-      const batchTime = Date.now() - batchStartTime;
-      console.log(`✅ ${signals.length} signals saved in ${batchTime}ms`);
-
-
-      // ✅ IMMEDIATE VERIFICATION SCHEDULING (direct setTimeout - no queue overhead)
-      insertedSignals.forEach((inserted, index) => {
-        const signal = signals[index];
-        if (!inserted?.id) return;
-
-
-        const delay = signal.timeframe * 1000 + 2000;
-
-
-        // ✅ Direct setTimeout (proven pattern from old code)
-        setTimeout(async () => {
-          await this.verificarResultado(
-            inserted.id,
-            +signal.active_id,  // Unary + for faster conversion
-            signal.timeframe,
-            signal.signal_price,
-            signal.signal_direction
-          );
-        }, delay);
-      });
-    } catch (err) {
-      console.error(`❌ Batch exception: ${err.message}`);
-    }
+    // ✅ 30-minute TTL (Time To Live) for fresh signals
+    const thirtyMinutesAgo = new Date(Date.now() - 30 * 60 * 1000).toISOString();
+    await supabase.from('strategy_trades').delete().lt('signal_timestamp', thirtyMinutesAgo);
   }
 
 

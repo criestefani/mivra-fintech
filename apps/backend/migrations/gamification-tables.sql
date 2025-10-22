@@ -173,6 +173,23 @@ CREATE INDEX IF NOT EXISTS idx_user_quests_user_id ON user_quests(user_id);
 CREATE INDEX IF NOT EXISTS idx_user_quests_status ON user_quests(status);
 CREATE INDEX IF NOT EXISTS idx_user_quests_expires_at ON user_quests(expires_at);
 
+-- Foreign Key: Link user_quests.quest_id to quests.quest_id
+-- This allows Supabase to use .select('*, quests(*)') syntax
+DO $$
+BEGIN
+  -- Try to drop existing constraint first (in case of re-runs)
+  ALTER TABLE user_quests DROP CONSTRAINT IF EXISTS fk_user_quests_quest_id;
+
+  -- Add the foreign key
+  ALTER TABLE user_quests
+  ADD CONSTRAINT fk_user_quests_quest_id
+  FOREIGN KEY (quest_id) REFERENCES quests(quest_id) ON DELETE RESTRICT;
+
+  RAISE NOTICE '✅ Foreign key constraint added to user_quests';
+EXCEPTION WHEN OTHERS THEN
+  RAISE NOTICE '⚠️ Foreign key constraint may already exist: %', SQLERRM;
+END $$;
+
 -- ============================================================
 -- 6. LEADERBOARDS (Cached rankings)
 -- ============================================================
