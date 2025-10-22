@@ -32,7 +32,6 @@ import {
   LiveTradeFeed,
   StreakOverlay,
   NextTradePreview,
-  CommandCenter,
   MetricsGrid,
   QuestTracker,
   type Trade as TradeFeedTrade,
@@ -850,14 +849,6 @@ const Operations = () => {
         {botMode === "auto" ? (
           // AUTO MODE
           <>
-            {/* ✅ Gamification: Command Center (Auto Mode HUD) */}
-            <CommandCenter
-              botStatus={isRunning ? "SCANNING" : "STOPPED"}
-              currentAsset={trades[0]?.asset}
-              sessionTime={sessionTime}
-              userLevel={progress?.current_level || 1}
-            />
-
             {/* ✅ P&L Chart: Always visible (bot running or not) */}
             <AutoModeRunning
               pnlData={pnlData}
