@@ -970,10 +970,11 @@ const Operations = () => {
               currentAmount={trades[0]?.pnl ? Math.abs(trades[0].pnl) : undefined}
               isRunning={isRunning}
               trades={trades.slice(0, 8).map((t) => ({
+                ...t,
                 id: t.id,
-                asset: t.asset,
+                asset: t.ativo_nome || t.asset,
                 direction: t.direction as 'CALL' | 'PUT',
-                result: t.result as 'WIN' | 'LOSS' | undefined,
+                result: t.resultado as 'WIN' | 'LOSS' | undefined,
                 pnl: t.pnl,
                 timestamp: t.created_at ? new Date(t.created_at).getTime() : Date.now(),
               }))}
@@ -1197,10 +1198,11 @@ const Operations = () => {
               tradeMarkers={tradeMarkers}
               currentStatus={currentStatus}
               trades={trades.slice(0, 8).map((t) => ({
+                ...t,
                 id: t.id,
-                asset: t.asset,
+                asset: t.ativo_nome || t.asset,
                 direction: t.direction as 'CALL' | 'PUT',
-                result: t.result as 'WIN' | 'LOSS' | undefined,
+                result: t.resultado as 'WIN' | 'LOSS' | undefined,
                 pnl: t.pnl,
                 timestamp: t.created_at ? new Date(t.created_at).getTime() : Date.now(),
               }))}
