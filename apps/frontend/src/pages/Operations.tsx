@@ -835,14 +835,26 @@ const Operations = () => {
               isRunning={isRunning}
             />
 
-            {/* ✅ Start/Stop Bot Button */}
-            <div className="flex items-center justify-center">
+            {/* ✅ Start/Stop Bot Button + Advanced Settings Icon */}
+            <div className="flex items-center justify-center gap-2">
+              {/* Advanced Settings Icon Button */}
+              <Button
+                variant="outline"
+                size="lg"
+                onClick={() => setShowManualAdvanced(true)}
+                className="gap-2 border-slate-700/50 hover:bg-slate-800/50 px-3 flex-shrink-0"
+                title="Advanced Settings"
+              >
+                <Settings className="w-5 h-5" />
+              </Button>
+
+              {/* Start/Stop Bot Button */}
               {isRunning ? (
                 <Button
                   onClick={handleStopBot}
                   disabled={botLoading}
                   size="lg"
-                  className="gap-2 bg-negative hover:bg-negative/90 text-white shadow-lg shadow-negative/30 px-12"
+                  className="gap-2 bg-negative hover:bg-negative/90 text-white shadow-lg shadow-negative/30 flex-1"
                 >
                   {botLoading ? (
                     <Loader2 className="w-5 h-5 animate-spin" />
@@ -856,7 +868,7 @@ const Operations = () => {
                   onClick={handleStartBot}
                   disabled={!isConnected || botLoading}
                   size="lg"
-                  className="gap-2 bg-positive text-white hover:bg-positive/90 shadow-lg shadow-positive/30 px-12"
+                  className="gap-2 bg-positive text-white hover:bg-positive/90 shadow-lg shadow-positive/30 flex-1"
                 >
                   {botLoading ? (
                     <Loader2 className="w-5 h-5 animate-spin" />
@@ -867,6 +879,115 @@ const Operations = () => {
                 </Button>
               )}
             </div>
+
+            {/* ✅ Advanced Settings Dialog */}
+            <Dialog open={showManualAdvanced} onOpenChange={setShowManualAdvanced}>
+              <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+                <DialogHeader>
+                  <DialogTitle>Advanced Options</DialogTitle>
+                  <DialogDescription>Optional risk management settings for auto trading</DialogDescription>
+                </DialogHeader>
+
+                <div className="space-y-6 py-4">
+                  {/* Leverage (Martingale) */}
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <Label className="text-base font-semibold">Leverage (Martingale)</Label>
+                        <p className="text-xs text-muted-foreground mt-1">
+                          Multiply entry after loss
+                        </p>
+                      </div>
+                      <Button
+                        variant={leverageEnabled ? "default" : "outline"}
+                        size="sm"
+                        onClick={() => setLeverageEnabled((prev) => !prev)}
+                      >
+                        {leverageEnabled ? "ON" : "OFF"}
+                      </Button>
+                    </div>
+                    {leverageEnabled && (
+                      <Input
+                        type="number"
+                        min="1.5"
+                        max="5"
+                        step="0.5"
+                        value={leverage}
+                        onChange={(e) => setLeverage(Number(e.target.value))}
+                        className="bg-card"
+                      />
+                    )}
+                  </div>
+
+                  {/* Safety Stop */}
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <Label className="text-base font-semibold">Safety Stop</Label>
+                        <p className="text-xs text-muted-foreground mt-1">
+                          Stop after consecutive losses
+                        </p>
+                      </div>
+                      <Button
+                        variant={safetyStopEnabled ? "default" : "outline"}
+                        size="sm"
+                        onClick={() => setSafetyStopEnabled((prev) => !prev)}
+                      >
+                        {safetyStopEnabled ? "ON" : "OFF"}
+                      </Button>
+                    </div>
+                    {safetyStopEnabled && (
+                      <Input
+                        type="number"
+                        min="1"
+                        max="10"
+                        step="1"
+                        value={safetyStop}
+                        onChange={(e) => setSafetyStop(Number(e.target.value))}
+                        className="bg-card"
+                      />
+                    )}
+                  </div>
+
+                  {/* Daily Goal */}
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <Label className="text-base font-semibold">Daily Goal</Label>
+                        <p className="text-xs text-muted-foreground mt-1">
+                          Target profit for the day
+                        </p>
+                      </div>
+                      <Button
+                        variant={dailyGoalEnabled ? "default" : "outline"}
+                        size="sm"
+                        onClick={() => setDailyGoalEnabled((prev) => !prev)}
+                      >
+                        {dailyGoalEnabled ? "ON" : "OFF"}
+                      </Button>
+                    </div>
+                    {dailyGoalEnabled && (
+                      <Input
+                        type="number"
+                        min="1"
+                        max="10000"
+                        step="10"
+                        value={dailyGoal}
+                        onChange={(e) => setDailyGoal(Number(e.target.value))}
+                        className="bg-card"
+                      />
+                    )}
+                  </div>
+                </div>
+
+                <Button
+                  onClick={() => setShowManualAdvanced(false)}
+                  className="w-full mt-4 bg-primary hover:bg-primary/90"
+                >
+                  Close
+                </Button>
+              </DialogContent>
+            </Dialog>
 
             {/* ✅ Configuration Panel: Only show when bot is NOT running */}
             {!isRunning && (
