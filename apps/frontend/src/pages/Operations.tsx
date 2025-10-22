@@ -10,7 +10,6 @@ import type { ScannerConfig } from "@/features/market-scanner";
 // ✅ Trading Components
 import {
   OperationsHeader,
-  AutoModeConfig,
   AutoModeRunning,
   MetricsCards,
   TradeHistory,
@@ -989,30 +988,6 @@ const Operations = () => {
               </DialogContent>
             </Dialog>
 
-            {/* ✅ Configuration Panel: Only show when bot is NOT running */}
-            {!isRunning && (
-              <AutoModeConfig
-                selectedStrategy={selectedStrategy}
-                onStrategyChange={setSelectedStrategy}
-                entryValue={entryValue}
-                onEntryValueChange={setEntryValue}
-                // ✅ Leverage with toggle
-                leverageEnabled={leverageEnabled}
-                onLeverageEnabledChange={setLeverageEnabled}
-                leverage={leverage}
-                onLeverageChange={setLeverage}
-                // ✅ Safety Stop with toggle
-                safetyStopEnabled={safetyStopEnabled}
-                onSafetyStopEnabledChange={setSafetyStopEnabled}
-                safetyStop={safetyStop}
-                onSafetyStopChange={setSafetyStop}
-                // ✅ Daily Goal with toggle
-                dailyGoalEnabled={dailyGoalEnabled}
-                onDailyGoalEnabledChange={setDailyGoalEnabled}
-                dailyGoal={dailyGoal}
-                onDailyGoalChange={setDailyGoal}
-              />
-            )}
           </>
         ) : (
           // MANUAL MODE
