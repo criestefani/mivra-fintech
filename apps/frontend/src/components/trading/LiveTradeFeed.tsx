@@ -116,7 +116,7 @@ export function LiveTradeFeed({
                             <span className={`text-sm font-bold flex-shrink-0 ${trade.result === 'WIN' ? 'text-positive' : 'text-negative'}`}>
                               {trade.result === 'WIN' ? '✓' : '✗'}
                             </span>
-                            <span className="text-sm font-medium text-white truncate">{trade.asset}</span>
+                            <span className="text-sm font-medium text-white truncate">{(trade as any).ativo_nome || trade.asset}</span>
                             <span className={`text-xs px-1.5 py-0.5 rounded flex-shrink-0 ${trade.direction === 'CALL' ? 'bg-positive/20 text-positive' : 'bg-negative/20 text-negative'}`}>
                               {trade.direction}
                             </span>
