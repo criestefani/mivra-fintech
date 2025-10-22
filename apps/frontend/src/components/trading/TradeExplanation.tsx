@@ -5,7 +5,6 @@
 
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Zap, TrendingUp, TrendingDown, Target, Gauge, Zap as ZapIcon } from 'lucide-react';
-import { GlassCard } from '@/components/ui/gamification';
 import type { Trade } from '@/integrations/supabase/client';
 
 export interface TradeDetails extends Trade {
@@ -87,7 +86,7 @@ export function TradeExplanation({ isOpen, trade, onClose }: TradeExplanationPro
             transition={{ type: 'spring', damping: 30, stiffness: 400 }}
             className="fixed inset-0 flex items-center justify-center z-50 p-4 pointer-events-none"
           >
-            <GlassCard className="border-primary/30 shadow-2xl max-h-[90vh] w-full max-w-2xl overflow-hidden flex flex-col pointer-events-auto">
+            <div className="bg-slate-900 border border-primary/50 shadow-2xl max-h-[90vh] w-full max-w-2xl overflow-hidden flex flex-col pointer-events-auto rounded-lg">
               {/* Header */}
               <div className={`border-b border-slate-700/50 p-5 flex items-center justify-between flex-shrink-0 bg-gradient-to-r ${
                 isWin ? 'from-positive/20 to-positive/10' : 'from-negative/20 to-negative/10'
@@ -253,7 +252,7 @@ export function TradeExplanation({ isOpen, trade, onClose }: TradeExplanationPro
                   </p>
                 </div>
               </div>
-            </GlassCard>
+            </div>
           </motion.div>
         </>
       )}
