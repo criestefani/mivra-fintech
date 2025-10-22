@@ -24,7 +24,7 @@ import { Input } from "@/shared/components/ui/input";
 import { Label } from "@/shared/components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/shared/components/ui/dialog";
 import { cn } from "@/shared/utils/cn";
-import { ChevronDown, TrendingUp, Play, Square, Loader2, Settings } from "lucide-react";
+import { ChevronDown, TrendingUp, Play, Square, Loader2, Settings, HelpCircle } from "lucide-react";
 
 // ✅ Gamification Components
 import {
@@ -101,6 +101,7 @@ const Operations = () => {
     return localStorage.getItem('selectedTimeframe') || '60';
   });
   const [showManualAdvanced, setShowManualAdvanced] = useState(false);
+  const [showStrategyHelp, setShowStrategyHelp] = useState(false);
   useEffect(() => {
     if (typeof window !== "undefined" && window.innerWidth >= 768) {
       setShowManualAdvanced(true);
@@ -825,6 +826,96 @@ const Operations = () => {
         {botMode === "auto" ? (
           // AUTO MODE
           <>
+            {/* ✅ Strategy Selection Dropdown + Help Icon */}
+            <div className="flex items-center gap-3">
+              {/* Strategy Selection Dropdown */}
+              <div className="flex-1">
+                <label className="text-sm font-medium text-white mb-2 block">Strategy</label>
+                <select
+                  value={selectedStrategy}
+                  onChange={(e) => setSelectedStrategy(e.target.value)}
+                  disabled={isRunning}
+                  className="w-full px-4 py-2.5 rounded-lg bg-slate-900/50 border border-slate-700/50 text-white hover:border-slate-600/50 disabled:opacity-50 disabled:cursor-not-allowed transition-all focus:outline-none focus:ring-2 focus:ring-primary/50"
+                >
+                  <option value="aggressive">Aggressive</option>
+                  <option value="balanced">Balanced</option>
+                  <option value="conservative">Conservative</option>
+                </select>
+              </div>
+
+              {/* Help Icon Button */}
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setShowStrategyHelp(true)}
+                className="gap-2 border-slate-700/50 hover:bg-slate-800/50 mt-6"
+                title="Strategy Information"
+              >
+                <HelpCircle className="w-4 h-4" />
+              </Button>
+            </div>
+
+            {/* ✅ Strategy Help Dialog */}
+            <Dialog open={showStrategyHelp} onOpenChange={setShowStrategyHelp}>
+              <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+                <DialogHeader>
+                  <DialogTitle>Trading Strategies</DialogTitle>
+                  <DialogDescription>Learn about each trading strategy</DialogDescription>
+                </DialogHeader>
+
+                <div className="space-y-6 py-4">
+                  {/* Aggressive Strategy */}
+                  <div className="space-y-2 p-4 rounded-lg bg-slate-900/50 border border-slate-700/50">
+                    <h3 className="font-semibold text-white flex items-center gap-2">
+                      <span className="text-xl">🚀</span>
+                      Aggressive Strategy
+                    </h3>
+                    <p className="text-sm text-slate-300">
+                      This strategy prioritizes high-frequency trading with shorter timeframes and higher risk. The bot enters positions more frequently, seeking maximum profit opportunities. Best for experienced traders comfortable with rapid market movements and higher volatility.
+                    </p>
+                  </div>
+
+                  {/* Balanced Strategy */}
+                  <div className="space-y-2 p-4 rounded-lg bg-slate-900/50 border border-slate-700/50">
+                    <h3 className="font-semibold text-white flex items-center gap-2">
+                      <span className="text-xl">⚖️</span>
+                      Balanced Strategy
+                    </h3>
+                    <p className="text-sm text-slate-300">
+                      This strategy provides a middle ground between risk and reward. The bot trades at moderate frequency with medium timeframes, seeking consistent profits while managing risk. Recommended for most traders looking for steady returns without extreme volatility.
+                    </p>
+                  </div>
+
+                  {/* Conservative Strategy */}
+                  <div className="space-y-3 p-4 rounded-lg bg-slate-900/50 border border-slate-700/50">
+                    <h3 className="font-semibold text-white flex items-center gap-2">
+                      <span className="text-xl">🛡️</span>
+                      Conservative Strategy
+                    </h3>
+                    <p className="text-sm text-slate-300">
+                      This strategy emphasizes capital preservation with low-frequency trading and longer timeframes. The bot waits for high-confidence trading signals, resulting in fewer but potentially more reliable trades. Ideal for risk-averse traders.
+                    </p>
+
+                    {/* Warning Box */}
+                    <div className="mt-3 p-3 rounded-lg bg-amber-900/20 border border-amber-700/50 flex gap-3">
+                      <span className="text-xl flex-shrink-0">⚠️</span>
+                      <div className="text-sm text-amber-300/90">
+                        <p className="font-semibold mb-1">Important Notice:</p>
+                        <p>The bot may remain idle for several minutes while searching for optimal trading signals. This is normal behavior and ensures high-quality trades.</p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <Button
+                  onClick={() => setShowStrategyHelp(false)}
+                  className="w-full mt-4 bg-primary hover:bg-primary/90"
+                >
+                  Close
+                </Button>
+              </DialogContent>
+            </Dialog>
+
             {/* ✅ P&L Chart: Always visible (bot running or not) */}
             <AutoModeRunning
               pnlData={pnlData}
@@ -1232,34 +1323,6 @@ const Operations = () => {
 
         {/* ✅ METRICS CARDS - Always visible */}
         <MetricsCards {...metrics} />
-
-        {/* ✅ GAMIFICATION WIDGETS */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Quests Widget */}
-          <div className="lg:col-span-1 backdrop-blur-xl bg-slate-900/50 border border-slate-700/50 rounded-lg p-4">
-            <QuestTrackerWidget userId={user?.id || null} maxQuests={4} />
-          </div>
-
-          {/* Leaderboard Widget */}
-          <div className="lg:col-span-1 backdrop-blur-xl bg-slate-900/50 border border-slate-700/50 rounded-lg p-4">
-            <div className="space-y-3">
-              <h3 className="text-lg font-bold text-white">Top Rankings</h3>
-              <p className="text-xs text-muted-foreground">
-                View full <a href="/gamification/leaderboard" className="text-primary hover:underline">rankings →</a>
-              </p>
-            </div>
-          </div>
-
-          {/* Badges Widget */}
-          <div className="lg:col-span-1 backdrop-blur-xl bg-slate-900/50 border border-slate-700/50 rounded-lg p-4">
-            <div className="space-y-3">
-              <h3 className="text-lg font-bold text-white">Badges</h3>
-              <p className="text-xs text-muted-foreground">
-                View your <a href="/gamification/badges" className="text-primary hover:underline">achievements →</a>
-              </p>
-            </div>
-          </div>
-        </div>
 
       </main>
 
