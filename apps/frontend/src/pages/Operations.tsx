@@ -24,7 +24,7 @@ import { Button } from "@/shared/components/ui/button";
 import { Input } from "@/shared/components/ui/input";
 import { Label } from "@/shared/components/ui/label";
 import { cn } from "@/shared/utils/cn";
-import { ChevronDown, TrendingUp } from "lucide-react";
+import { ChevronDown, TrendingUp, Play, Square, Loader2 } from "lucide-react";
 
 // ✅ Gamification Components
 import {
@@ -814,15 +814,11 @@ const Operations = () => {
           </div>
         </DiagonalSection>
 
-        {/* ✅ NEW HEADER */}
+        {/* ✅ MODE TOGGLE HEADER */}
         <OperationsHeader
           botMode={botMode}
           onBotModeChange={handleModeChange}
           isRunning={isRunning}
-          isConnected={isConnected}
-          isLoading={botLoading}
-          onStart={handleStartBot}
-          onStop={handleStopBot}
         />
 
         {/* ✅ MODE-SPECIFIC CONTENT */}
@@ -836,6 +832,39 @@ const Operations = () => {
               currentAsset={trades[0]?.asset}
               currentAmount={trades[0]?.pnl ? Math.abs(trades[0].pnl) : undefined}
             />
+
+            {/* ✅ Start/Stop Bot Button */}
+            <div className="flex items-center justify-center">
+              {isRunning ? (
+                <Button
+                  onClick={handleStopBot}
+                  disabled={botLoading}
+                  size="lg"
+                  className="gap-2 bg-negative hover:bg-negative/90 text-white shadow-lg shadow-negative/30 px-12"
+                >
+                  {botLoading ? (
+                    <Loader2 className="w-5 h-5 animate-spin" />
+                  ) : (
+                    <Square className="w-5 h-5" />
+                  )}
+                  Stop Bot
+                </Button>
+              ) : (
+                <Button
+                  onClick={handleStartBot}
+                  disabled={!isConnected || botLoading}
+                  size="lg"
+                  className="gap-2 bg-positive text-white hover:bg-positive/90 shadow-lg shadow-positive/30 px-12"
+                >
+                  {botLoading ? (
+                    <Loader2 className="w-5 h-5 animate-spin" />
+                  ) : (
+                    <Play className="w-5 h-5" />
+                  )}
+                  Start Bot
+                </Button>
+              )}
+            </div>
 
             {/* ✅ Configuration Panel: Only show when bot is NOT running */}
             {!isRunning && (
@@ -875,6 +904,39 @@ const Operations = () => {
               tradeMarkers={tradeMarkers}
               currentStatus={currentStatus}
             />
+
+            {/* ✅ Start/Stop Bot Button */}
+            <div className="flex items-center justify-center">
+              {isRunning ? (
+                <Button
+                  onClick={handleStopBot}
+                  disabled={botLoading}
+                  size="lg"
+                  className="gap-2 bg-negative hover:bg-negative/90 text-white shadow-lg shadow-negative/30 px-12"
+                >
+                  {botLoading ? (
+                    <Loader2 className="w-5 h-5 animate-spin" />
+                  ) : (
+                    <Square className="w-5 h-5" />
+                  )}
+                  Stop Bot
+                </Button>
+              ) : (
+                <Button
+                  onClick={handleStartBot}
+                  disabled={!isConnected || botLoading}
+                  size="lg"
+                  className="gap-2 bg-positive text-white hover:bg-positive/90 shadow-lg shadow-positive/30 px-12"
+                >
+                  {botLoading ? (
+                    <Loader2 className="w-5 h-5 animate-spin" />
+                  ) : (
+                    <Play className="w-5 h-5" />
+                  )}
+                  Start Bot
+                </Button>
+              )}
+            </div>
 
             {/* ✅ Gamification: Live Trade Feed (Manual Mode) - Floating Button */}
             <LiveTradeFeed
