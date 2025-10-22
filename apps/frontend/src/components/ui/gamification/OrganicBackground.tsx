@@ -37,8 +37,8 @@ export function OrganicBackground({
       {/* Gradient mesh background */}
       <div className="absolute inset-0 bg-gradient-to-br from-deep-space via-deep-space/95 to-deep-space" />
 
-      {/* Animated blobs */}
-      {Array.from({ length: blobCount }).map((_, i) => (
+      {/* Animated blobs - DISABLED FOR TESTING */}
+      {/* {Array.from({ length: blobCount }).map((_, i) => (
         <motion.div
           key={i}
           className="absolute rounded-full blur-3xl opacity-5"
@@ -68,7 +68,7 @@ export function OrganicBackground({
             ease: 'easeInOut',
           }}
         />
-      ))}
+      ))} */
 
       {/* Noise overlay for texture */}
       <div
