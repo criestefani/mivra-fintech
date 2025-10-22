@@ -113,7 +113,7 @@ export const AutoModeRunning: React.FC<AutoModeRunningProps> = ({
                 <Line
                   type="monotone"
                   dataKey="value"
-                  stroke={isProfitable ? 'hsl(152, 71%, 45%)' : 'hsl(0, 84%, 55%)'}
+                  stroke={isProfitable ? '#21C06C' : '#EF4444'}
                   strokeWidth={2}
                   dot={false}
                   animationDuration={300}

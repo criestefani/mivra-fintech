@@ -137,12 +137,12 @@ export const TradingChart: React.FC<TradingChartProps> = ({
     })
 
     const candleSeries = chart.addCandlestickSeries({
-      upColor: 'hsl(152, 71%, 45%)',
-      downColor: 'hsl(0, 84%, 55%)',
-      borderUpColor: 'hsl(152, 71%, 45%)',
-      borderDownColor: 'hsl(0, 84%, 55%)',
-      wickUpColor: 'hsl(152, 71%, 45%)',
-      wickDownColor: 'hsl(0, 84%, 55%)'
+      upColor: '#21C06C',        // hsl(152, 71%, 45%) - Green for up candles
+      downColor: '#EF4444',      // hsl(0, 84%, 55%) - Red for down candles
+      borderUpColor: '#21C06C',
+      borderDownColor: '#EF4444',
+      wickUpColor: '#21C06C',
+      wickDownColor: '#EF4444'
     })
 
     chartRef.current = chart
