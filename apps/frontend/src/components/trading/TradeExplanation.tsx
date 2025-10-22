@@ -58,12 +58,24 @@ export function TradeExplanation({ isOpen, trade, onClose }: TradeExplanationPro
   const duration = getTradeDuration(trade.expiration_seconds);
   const roi = calculateROI(trade.pnl || 0, trade.valor);
 
-  // ✅ USE REAL DATA FROM SUPABASE
+  // ✅ USE REAL DATA FROM SUPABASE - WITH LOGGING FOR DEBUGGING
+  console.log('📊 TradeExplanation Data:', {
+    strategy_explanation: trade.strategy_explanation,
+    technical_summary: trade.technical_summary,
+    confidence_score: trade.confidence_score,
+    strategy_id: trade.strategy_id,
+    entry_price: trade.entry_price,
+    exit_price: trade.exit_price,
+    account_type: (trade as any).account_type,
+    all_keys: Object.keys(trade)
+  });
+
   const explanation = trade.strategy_explanation || 'No analysis available';
   const technicalSummary = trade.technical_summary || '';
   const confidenceScore = trade.confidence_score || 0;
   const indicators = trade.indicators_snapshot as Record<string, any> | null;
   const marketConditions = trade.market_conditions as Record<string, any> | null;
+  const accountType = (trade as any).account_type || 'Unknown';
 
   return (
     <AnimatePresence>
@@ -158,8 +170,8 @@ export function TradeExplanation({ isOpen, trade, onClose }: TradeExplanationPro
                   </div>
                 )}
 
-                {/* Strategy & Direction */}
-                <div className="grid grid-cols-2 gap-3">
+                {/* Strategy, Direction & Account Type */}
+                <div className="grid grid-cols-3 gap-3">
                   <div className="bg-slate-800/30 rounded-lg p-3 border border-slate-700/30">
                     <p className="text-xs text-slate-400 mb-1 flex items-center gap-1">
                       <Zap className="w-3 h-3" />
@@ -174,6 +186,12 @@ export function TradeExplanation({ isOpen, trade, onClose }: TradeExplanationPro
                     </p>
                     <p className={`text-sm font-bold ${trade.direction === 'CALL' ? 'text-positive' : 'text-negative'}`}>
                       {trade.direction === 'CALL' ? '📈 CALL' : '📉 PUT'}
+                    </p>
+                  </div>
+                  <div className="bg-slate-800/30 rounded-lg p-3 border border-slate-700/30">
+                    <p className="text-xs text-slate-400 mb-1">Account Type</p>
+                    <p className={`text-sm font-bold ${accountType === 'demo' ? 'text-warning' : 'text-positive'}`}>
+                      {accountType === 'demo' ? '🎮 Demo' : '💰 Real'}
                     </p>
                   </div>
                 </div>

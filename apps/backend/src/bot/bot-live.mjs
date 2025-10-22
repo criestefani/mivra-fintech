@@ -559,6 +559,13 @@ class MivraTecBot {
 
 
     console.log(`📊 Resultado: ${resultado} | PnL: ${position.pnl}`);
+    console.log(`🔍 Position Object Debug:`, {
+      closePrice: position.closePrice,
+      price: position.price,
+      openPrice: position.openPrice,
+      entryPrice: position.entryPrice,
+      exitPrice: position.exitPrice
+    });
     this.atualizarStats(resultado, position.pnl);
 
     // ✅ SET STATUS: Position closed
