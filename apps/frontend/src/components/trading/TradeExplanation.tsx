@@ -58,18 +58,7 @@ export function TradeExplanation({ isOpen, trade, onClose }: TradeExplanationPro
   const duration = getTradeDuration(trade.expiration_seconds);
   const roi = calculateROI(trade.pnl || 0, trade.valor);
 
-  // ✅ USE REAL DATA FROM SUPABASE - WITH LOGGING FOR DEBUGGING
-  console.log('📊 TradeExplanation Data:', {
-    strategy_explanation: trade.strategy_explanation,
-    technical_summary: trade.technical_summary,
-    confidence_score: trade.confidence_score,
-    strategy_id: trade.strategy_id,
-    entry_price: trade.entry_price,
-    exit_price: trade.exit_price,
-    account_type: (trade as any).account_type,
-    all_keys: Object.keys(trade)
-  });
-
+  // ✅ USE REAL DATA FROM SUPABASE
   const explanation = trade.strategy_explanation || 'No analysis available';
   const technicalSummary = trade.technical_summary || '';
   const confidenceScore = trade.confidence_score || 0;
