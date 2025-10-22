@@ -676,7 +676,8 @@ const Operations = () => {
       setSessionStartTime(Date.now());
       setSessionConfig(userConfig);
 
-      // ✅ RESET METRICS FOR NEW SESSION
+      // ✅ RESET TRADES AND METRICS FOR NEW SESSION
+      setTrades([]);
       setMetrics({
         winRate: 0,
         totalTrades: 0,
@@ -1006,7 +1007,7 @@ const Operations = () => {
             <AutoModeRunning
               pnlData={pnlData}
               currentStatus={currentStatus}
-              currentAsset={trades[0]?.asset}
+              currentAsset={isRunning ? (sessionConfig?.asset || trades[0]?.asset) : trades[0]?.asset}
               currentAmount={trades[0]?.pnl ? Math.abs(trades[0].pnl) : undefined}
               isRunning={isRunning}
               trades={trades.slice(0, 8) as any}
@@ -1450,16 +1451,15 @@ const Operations = () => {
         totalPnL={metrics.pnl}
         config={sessionConfig}
         onClose={handleResetSession}
-        onTradeClick={setSelectedTrade}
+        onTradeClick={(trade) => setSelectedTrade(trade as any)}
       />
 
       {/* ✅ TRADE EXPLANATION MODAL - Shows when a trade is clicked from SessionSummary */}
-      {selectedTrade && (
-        <TradeExplanation
-          trade={selectedTrade as any}
-          onClose={() => setSelectedTrade(null)}
-        />
-      )}
+      <TradeExplanation
+        isOpen={selectedTrade !== null}
+        trade={selectedTrade as any}
+        onClose={() => setSelectedTrade(null)}
+      />
 
     </div>
   );
