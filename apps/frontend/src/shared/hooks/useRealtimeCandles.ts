@@ -27,7 +27,20 @@ interface UseRealtimeCandlesReturn {
   refetch: () => void
 }
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:4001'
+// Get API URL - handle dev vs production
+const getSocketURL = () => {
+  // In development: use proxy path
+  if (import.meta.env.DEV) {
+    return window.location.origin // Uses proxy at /socket.io
+  }
+
+  // In production/PWA: construct from current location
+  const protocol = window.location.protocol === 'https:' ? 'https:' : 'http:'
+  const host = window.location.hostname
+  const port = import.meta.env.VITE_API_PORT || (protocol === 'https:' ? 443 : 4001)
+
+  return `${protocol}//${host}:${port}`
+}
 
 export const useRealtimeCandles = ({
   asset,
@@ -47,13 +60,18 @@ export const useRealtimeCandles = ({
   useEffect(() => {
     if (!autoConnect) return
 
-    console.log('[useRealtimeCandles] Connecting to Socket.IO:', API_URL)
+    const socketURL = getSocketURL()
+    console.log('[useRealtimeCandles] Connecting to Socket.IO:', socketURL)
 
-    const socket = io(API_URL, {
+    const socket = io(socketURL, {
       transports: ['websocket', 'polling'],
       reconnection: true,
       reconnectionAttempts: 5,
-      reconnectionDelay: 1000
+      reconnectionDelay: 1000,
+      // For PWA/mobile compatibility
+      path: '/socket.io/',
+      withCredentials: true,
+      autoConnect: true
     })
 
     socketRef.current = socket
