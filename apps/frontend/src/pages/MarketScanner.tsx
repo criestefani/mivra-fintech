@@ -11,7 +11,7 @@ import type { ScannerAsset, ScannerConfig } from '@/features/market-scanner';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/shared/components/ui/card';
 import { Button } from '@/shared/components/ui/button';
 import { Loader2, RefreshCw, Activity, Zap } from 'lucide-react';
-import { OrganicBackground, DiagonalSection } from '@/components/ui/gamification';
+import { DiagonalSection } from '@/components/ui/gamification';
 import axios from 'axios';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:4001';
@@ -170,12 +170,7 @@ export const MarketScanner: React.FC = () => {
   // Initial loading state
   if (loading) {
     return (
-      <div className="min-h-screen bg-slate-900 relative overflow-hidden pt-16">
-        <OrganicBackground
-          blobCount={3}
-          colors={['#0EA5E9', '#F59E0B', '#10B981']}
-          speed={0.8}
-        />
+      <div className="min-h-screen bg-black relative overflow-hidden pt-16">
         <DashboardHeader user={user} />
         <Sidebar />
         <div className="lg:ml-64 container mx-auto px-4 py-6 relative z-20" style={{ marginTop: "max(1.5rem, calc(env(safe-area-inset-top) + 1.5rem))" }}>
@@ -194,12 +189,7 @@ export const MarketScanner: React.FC = () => {
   // Error state
   if (error) {
     return (
-      <div className="min-h-screen bg-slate-900 relative overflow-hidden pt-16">
-        <OrganicBackground
-          blobCount={3}
-          colors={['#0EA5E9', '#F59E0B', '#10B981']}
-          speed={0.8}
-        />
+      <div className="min-h-screen bg-black relative overflow-hidden pt-16">
         <DashboardHeader user={user} />
         <Sidebar />
         <div className="lg:ml-64 container mx-auto px-4 py-6 relative z-20" style={{ marginTop: "max(1.5rem, calc(env(safe-area-inset-top) + 1.5rem))" }}>
@@ -224,14 +214,7 @@ export const MarketScanner: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-slate-900 relative overflow-hidden">
-      {/* Organic Background Animation */}
-      <OrganicBackground
-        blobCount={3}
-        colors={['#0EA5E9', '#F59E0B', '#10B981']}
-        speed={0.8}
-      />
-
+    <div className="min-h-screen bg-black relative overflow-hidden">
       <DashboardHeader user={user} />
       <Sidebar />
       <div className="lg:ml-64 container mx-auto px-4 py-6 space-y-6 pb-20 relative z-20" style={{ marginTop: 'max(1.5rem, calc(env(safe-area-inset-top) + 1.5rem))' }}>

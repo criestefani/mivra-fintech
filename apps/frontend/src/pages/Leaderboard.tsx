@@ -4,7 +4,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { User } from '@supabase/supabase-js';
 import { DashboardHeader, Sidebar } from '@/features/dashboard';
 import { LeaderboardPage } from '@/features/gamification/pages/Leaderboard';
-import { DiagonalSection, OrganicBackground } from '@/components/ui/gamification';
+import { DiagonalSection } from '@/components/ui/gamification';
 
 const LeaderboardPage_Wrapper = () => {
   const navigate = useNavigate();
@@ -50,13 +50,8 @@ const LeaderboardPage_Wrapper = () => {
   }
 
   return (
-    <div className="min-h-screen bg-slate-900 relative overflow-hidden">
-      {/* Organic Background Animation */}
-      <OrganicBackground
-        blobCount={3}
-        colors={['#0EA5E9', '#F59E0B', '#10B981']}
-        speed={0.8}
-      />
+    <div className="min-h-screen bg-black relative overflow-hidden">
+      {/* Organic Background Animation - REMOVED */}
 
       <DashboardHeader user={user} />
       <Sidebar />

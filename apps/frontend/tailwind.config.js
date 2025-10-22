@@ -69,6 +69,7 @@ export default {
           5: "hsl(var(--chart-5))",
         },
         "deep-space": "#0a0e27",
+        "card-bg": "#1a1a1a",
         // Mivra Design Guide Custom Colors
         positive: {
           DEFAULT: "hsl(var(--positive))",

@@ -37,7 +37,7 @@ import {
   QuestTracker,
   type Trade as TradeFeedTrade,
 } from "@/components/trading";
-import { XPBar, StreakBadge, FloatingXP, OrganicBackground, DiagonalSection } from "@/components/ui/gamification";
+import { XPBar, StreakBadge, FloatingXP, DiagonalSection } from "@/components/ui/gamification";
 import { BadgeUnlockModal, LevelUpModal } from "@/components/gamification";
 
 // ✅ Gamification Hooks

@@ -9,7 +9,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/shared/components/ui
 import { toast } from "sonner";
 import { Zap, Mail, Lock, User, Loader2 } from "lucide-react";
 import { z } from "zod";
-import { OrganicBackground, DiagonalSection } from "@/components/ui/gamification";
+import { DiagonalSection } from "@/components/ui/gamification";
 // 🆕 IMPORTAR O SERVIÇO AVALON
 import avalonService from "@/features/broker/services/avalon.service";
 
@@ -127,13 +127,8 @@ const Auth = () => {
   };
 
   return (
-    <div className="min-h-screen bg-slate-900 relative overflow-hidden" style={{ paddingTop: 'env(safe-area-inset-top)' }}>
-      {/* Organic Background Animation */}
-      <OrganicBackground
-        blobCount={3}
-        colors={['#0EA5E9', '#F59E0B', '#10B981']}
-        speed={0.8}
-      />
+    <div className="min-h-screen bg-black relative overflow-hidden" style={{ paddingTop: 'env(safe-area-inset-top)' }}>
+      {/* Organic Background Animation - REMOVED */}
 
       {/* Diagonal Header - Brand Section */}
       <DiagonalSection

@@ -19,7 +19,7 @@ import {
 } from '@/shared/components/ui/dialog';
 import { toast } from 'sonner';
 import { Loader2, Settings as SettingsIcon } from 'lucide-react';
-import { DepositButton, WithdrawButton, OrganicBackground, DiagonalSection } from '@/components/ui/gamification';
+import { DepositButton, WithdrawButton, DiagonalSection } from '@/components/ui/gamification';
 
 const Settings = () => {
   const navigate = useNavigate();
@@ -236,14 +236,7 @@ const Settings = () => {
   }
 
   return (
-    <div className="min-h-screen bg-slate-900 relative overflow-hidden">
-      {/* Organic Background Animation */}
-      <OrganicBackground
-        blobCount={3}
-        colors={['#0EA5E9', '#F59E0B', '#10B981']}
-        speed={0.8}
-      />
-
+    <div className="min-h-screen bg-black relative overflow-hidden">
       {user ? (
         <DashboardHeader user={user} />
       ) : (

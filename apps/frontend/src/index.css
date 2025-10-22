@@ -124,7 +124,7 @@
 
 @layer utilities {
   .glass {
-    background: color-mix(in srgb, hsl(var(--card)) 92%, transparent);
+    background: rgba(26, 26, 26, 0.7);
     border: 1px solid hsl(var(--border) / 0.5);
     box-shadow: var(--shadow);
     backdrop-filter: blur(18px);
@@ -132,7 +132,7 @@
   }
 
   .glass-dark {
-    background: color-mix(in srgb, hsl(var(--card)) 85%, transparent);
+    background: rgba(26, 26, 26, 0.8);
     border: 1px solid hsl(var(--border) / 0.65);
     box-shadow: var(--shadow-md);
     backdrop-filter: blur(24px);
@@ -160,7 +160,7 @@
 
   .metric-card {
     @apply rounded-xl p-6 transition-transform duration-200 ease-out;
-    background: color-mix(in srgb, hsl(var(--card)) 94%, transparent);
+    background: rgba(26, 26, 26, 0.75);
     border: 1px solid hsl(var(--border) / 0.5);
     box-shadow: var(--shadow-sm);
   }

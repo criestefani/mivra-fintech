@@ -6,7 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/sha
 import { Badge } from '@/shared/components/ui/badge'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/shared/components/ui/table'
 import { TrendingUp, TrendingDown, Activity, DollarSign } from 'lucide-react'
-import { OrganicBackground, DiagonalSection } from '@/components/ui/gamification'
+import { DiagonalSection } from '@/components/ui/gamification'
 
 interface Trade {
   id: string
@@ -108,13 +108,8 @@ export default function History() {
   }
 
   return (
-    <div className="min-h-screen bg-slate-900 relative overflow-hidden">
-      {/* Organic Background Animation */}
-      <OrganicBackground
-        blobCount={3}
-        colors={['#0EA5E9', '#F59E0B', '#10B981']}
-        speed={0.8}
-      />
+    <div className="min-h-screen bg-black relative overflow-hidden">
+      {/* Organic Background Animation - REMOVED */}
 
       <DashboardHeader user={user} />
       <Sidebar />
