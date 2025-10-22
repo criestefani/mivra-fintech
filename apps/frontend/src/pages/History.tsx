@@ -119,7 +119,7 @@ export default function History() {
       <DashboardHeader user={user} />
       <Sidebar />
 
-      <main className="lg:ml-64 container mx-auto px-4 py-6 pb-24 space-y-6 relative z-20">
+      <main className="lg:ml-64 container mx-auto px-4 py-6 pb-24 space-y-6 relative z-20" style={{ marginTop: 'max(1.5rem, calc(env(safe-area-inset-top) + 1.5rem))' }}>
         {/* Diagonal Section Header */}
         <DiagonalSection
           direction="bottom-left"

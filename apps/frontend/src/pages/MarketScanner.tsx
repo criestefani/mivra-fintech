@@ -178,7 +178,7 @@ export const MarketScanner: React.FC = () => {
         />
         <DashboardHeader user={user} />
         <Sidebar />
-        <div className="lg:ml-64 container mx-auto px-4 py-6 relative z-20">
+        <div className="lg:ml-64 container mx-auto px-4 py-6 relative z-20" style={{ marginTop: "max(1.5rem, calc(env(safe-area-inset-top) + 1.5rem))" }}>
           <div className="flex flex-col items-center justify-center min-h-[60vh] space-y-4">
             <Loader2 className="w-12 h-12 animate-spin text-primary" />
             <p className="text-muted-foreground text-lg">Loading Market Scanner...</p>
@@ -202,7 +202,7 @@ export const MarketScanner: React.FC = () => {
         />
         <DashboardHeader user={user} />
         <Sidebar />
-        <div className="lg:ml-64 container mx-auto px-4 py-6 relative z-20">
+        <div className="lg:ml-64 container mx-auto px-4 py-6 relative z-20" style={{ marginTop: "max(1.5rem, calc(env(safe-area-inset-top) + 1.5rem))" }}>
           <Card className="glass border-destructive">
             <CardHeader>
               <CardTitle className="text-destructive flex items-center gap-2">
@@ -234,7 +234,7 @@ export const MarketScanner: React.FC = () => {
 
       <DashboardHeader user={user} />
       <Sidebar />
-      <div className="lg:ml-64 container mx-auto px-4 py-6 space-y-6 pb-20 relative z-20">
+      <div className="lg:ml-64 container mx-auto px-4 py-6 space-y-6 pb-20 relative z-20" style={{ marginTop: 'max(1.5rem, calc(env(safe-area-inset-top) + 1.5rem))' }}>
         {/* Diagonal Section Header */}
         <DiagonalSection
           direction="top-left"

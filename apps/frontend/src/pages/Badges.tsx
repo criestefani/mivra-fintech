@@ -61,7 +61,7 @@ const BadgesPage_Wrapper = () => {
       <DashboardHeader user={user} />
       <Sidebar />
 
-      <main className="lg:ml-64 relative z-20">
+      <main className="lg:ml-64 relative z-20" style={{ marginTop: 'max(1.5rem, calc(env(safe-area-inset-top) + 1.5rem))' }}>
         {/* Diagonal Section Header with Title */}
         <DiagonalSection
           direction="top-left"

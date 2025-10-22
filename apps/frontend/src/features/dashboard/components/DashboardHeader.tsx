@@ -98,7 +98,7 @@ export const DashboardHeader = ({ user }: DashboardHeaderProps) => {
   )
 
   return (
-    <header className="fixed top-0 left-0 right-0 z-50 h-16 bg-gradient-to-r from-slate-900/95 via-slate-800/95 to-slate-900/95 border-b border-primary/30 shadow-2xl backdrop-blur-md">
+    <header className="fixed top-0 left-0 right-0 z-50 bg-gradient-to-r from-slate-900/95 via-slate-800/95 to-slate-900/95 border-b border-primary/30 shadow-2xl backdrop-blur-md" style={{ paddingTop: 'max(1rem, env(safe-area-inset-top))', paddingBottom: '1rem', minHeight: '4rem' }}>
       <div className="container mx-auto h-full px-4 flex items-center justify-between">
         {/* Left: Beta Badge */}
         <div className="flex items-center">

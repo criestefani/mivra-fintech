@@ -127,7 +127,7 @@ const Auth = () => {
   };
 
   return (
-    <div className="min-h-screen bg-slate-900 relative overflow-hidden">
+    <div className="min-h-screen bg-slate-900 relative overflow-hidden" style={{ paddingTop: 'env(safe-area-inset-top)' }}>
       {/* Organic Background Animation */}
       <OrganicBackground
         blobCount={3}
