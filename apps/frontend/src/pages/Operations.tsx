@@ -28,7 +28,6 @@ import { ChevronDown, TrendingUp } from "lucide-react";
 
 // ✅ Gamification Components
 import {
-  BotStatusBar,
   LiveTradeFeed,
   StreakOverlay,
   NextTradePreview,
@@ -802,14 +801,6 @@ const Operations = () => {
 
       {/* Mobile-First Layout */}
       <main className="lg:ml-64 container mx-auto px-4 py-6 pb-20 space-y-6 animate-fade-in relative z-20" style={{ marginTop: 'max(1.5rem, calc(env(safe-area-inset-top) + 1.5rem))' }}>
-
-        {/* ✅ Gamification: Bot Status Bar */}
-        <BotStatusBar
-          status={isRunning ? "RUNNING" : "STOPPED"}
-          sessionDuration={sessionTime}
-          pnlToday={metrics.pnl}
-          xpGained={progress?.total_xp}
-        />
 
         {/* ✅ Gamification: XP Bar */}
         {progress && (
