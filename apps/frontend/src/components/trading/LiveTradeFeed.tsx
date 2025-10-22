@@ -6,8 +6,9 @@
 import { motion, AnimatePresence } from 'framer-motion';
 import confetti from 'canvas-confetti';
 import { useEffect, useState } from 'react';
-import { X, TrendingUp } from 'lucide-react';
+import { X, TrendingUp, ChevronRight } from 'lucide-react';
 import { GlassCard } from '@/components/ui/gamification';
+import { TradeExplanation, TradeDetails } from './TradeExplanation';
 
 export interface Trade {
   id: string;
@@ -15,7 +16,15 @@ export interface Trade {
   direction: 'CALL' | 'PUT';
   result: 'WIN' | 'LOSS' | 'PENDING';
   pnl: number;
-  timestamp: string;
+  timestamp: string | number;
+  strategy?: string;
+  strategy_explanation?: string;
+  indicators_snapshot?: Record<string, any>;
+  confidence_score?: number;
+  market_conditions?: Record<string, any>;
+  technical_summary?: string;
+  entry_price?: number;
+  exit_price?: number;
 }
 
 interface LiveTradeFeedProps {
@@ -30,6 +39,7 @@ export function LiveTradeFeed({
   className = ''
 }: LiveTradeFeedProps) {
   const [isOpen, setIsOpen] = useState(false);
+  const [selectedTrade, setSelectedTrade] = useState<Trade | null>(null);
   const recentTrades = trades.slice(0, maxTrades);
   const winCount = recentTrades.filter(t => t.result === 'WIN').length;
 
@@ -77,7 +87,7 @@ export function LiveTradeFeed({
             >
               <GlassCard className="border-primary/30 shadow-2xl max-h-96 w-full max-w-md overflow-hidden flex flex-col">
                 {/* Header */}
-                <div className="border-b border-slate-700/50 p-5 flex items-center justify-between flex-shrink-0">
+                <div className="border-b border-slate-700/50 p-4 flex items-center justify-between flex-shrink-0">
                   <h2 className="text-lg font-semibold text-white flex items-center gap-2">
                     <TrendingUp className="w-5 h-5 text-primary" />
                     Recent Trades
@@ -92,12 +102,36 @@ export function LiveTradeFeed({
                   </motion.button>
                 </div>
 
-                {/* Trades List */}
-                <div className="overflow-y-auto flex-1 p-4 space-y-3">
+                {/* Trades List - Compact Lines */}
+                <div className="overflow-y-auto flex-1">
                   <AnimatePresence mode="popLayout">
                     {recentTrades.length > 0 ? (
                       recentTrades.map((trade, index) => (
-                        <TradeCard key={trade.id} trade={trade} index={index} />
+                        <motion.button
+                          key={trade.id}
+                          layout
+                          initial={{ opacity: 0, x: -20 }}
+                          animate={{ opacity: 1, x: 0 }}
+                          exit={{ opacity: 0, x: -20 }}
+                          onClick={() => setSelectedTrade(trade)}
+                          className="w-full px-4 py-2.5 border-b border-slate-700/30 hover:bg-slate-800/40 transition-colors flex items-center justify-between group"
+                        >
+                          <div className="flex items-center gap-2 flex-1 min-w-0">
+                            <span className={`text-sm font-bold flex-shrink-0 ${trade.result === 'WIN' ? 'text-positive' : 'text-negative'}`}>
+                              {trade.result === 'WIN' ? '✓' : '✗'}
+                            </span>
+                            <span className="text-sm font-medium text-white truncate">{trade.asset}</span>
+                            <span className={`text-xs px-1.5 py-0.5 rounded flex-shrink-0 ${trade.direction === 'CALL' ? 'bg-positive/20 text-positive' : 'bg-negative/20 text-negative'}`}>
+                              {trade.direction}
+                            </span>
+                          </div>
+                          <div className="flex items-center gap-2 flex-shrink-0 ml-2">
+                            <span className={`text-sm font-bold ${trade.pnl >= 0 ? 'text-positive' : 'text-negative'}`}>
+                              {trade.pnl >= 0 ? '+' : ''}R$ {trade.pnl.toFixed(0)}
+                            </span>
+                            <ChevronRight className="w-4 h-4 text-slate-600 group-hover:text-slate-400 transition-colors" />
+                          </div>
+                        </motion.button>
                       ))
                     ) : (
                       <div className="text-center py-12 text-slate-400">
@@ -112,97 +146,13 @@ export function LiveTradeFeed({
           </>
         )}
       </AnimatePresence>
+
+      {/* ✅ Trade Explanation Modal */}
+      <TradeExplanation
+        isOpen={selectedTrade !== null}
+        trade={selectedTrade as TradeDetails}
+        onClose={() => setSelectedTrade(null)}
+      />
     </>
-  );
-}
-
-interface TradeCardProps {
-  trade: Trade;
-  index: number;
-}
-
-function TradeCard({ trade, index }: TradeCardProps) {
-  const isWin = trade.result === 'WIN';
-  const isLoss = trade.result === 'LOSS';
-  const isPending = trade.result === 'PENDING';
-
-  // Trigger confetti for wins
-  useEffect(() => {
-    if (isWin && index === 0) {
-      // Small confetti burst for wins
-      confetti({
-        particleCount: 30,
-        spread: 60,
-        origin: { x: 0.5, y: 0.5 },
-        colors: ['hsl(152, 71%, 45%)', 'hsl(35, 96%, 52%)'],
-      });
-    }
-  }, [isWin, index]);
-
-  const resultConfig = {
-    WIN: {
-      icon: '✅',
-      bgColor: 'bg-positive/10',
-      borderColor: 'border-positive/30',
-      textColor: 'text-positive',
-    },
-    LOSS: {
-      icon: '❌',
-      bgColor: 'bg-negative/10',
-      borderColor: 'border-negative/30',
-      textColor: 'text-negative',
-    },
-    PENDING: {
-      icon: '⏳',
-      bgColor: 'bg-primary/10',
-      borderColor: 'border-primary/30',
-      textColor: 'text-primary',
-    },
-  }[trade.result];
-
-  const directionIcon = trade.direction === 'CALL' ? '▲' : '▼';
-  const directionColor = trade.direction === 'CALL' ? 'text-positive' : 'text-negative';
-
-  return (
-    <motion.div
-      layout
-      initial={{ opacity: 0, y: 20, scale: 0.8 }}
-      animate={{ opacity: 1, y: 0, scale: 1 }}
-      exit={{ opacity: 0, scale: 0.8, height: 0 }}
-      transition={{ duration: 0.3 }}
-      className={`rounded-lg border ${resultConfig.bgColor} ${resultConfig.borderColor} p-3`}
-    >
-      <div className="flex items-center justify-between mb-2">
-        <div className="flex items-center gap-2">
-          <span className={`text-lg ${directionColor}`}>{directionIcon}</span>
-          <span className="font-bold text-white text-sm">{trade.asset}</span>
-        </div>
-        <motion.span
-          className="text-xl"
-          animate={isPending ? { rotate: 360 } : {}}
-          transition={{ duration: 1, repeat: isPending ? Infinity : 0 }}
-        >
-          {resultConfig.icon}
-        </motion.span>
-      </div>
-
-      <div className="flex items-center justify-between">
-        <span className="text-xs text-gray-400">
-          {new Date(Number(trade.timestamp)).toLocaleTimeString('pt-BR', {
-            hour: '2-digit',
-            minute: '2-digit',
-          })}
-        </span>
-        {!isPending && (
-          <motion.span
-            initial={{ scale: 0 }}
-            animate={{ scale: [0, 1.2, 1] }}
-            className={`text-sm font-bold ${resultConfig.textColor}`}
-          >
-            {trade.pnl >= 0 ? '+' : ''}R$ {trade.pnl.toFixed(2)}
-          </motion.span>
-        )}
-      </div>
-    </motion.div>
   );
 }
