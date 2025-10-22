@@ -53,11 +53,13 @@ export function ProfileHeader({ stats, rank }: ProfileHeaderProps) {
         {/* XP Bar */}
         <div className="w-full max-w-md">
           <XPBar
-            current={stats.xp_current_level}
-            next={stats.xp_next_level}
+            level={stats.current_level}
+            currentXP={stats.xp_current_level || 0}
+            nextLevelXP={stats.xp_next_level || 1}
+            levelTitle={stats.level_title}
           />
           <p className="text-xs text-slate-500 mt-2">
-            {stats.xp_current_level.toLocaleString()} / {stats.xp_next_level.toLocaleString()} XP
+            {(stats.xp_current_level || 0).toLocaleString()} / {(stats.xp_next_level || 1).toLocaleString()} XP
           </p>
         </div>
       </div>
