@@ -490,4 +490,141 @@ router.post('/notifications/:userId/read-all', async (req, res) => {
   }
 });
 
+/**
+ * GET /api/gamification/profile/:userId
+ * Get complete user profile with stats and milestones
+ * Returns: { stats, totalBadges, milestones, rank }
+ */
+router.get('/profile/:userId', async (req, res) => {
+  try {
+    const { userId } = req.params;
+
+    // 1. Get user gamification stats
+    const { data: stats, error: statsError } = await req.db
+      .from('user_gamification')
+      .select('*')
+      .eq('user_id', userId)
+      .single();
+
+    if (statsError) throw statsError;
+
+    // 2. Get user badges count
+    const { data: badges, error: badgesError } = await req.db
+      .from('user_badges')
+      .select('id, earned_at')
+      .eq('user_id', userId)
+      .order('earned_at', { ascending: true });
+
+    if (badgesError) throw badgesError;
+
+    // 3. Calculate milestones
+    // Get first trade demo
+    const { data: firstTradeDemo } = await req.db
+      .from('trade_history')
+      .select('created_at')
+      .eq('user_id', userId)
+      .eq('account_type', 'demo')
+      .order('created_at', { ascending: true })
+      .limit(1);
+
+    // Get first deposit
+    const { data: firstDeposit } = await req.db
+      .from('deposit_tracking')
+      .select('created_at, amount')
+      .eq('user_id', userId)
+      .order('created_at', { ascending: true })
+      .limit(1);
+
+    // Get first trade real
+    const { data: firstTradeReal } = await req.db
+      .from('trade_history')
+      .select('created_at')
+      .eq('user_id', userId)
+      .eq('account_type', 'real')
+      .order('created_at', { ascending: true })
+      .limit(1);
+
+    // Get first win
+    const { data: firstWin } = await req.db
+      .from('trade_history')
+      .select('created_at')
+      .eq('user_id', userId)
+      .eq('resultado', 'win')
+      .order('created_at', { ascending: true })
+      .limit(1);
+
+    // Build milestones array
+    const milestones = [
+      {
+        id: 'first_trade_demo',
+        name: 'Primeiro Trade Demo',
+        icon: '🎯',
+        category: 'trading',
+        achieved: !!firstTradeDemo?.[0],
+        date: firstTradeDemo?.[0]?.created_at,
+      },
+      {
+        id: 'first_deposit',
+        name: 'Primeiro Depósito',
+        icon: '💰',
+        category: 'account',
+        achieved: !!firstDeposit?.[0],
+        date: firstDeposit?.[0]?.created_at,
+        value: firstDeposit?.[0]?.amount,
+      },
+      {
+        id: 'first_trade_real',
+        name: 'Primeiro Trade Real',
+        icon: '🔥',
+        category: 'trading',
+        achieved: !!firstTradeReal?.[0],
+        date: firstTradeReal?.[0]?.created_at,
+      },
+      {
+        id: 'first_win',
+        name: 'Primeira Vitória',
+        icon: '✅',
+        category: 'achievement',
+        achieved: !!firstWin?.[0],
+        date: firstWin?.[0]?.created_at,
+      },
+      {
+        id: 'first_badge',
+        name: 'Primeiro Badge',
+        icon: '🎖️',
+        category: 'achievement',
+        achieved: badges && badges.length > 0,
+        date: badges?.[0]?.earned_at,
+      },
+      {
+        id: 'level_5',
+        name: 'Nível 5 Atingido',
+        icon: '📈',
+        category: 'level',
+        achieved: stats?.current_level >= 5,
+        date: stats?.updated_at,
+      },
+    ];
+
+    // 4. Get user rank
+    const { data: rankData } = await req.db
+      .from('leaderboards')
+      .select('rank')
+      .eq('user_id', userId)
+      .eq('period', 'all_time')
+      .eq('category', 'xp')
+      .limit(1);
+
+    res.json({
+      stats,
+      totalBadges: badges?.length || 0,
+      milestones,
+      rank: rankData?.[0]?.rank || null,
+    });
+  } catch (error) {
+    console.error('❌ Error in /profile/:userId:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
 export default router;

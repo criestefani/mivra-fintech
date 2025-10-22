@@ -14,8 +14,7 @@ import MarketScanner from '@/pages/MarketScanner'
 import History from '@/pages/History'
 
 // Gamification Pages
-import Leaderboard from '@/pages/Leaderboard'
-import Badges from '@/pages/Badges'
+import Profile from '@/pages/Profile'
 
 // Create QueryClient
 const queryClient = new QueryClient({
@@ -47,8 +46,7 @@ function App() {
                 <Route path="/history" element={<History />} />
 
                 {/* Gamification Pages */}
-                <Route path="/gamification/leaderboard" element={<Leaderboard />} />
-                <Route path="/gamification/badges" element={<Badges />} />
+                <Route path="/profile" element={<Profile />} />
 
                 {/* 404 */}
                 <Route path="*" element={<Navigate to="/operations" replace />} />
