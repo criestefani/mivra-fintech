@@ -262,7 +262,7 @@ const Settings = () => {
 
           <div className="grid grid-cols-1 gap-6">
             {/* Broker Connection */}
-            <Card>
+            <Card className="backdrop-blur-xl bg-slate-900/50 border-slate-700/50">
               <CardHeader>
                 <CardTitle>Broker Connection</CardTitle>
               </CardHeader>
@@ -313,7 +313,7 @@ const Settings = () => {
             </Card>
 
             {/* Dados Pessoais */}
-            <Card>
+            <Card className="backdrop-blur-xl bg-slate-900/50 border-slate-700/50">
               <CardHeader>
                 <CardTitle>Dados Pessoais</CardTitle>
               </CardHeader>
@@ -390,7 +390,7 @@ const Settings = () => {
             </Card>
 
             {/* Deposit & Withdrawal Section */}
-            <Card>
+            <Card className="backdrop-blur-xl bg-slate-900/50 border-slate-700/50">
               <CardHeader>
                 <CardTitle>Transações Financeiras</CardTitle>
               </CardHeader>
