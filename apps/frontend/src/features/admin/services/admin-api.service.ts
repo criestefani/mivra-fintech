@@ -24,9 +24,10 @@ import type {
   AssetPerformance,
   ApiResponse,
 } from '../types/admin.types';
+import { getApiUrl } from '@/shared/utils/getApiUrl';
 
-// Base URL - ajustar se necessário
-const API_BASE_URL = 'http://localhost:4001/api/admin';
+// Dynamic base URL for mobile/PWA support
+const API_BASE_URL = `${getApiUrl()}/api/admin`;
 
 // ============================================================================
 // HELPER FUNCTIONS

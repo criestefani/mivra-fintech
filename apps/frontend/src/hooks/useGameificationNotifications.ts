@@ -7,6 +7,7 @@ import { useEffect, useState, useCallback, useRef } from 'react';
 import { useShallow } from 'zustand/react/shallow';
 import { io, Socket } from 'socket.io-client';
 import { useGamificationStore } from '../stores/gamificationStore';
+import { getApiUrl } from '@/shared/utils/getApiUrl';
 
 interface GameificationNotification {
   id?: string;
@@ -35,7 +36,7 @@ let socketInstance: Socket | null = null;
  */
 function getSocketInstance(): Socket {
   if (!socketInstance) {
-    const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3001';
+    const apiUrl = getApiUrl();
     socketInstance = io(apiUrl, {
       reconnection: true,
       reconnectionDelay: 1000,

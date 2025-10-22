@@ -13,8 +13,9 @@ import axios from 'axios'
 import { GlassCard } from '@/components/ui/gamification'
 import { CHART_COLORS } from '@/utils/chartColors'
 import { cn } from '@/shared/utils/cn'
+import { getApiUrl } from '@/shared/utils/getApiUrl'
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:4001'
+const API_URL = getApiUrl()
 
 interface TradeMarker {
   time: number
@@ -74,7 +75,9 @@ export const TradingChart: React.FC<TradingChartProps> = ({
   const [loadingAssets, setLoadingAssets] = useState(true)
   const [assetMenuOpen, setAssetMenuOpen] = useState(false)
   const [selectedCategoryInMenu, setSelectedCategoryInMenu] = useState<string | null>(null)
+  const [timeframeMenuOpen, setTimeframeMenuOpen] = useState(false)
   const assetMenuRef = useRef<HTMLDivElement>(null)
+  const timeframeMenuRef = useRef<HTMLDivElement>(null)
 
   // Use WebSocket hook for real-time candles
   const {
@@ -256,19 +259,25 @@ export const TradingChart: React.FC<TradingChartProps> = ({
     onAssetChange(firstAsset)
   }
 
-  // Close menu when clicking outside
+  // Close menu when clicking outside (improved for mobile)
   useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
+    const handleClickOutside = (event: Event) => {
       if (assetMenuRef.current && !assetMenuRef.current.contains(event.target as Node)) {
         setAssetMenuOpen(false)
+        setTimeframeMenuOpen(false)
       }
     }
 
-    if (assetMenuOpen) {
+    if (assetMenuOpen || timeframeMenuOpen) {
+      // Use both mousedown and touchstart for better mobile support
       document.addEventListener('mousedown', handleClickOutside)
-      return () => document.removeEventListener('mousedown', handleClickOutside)
+      document.addEventListener('touchstart', handleClickOutside)
+      return () => {
+        document.removeEventListener('mousedown', handleClickOutside)
+        document.removeEventListener('touchstart', handleClickOutside)
+      }
     }
-  }, [assetMenuOpen])
+  }, [assetMenuOpen, timeframeMenuOpen])
 
   return (
     <GlassCard className="border-primary/30 shadow-[0_0_20px_rgba(255,140,26,0.15)]">
@@ -283,12 +292,14 @@ export const TradingChart: React.FC<TradingChartProps> = ({
         </div>
       </CardHeader>
 
-      <CardContent className="space-y-4">
+      <CardContent className="space-y-1">
+        {/* Controls Title */}
+        <Label className="text-sm font-medium text-white">Choose the asset and timeframe</Label>
+
         {/* Controls - Horizontal Layout */}
         <div className="grid grid-cols-2 gap-3">
           {/* Asset Selection with Category Submenu */}
-          <div className="space-y-1.5 relative" ref={assetMenuRef}>
-            <Label className="text-xs font-semibold text-slate-200">Asset</Label>
+          <div className="relative" ref={assetMenuRef}>
             <button
               onClick={() => {
                 if (!assetMenuOpen) {
@@ -313,16 +324,20 @@ export const TradingChart: React.FC<TradingChartProps> = ({
               <ChevronDown className="w-3.5 h-3.5 opacity-70 group-hover:opacity-100 transition-opacity flex-shrink-0 ml-1" />
             </button>
 
-            {/* Dropdown Menu - Improved */}
+            {/* Dropdown Menu - Submenu Structure */}
             {assetMenuOpen && !loadingAssets && (
-              <div className="absolute top-full left-0 right-0 mt-1 bg-slate-950/95 border border-slate-700/50 rounded-lg shadow-xl z-50 max-h-80 backdrop-blur-sm">
+              <div className="fixed inset-0 z-40" onClick={() => setAssetMenuOpen(false)} />
+            )}
+            {assetMenuOpen && !loadingAssets && (
+              <div ref={assetMenuRef} onClick={(e) => e.stopPropagation()} className="absolute top-full left-0 right-0 mt-1 bg-slate-950/95 border border-slate-700/50 rounded-lg shadow-xl z-50 max-h-96 backdrop-blur-sm overflow-hidden flex flex-col">
                 {selectedCategoryInMenu === null ? (
-                  // Show Categories
-                  <div className="overflow-y-auto max-h-80 p-1">
+                  // Show Categories (Level 1)
+                  <div className="overflow-y-auto flex-1 p-1">
                     {categories.map((cat) => (
                       <button
                         key={cat.id}
-                        onClick={() => {
+                        onClick={(e) => {
+                          e.stopPropagation()
                           setSelectedCategoryInMenu(cat.id)
                           handleCategoryChange(cat.id)
                         }}
@@ -337,21 +352,25 @@ export const TradingChart: React.FC<TradingChartProps> = ({
                     ))}
                   </div>
                 ) : (
-                  // Show Assets for selected category
-                  <div>
-                    <div className="sticky top-0 bg-slate-950/95 border-b border-slate-700/30 p-1 z-10">
+                  // Show Assets (Level 2)
+                  <div className="flex flex-col h-full">
+                    <div className="sticky top-0 bg-slate-950/95 border-b border-slate-700/30 p-1 z-10 flex-shrink-0">
                       <button
-                        onClick={() => setSelectedCategoryInMenu(null)}
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          setSelectedCategoryInMenu(null)
+                        }}
                         className="w-full text-left px-3 py-2 hover:bg-slate-800/50 rounded-md text-xs transition-colors flex items-center gap-2 text-primary font-semibold"
                       >
                         ← {categories.find((c) => c.id === selectedCategoryInMenu)?.name}
                       </button>
                     </div>
-                    <div className="overflow-y-auto max-h-72 p-1">
+                    <div className="overflow-y-auto flex-1 p-1">
                       {assetsByCategory[selectedCategoryInMenu]?.map((assetOption) => (
                         <button
                           key={assetOption.key}
-                          onClick={() => {
+                          onClick={(e) => {
+                            e.stopPropagation()
                             onAssetChange(assetOption.key)
                             setAssetMenuOpen(false)
                             setSelectedCategoryInMenu(null)
@@ -373,34 +392,51 @@ export const TradingChart: React.FC<TradingChartProps> = ({
             )}
           </div>
 
-          {/* Timeframe Selection */}
-          <div className="space-y-1.5">
-            <Label htmlFor="timeframe-select" className="text-xs font-semibold text-slate-200">Timeframe</Label>
-            <select
-              id="timeframe-select"
-              value={timeframe}
-              onChange={(e) => onTimeframeChange(e.target.value)}
+          {/* Timeframe Selection - Custom Dropdown */}
+          <div className="relative" ref={timeframeMenuRef}>
+            <button
+              onClick={() => setTimeframeMenuOpen(!timeframeMenuOpen)}
               className={cn(
-                'w-full h-8 px-3 pr-8 rounded-lg border transition-all text-sm font-medium',
+                'w-full h-8 px-3 rounded-lg border transition-all text-sm text-left font-medium',
                 'bg-slate-900/50 border-slate-700/50 text-slate-200',
                 'hover:border-primary/50 hover:bg-slate-900/70',
-                'focus:outline-none focus:ring-2 focus:ring-primary/50',
-                'appearance-none cursor-pointer',
-                'text-left'
+                'flex items-center justify-between group'
               )}
-              style={{
-                backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23cbd5e1' d='M6 8L1 3h10z'/%3E%3C/svg%3E")`,
-                backgroundRepeat: 'no-repeat',
-                backgroundPosition: 'right 6px center',
-                backgroundSize: '12px 12px'
-              }}
             >
-              {timeframes.map((tf) => (
-                <option key={tf.value} value={tf.value} className="bg-slate-900 text-slate-200">
-                  {tf.label}
-                </option>
-              ))}
-            </select>
+              <span>
+                {timeframes.find((tf) => tf.value === timeframe)?.label || 'Timeframe'}
+              </span>
+              <ChevronDown className="w-3.5 h-3.5 opacity-70 group-hover:opacity-100 transition-opacity flex-shrink-0 ml-1" />
+            </button>
+
+            {/* Timeframe Dropdown Menu - Mobile Safe */}
+            {timeframeMenuOpen && (
+              <div className="fixed inset-0 z-40" onClick={() => setTimeframeMenuOpen(false)} />
+            )}
+            {timeframeMenuOpen && (
+              <div onClick={(e) => e.stopPropagation()} className="absolute top-full left-0 right-0 mt-1 bg-slate-950/95 border border-slate-700/50 rounded-lg shadow-xl z-50 max-h-96 backdrop-blur-sm overflow-hidden flex flex-col">
+                <div className="overflow-y-auto flex-1 p-1">
+                  {timeframes.map((tf) => (
+                    <button
+                      key={tf.value}
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        onTimeframeChange(tf.value)
+                        setTimeframeMenuOpen(false)
+                      }}
+                      className={cn(
+                        'w-full text-left px-3 py-2 rounded-md text-sm transition-all font-medium',
+                        timeframe === tf.value
+                          ? 'bg-primary/30 text-primary border-l-2 border-primary'
+                          : 'hover:bg-slate-800/50 text-slate-200'
+                      )}
+                    >
+                      {tf.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
         </div>
 

@@ -13,8 +13,9 @@ import { Button } from '@/shared/components/ui/button';
 import { Loader2, RefreshCw, Activity, Zap } from 'lucide-react';
 import { DiagonalSection } from '@/components/ui/gamification';
 import axios from 'axios';
+import { getApiUrl } from '@/shared/utils/getApiUrl';
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:4001';
+const API_URL = getApiUrl();
 
 type AssetLookupEntry = {
   key: string;

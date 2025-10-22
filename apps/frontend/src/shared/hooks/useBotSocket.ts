@@ -1,7 +1,8 @@
 import { useEffect, useState, useCallback } from 'react'
 import { io, Socket } from 'socket.io-client'
+import { getApiUrl } from '@/shared/utils/getApiUrl'
 
-const SOCKET_URL = import.meta.env.VITE_API_URL || 'http://localhost:4001'
+const SOCKET_URL = getApiUrl()
 
 interface BotSocketData {
   currentStatus: string | null

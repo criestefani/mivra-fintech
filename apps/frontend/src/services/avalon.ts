@@ -1,7 +1,9 @@
 // Avalon Broker Service
 // This service interfaces with the Avalon Broker API via backend proxy
 
-const BACKEND_API_URL = import.meta.env.VITE_API_URL || 'http://localhost:4001'
+import { getApiUrl } from '@/shared/utils/getApiUrl'
+
+const BACKEND_API_URL = getApiUrl()
 const AVALON_AFF_ID = import.meta.env.VITE_AVALON_AFF_ID || '430322'
 
 interface CreateUserParams {
