@@ -6,9 +6,8 @@
 import { motion, AnimatePresence } from 'framer-motion';
 import confetti from 'canvas-confetti';
 import { useEffect, useState } from 'react';
-import { X, TrendingUp, ChevronRight } from 'lucide-react';
+import { X, TrendingUp } from 'lucide-react';
 import { GlassCard } from '@/components/ui/gamification';
-import { TradeExplanation, TradeDetails } from './TradeExplanation';
 
 export interface Trade {
   id: string;
@@ -39,7 +38,6 @@ export function LiveTradeFeed({
   className = ''
 }: LiveTradeFeedProps) {
   const [isOpen, setIsOpen] = useState(false);
-  const [selectedTrade, setSelectedTrade] = useState<Trade | null>(null);
   const recentTrades = trades.slice(0, maxTrades);
   const winCount = recentTrades.filter(t => t.result === 'WIN').length;
 
@@ -107,14 +105,9 @@ export function LiveTradeFeed({
                   <AnimatePresence mode="popLayout">
                     {recentTrades.length > 0 ? (
                       recentTrades.map((trade, index) => (
-                        <motion.button
+                        <div
                           key={trade.id}
-                          layout
-                          initial={{ opacity: 0, x: -20 }}
-                          animate={{ opacity: 1, x: 0 }}
-                          exit={{ opacity: 0, x: -20 }}
-                          onClick={() => setSelectedTrade(trade)}
-                          className="w-full px-4 py-2.5 border-b border-slate-700/30 hover:bg-slate-800/40 transition-colors flex items-center justify-between group"
+                          className="w-full px-4 py-2.5 border-b border-slate-700/30 flex items-center justify-between group"
                         >
                           <div className="flex items-center gap-2 flex-1 min-w-0">
                             <span className={`text-sm font-bold flex-shrink-0 ${trade.result === 'WIN' ? 'text-positive' : 'text-negative'}`}>
@@ -125,13 +118,10 @@ export function LiveTradeFeed({
                               {trade.direction}
                             </span>
                           </div>
-                          <div className="flex items-center gap-2 flex-shrink-0 ml-2">
-                            <span className={`text-sm font-bold ${trade.pnl >= 0 ? 'text-positive' : 'text-negative'}`}>
-                              {trade.pnl >= 0 ? '+' : ''}R$ {trade.pnl.toFixed(0)}
-                            </span>
-                            <ChevronRight className="w-4 h-4 text-slate-600 group-hover:text-slate-400 transition-colors" />
-                          </div>
-                        </motion.button>
+                          <span className={`text-sm font-bold ${trade.pnl >= 0 ? 'text-positive' : 'text-negative'}`}>
+                            {trade.pnl >= 0 ? '+' : ''}R$ {trade.pnl.toFixed(0)}
+                          </span>
+                        </div>
                       ))
                     ) : (
                       <div className="text-center py-12 text-slate-400">
@@ -146,13 +136,6 @@ export function LiveTradeFeed({
           </>
         )}
       </AnimatePresence>
-
-      {/* ✅ Trade Explanation Modal */}
-      <TradeExplanation
-        isOpen={selectedTrade !== null}
-        trade={selectedTrade as TradeDetails}
-        onClose={() => setSelectedTrade(null)}
-      />
     </>
   );
 }
