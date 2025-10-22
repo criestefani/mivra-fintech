@@ -143,21 +143,10 @@ export function LiveTradeFeed({
         )}
       </AnimatePresence>
 
-      {/* ✅ Trade Explanation Modal */}
+      {/* ✅ Trade Explanation Modal - Pass ALL data unfiltered */}
       <TradeExplanation
         isOpen={selectedTrade !== null}
-        trade={selectedTrade ? {
-          id: selectedTrade.id,
-          asset: selectedTrade.asset,
-          direction: selectedTrade.direction,
-          result: selectedTrade.result,
-          pnl: selectedTrade.pnl,
-          valor: 0, // Not available in Trade interface, will be handled in component
-          strategy_id: null, // Not available in Trade interface
-          data_abertura: typeof selectedTrade.timestamp === 'string' ? selectedTrade.timestamp : new Date(selectedTrade.timestamp).toISOString(),
-          data_expiracao: new Date(Date.now() + 60000).toISOString(), // Placeholder
-          expiration_seconds: null, // Not available
-        } : null}
+        trade={selectedTrade as any}
         onClose={() => setSelectedTrade(null)}
       />
     </>
