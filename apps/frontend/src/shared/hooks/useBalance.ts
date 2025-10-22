@@ -42,10 +42,33 @@ export function useBalance(enabled = true): UseBalanceReturn {
     try {
       setError(null)
       const response = await fetch(`/api/bot/balance?accountType=${accountType}`)
-      const data: BalanceResponse = await response.json()
+
+      // Check if response has valid JSON content before parsing
+      const contentType = response.headers.get('content-type')
+      if (!contentType || !contentType.includes('application/json')) {
+        throw new Error(`Server returned invalid content type: ${contentType || 'none'}`)
+      }
+
+      // Get response text first to handle empty responses
+      const responseText = await response.text()
+      if (!responseText) {
+        throw new Error(
+          response.ok
+            ? 'Server returned empty response'
+            : `Server error: ${response.status} ${response.statusText}`
+        )
+      }
+
+      // Parse JSON only if response is not empty
+      let data: BalanceResponse
+      try {
+        data = JSON.parse(responseText)
+      } catch (parseErr) {
+        throw new Error(`Invalid JSON response: ${parseErr instanceof Error ? parseErr.message : 'Unknown error'}`)
+      }
 
       if (!response.ok) {
-        throw new Error(data.error || 'Failed to fetch balance')
+        throw new Error(data.error || `Server error: ${response.status}`)
       }
 
       if (data.success) {

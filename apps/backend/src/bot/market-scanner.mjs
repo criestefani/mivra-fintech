@@ -27,112 +27,6 @@ const AVALON_API_HOST = process.env.AVALON_API_HOST || 'https://trade.avalonbrok
 
 
 class MarketScanner {
-  scheduleVerification(payload) {
-    const jitterMs = Number(process.env.TRADE_VERIFICATION_JITTER_MS ?? 5000);
-    const timeframeSeconds = Number(
-  payload?.timeframe ?? payload?.timeframe_seconds ?? 0
-);
-const baseDelayMs = Number.isFinite(timeframeSeconds)
-
-
-      ? timeframeSeconds * 1000
-      : 0;
-    const delay =
-      baseDelayMs + 2000 + Math.max(0, Math.random() * Math.max(0, jitterMs));
-
-
-    if (!this.pendingVerificationTimers) {
-      this.pendingVerificationTimers = new Map();
-    }
-
-
-    const tradeId = payload?.tradeId;
-    const shortId = tradeId ? tradeId.substring(0, 8) : 'unknown';
-
-
-    return new Promise((resolve) => {
-      const timer = setTimeout(async () => {
-        try {
-          await this.verifyTrade(payload);
-        } catch (error) {
-          const err = error instanceof Error ? error : new Error(String(error));
-          const logger = this.logger ?? console;
-          logger.error?.(`❌ ${shortId}: ${err.message}`);
-        } finally {
-          if (tradeId && this.pendingVerificationTimers) {
-            this.pendingVerificationTimers.delete(tradeId);
-          }
-          resolve();
-        }
-      }, delay);
-
-
-      if (tradeId) {
-        this.pendingVerificationTimers.set(tradeId, timer);
-      }
-    });
-  }
-
-
-  async verifyTrade(payload) {
-    try {
-      const { tradeId, activeId, timeframe, signalPrice, direction } = payload;
-     
-      // Fetch candles
-      const candles = await this.candlesService.getCandles(activeId, timeframe);
-     
-      if (!candles || candles.length === 0) {
-        console.log(`⚠️  [${tradeId.substring(0,8)}] No candles available`);
-        return;
-      }
-     
-      // Get last candle
-      const lastCandle = candles[candles.length - 1];
-     
-      // Calculate result
-      const result = direction === 'call'
-        ? lastCandle.close > signalPrice ? 'WIN' : 'LOSS'
-        : lastCandle.close < signalPrice ? 'WIN' : 'LOSS';
-     
-      // Calculate price difference
-      const priceDiff = lastCandle.close - signalPrice;
-     
-      // Update Supabase (CAMPOS CORRETOS!)
-      const { error } = await this.supabase
-        .from('strategy_trades')
-        .update({
-          result: result,
-          result_price: lastCandle.close,
-          result_timestamp: new Date().toISOString(),
-          price_diff: priceDiff
-        })
-        .eq('id', tradeId);
-     
-      if (error) {
-        console.log(`❌ [${tradeId.substring(0,8)}] UPDATE failed: ${error.message}`);
-      } else {
-        console.log(`✅ [${tradeId.substring(0,8)}] → ${result}`);
-      }
-     
-    } catch (err) {
-      console.log(`❌ [${payload.tradeId?.substring(0,8)}] Error: ${err.message}`);
-    }
-  }
-
-
-  clearVerificationTimers() {
-    if (!this.pendingVerificationTimers) {
-      return;
-    }
-
-
-    for (const [, timeoutId] of this.pendingVerificationTimers) {
-      clearTimeout(timeoutId);
-    }
-
-
-    this.pendingVerificationTimers.clear();
-  }
   constructor() {
     this.sdk = null;
     this.blitz = null;
@@ -153,9 +47,6 @@ const baseDelayMs = Number.isFinite(timeframeSeconds)
         auth: { persistSession: false }
       }
     );
-
-
-    // ✅ VERIFICATION QUEUE: Placeholder, initialized in connect()
   }
 
 
@@ -198,7 +89,7 @@ const baseDelayMs = Number.isFinite(timeframeSeconds)
     this.candlesService = await this.sdk.candles();
 
 
-        console.log('✅ Market Scanner conectado ao Avalon\n');
+    console.log('✅ Market Scanner conectado ao Avalon\n');
   }
 
 
@@ -291,19 +182,11 @@ const baseDelayMs = Number.isFinite(timeframeSeconds)
         const scanSeconds = (scanDuration / 1000).toFixed(1);
 
 
-        // ✅ Get queue stats
-
-
         console.log(`\n📊 Scan complete:`);
         console.log(`   Time: ${scanSeconds}s`);
         console.log(`   Combinations: ${totalCombinations}`);
         console.log(`   Signals found: ${signalsFound}`);
-        console.log(`   Total accumulated: ${this.signalsCount}`);
-        console.log(`\n📈 Queue Status:`);
-        console.log(`   Pending: ${queueStats.queueLength}`);
-        console.log(`   Processing: ${queueStats.processing}/${2} workers`);
-        console.log(`   Processed: ${queueStats.stats.processed}/${queueStats.stats.queued} total`);
-        console.log(`   Success rate: ${queueStats.stats.processed > 0 ? ((queueStats.stats.successful / queueStats.stats.processed) * 100).toFixed(1) : 0}%\n`);
+        console.log(`   Total accumulated: ${this.signalsCount}\n`);
 
 
         // ✅ BACKGROUND TASKS: Fire-and-forget (every 6 scans)
@@ -372,16 +255,13 @@ const baseDelayMs = Number.isFinite(timeframeSeconds)
 
 
         const tradeId = data.id;
+        const delay = timeframe * 1000 + 2000;
 
 
-        // ✅ Add to Verification Queue (no setTimeout, queue handles scheduling)
-    this.scheduleVerification({
-          tradeId: tradeId,
-          activeId: active.id,
-          timeframe: timeframe,
-          signalPrice: signalPrice,
-          direction: direction
-        });
+        // ✅ Schedule verification using unique ID
+        setTimeout(async () => {
+          await this.verificarResultado(tradeId, active.id, timeframe, signalPrice, direction);
+        }, delay);
 
 
         return true; // ✅ SUCCESS
@@ -478,34 +358,36 @@ const baseDelayMs = Number.isFinite(timeframeSeconds)
       }
 
 
-      console.log(`🔧 [RECOVERY] Found ${pendingTrades.length} orphaned PENDING trades. Adding to Verification Queue...`);
+      console.log(`🔧 [RECOVERY] Found ${pendingTrades.length} orphaned PENDING trades. Verifying results...`);
 
 
-      let queued = 0;
+      let verified = 0;
       for (const trade of pendingTrades) {
         try {
           const timeSinceSignal = Date.now() - new Date(trade.signal_timestamp).getTime();
 
 
           if (timeSinceSignal >= (trade.timeframe * 1000 + 2000)) {
-            // ✅ Add to Verification Queue (not direct call)
-    this.scheduleVerification({
-              tradeId: trade.id,
-              activeId: parseInt(trade.active_id),
-              timeframe: trade.timeframe,
-              signalPrice: trade.signal_price,
-              direction: trade.signal_direction
-            });
-            queued++;
+            await this.verificarResultado(
+              trade.id,
+              parseInt(trade.active_id),
+              trade.timeframe,
+              trade.signal_price,
+              trade.signal_direction
+            );
+            verified++;
+
+
+            await new Promise(r => setTimeout(r, 200)); // Rate limiting (increased to 200ms)
           }
         } catch (err) {
-          console.error(`❌ [RECOVERY] Error queueing trade ${trade.id}: ${err.message}`);
+          console.error(`❌ [RECOVERY] Error verifying trade ${trade.id}: ${err.message}`);
         }
       }
 
 
       const recoveryTime = Date.now() - recoveryStartTime;
-      console.log(`✅ [RECOVERY] Completed in ${recoveryTime}ms. Queued: ${queued}/${pendingTrades.length}`);
+      console.log(`✅ [RECOVERY] Completed in ${recoveryTime}ms. Verified: ${verified}/${pendingTrades.length}`);
     } catch (err) {
       console.error(`❌ [RECOVERY] Fatal error: ${err.message}`);
       console.error(`   Stack: ${err.stack}`);
@@ -588,14 +470,17 @@ const baseDelayMs = Number.isFinite(timeframeSeconds)
 
             if (result?.id) {
               successCount++;
-              // Add to Verification Queue (no setTimeout)
-    this.scheduleVerification({
-                tradeId: result.id,
-                activeId: +signal.active_id,
-                timeframe: signal.timeframe,
-                signalPrice: signal.signal_price,
-                direction: signal.signal_direction
-              });
+              // Schedule verification for this individual signal
+              const delay = signal.timeframe * 1000 + 2000;
+              setTimeout(async () => {
+                await this.verificarResultado(
+                  result.id,
+                  +signal.active_id,
+                  signal.timeframe,
+                  signal.signal_price,
+                  signal.signal_direction
+                );
+              }, delay);
             }
           } catch (err) {
             console.error(`❌ Fallback insert exception: ${err.message}`);
@@ -616,20 +501,25 @@ const baseDelayMs = Number.isFinite(timeframeSeconds)
       console.log(`✅ Batch saved: ${signals.length} signals in ${batchTime}ms`);
 
 
-      // ✅ SCHEDULE VERIFICATIONS: Use Verification Queue
+      // ✅ SCHEDULE VERIFICATIONS: Direct setTimeout for each signal
       insertedSignals.forEach((inserted, index) => {
         const signal = signals[index];
         if (!inserted?.id) return;
 
 
-        // Add to queue (no setTimeout - queue handles scheduling)
-    this.scheduleVerification({
-          tradeId: inserted.id,
-          activeId: +signal.active_id,
-          timeframe: signal.timeframe,
-          signalPrice: signal.signal_price,
-          direction: signal.signal_direction
-        });
+        const delay = signal.timeframe * 1000 + 2000;
+
+
+        // Direct setTimeout (proven pattern - no queue overhead)
+        setTimeout(async () => {
+          await this.verificarResultado(
+            inserted.id,
+            +signal.active_id,
+            signal.timeframe,
+            signal.signal_price,
+            signal.signal_direction
+          );
+        }, delay);
       });
 
 
@@ -667,20 +557,25 @@ const baseDelayMs = Number.isFinite(timeframeSeconds)
       console.log(`✅ ${signals.length} signals saved in ${batchTime}ms`);
 
 
-      // ✅ SCHEDULE VERIFICATIONS: Use Verification Queue
+      // ✅ IMMEDIATE VERIFICATION SCHEDULING (direct setTimeout - no queue overhead)
       insertedSignals.forEach((inserted, index) => {
         const signal = signals[index];
         if (!inserted?.id) return;
 
 
-        // Add to queue (no setTimeout - queue handles scheduling)
-    this.scheduleVerification({
-          tradeId: inserted.id,
-          activeId: +signal.active_id,
-          timeframe: signal.timeframe,
-          signalPrice: signal.signal_price,
-          direction: signal.signal_direction
-        });
+        const delay = signal.timeframe * 1000 + 2000;
+
+
+        // ✅ Direct setTimeout (proven pattern from old code)
+        setTimeout(async () => {
+          await this.verificarResultado(
+            inserted.id,
+            +signal.active_id,  // Unary + for faster conversion
+            signal.timeframe,
+            signal.signal_price,
+            signal.signal_direction
+          );
+        }, delay);
       });
     } catch (err) {
       console.error(`❌ Batch exception: ${err.message}`);
