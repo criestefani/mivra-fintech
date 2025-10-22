@@ -401,7 +401,7 @@ class MivraTecBot {
   }
 
 
-  async salvarNoSupabase(positionId, signal, order) {
+  async salvarNoSupabase(positionId, signal, order, indicators = null) {
     const { data: existente } = await supabase
       .from('trade_history')
       .select('external_id')
@@ -427,7 +427,7 @@ class MivraTecBot {
     const signalData = {
       asset: ativoNome,
       direction: signal.consensus, // 'CALL' ou 'PUT'
-      confidence: 0.75, // placeholder
+      confidence: signal.confidence || 0.75,
       timestamp: Date.now()
     };
 
@@ -438,6 +438,48 @@ class MivraTecBot {
     } catch (validationError) {
       console.error('⚠️ Erro de validação Zod (continuando...):', JSON.stringify(validationError.errors || validationError.message));
     }
+
+
+    // ✅ BUILD TECHNICAL EXPLANATION FROM INDICATORS
+    let strategy_explanation = `The bot has identified a ${signal.consensus.toLowerCase()} opportunity on ${ativoNome}. `;
+
+    if (indicators) {
+      const { rsi, macd, bb } = indicators;
+
+      if (rsi) strategy_explanation += `RSI at ${rsi.value.toFixed(1)} (${rsi.signal.toLowerCase()}), `;
+      if (macd) strategy_explanation += `MACD showing ${macd.trend.toLowerCase()} momentum. `;
+
+      strategy_explanation += `Using the ${strategyInfo.name} strategy with ${signal.confidence || 75}% confidence in this trade decision.`;
+    } else {
+      strategy_explanation += `Using the ${strategyInfo.name} strategy with ${signal.confidence || 75}% confidence in this trade decision.`;
+    }
+
+    // ✅ BUILD INDICATORS SNAPSHOT
+    const indicators_snapshot = indicators ? {
+      rsi: indicators.rsi ? { value: indicators.rsi.value, signal: indicators.rsi.signal } : null,
+      macd: indicators.macd ? { value: indicators.macd.macd, signal_line: indicators.macd.signal, histogram: indicators.macd.histogram, trend: indicators.macd.trend } : null,
+      bollinger_bands: indicators.bb ? { lower: indicators.bb.lower, upper: indicators.bb.upper, middle: indicators.bb.middle, signal: indicators.bb.signal } : null
+    } : null;
+
+    // ✅ BUILD TECHNICAL SUMMARY
+    let technical_summary = '';
+    if (indicators) {
+      if (indicators.rsi) technical_summary += `RSI at ${indicators.rsi.value.toFixed(1)} (${indicators.rsi.signal.toLowerCase()}) `;
+      if (indicators.macd) technical_summary += `| MACD ${indicators.macd.trend.toLowerCase()}`;
+      if (indicators.bb && indicators.bb.signal !== 'SQUEEZE') technical_summary += ` | BB ${indicators.bb.signal}`;
+    }
+
+    // ✅ BUILD MARKET CONDITIONS
+    const market_conditions = {
+      price: signal.currentPrice || order.openPrice || 0,
+      timestamp: new Date().toISOString(),
+      volatility: 'Unknown',
+      volume_trend: 'Unknown',
+      market_session: 'Unknown'
+    };
+
+    // ✅ GET ENTRY PRICE
+    const entry_price = order.openPrice || signal.currentPrice || null;
 
 
     const { error } = await supabase
@@ -455,7 +497,13 @@ class MivraTecBot {
         strategy_id: strategyInfo.id,
         status: 'open',
         data_abertura: new Date().toISOString(),
-        data_expiracao: order.expiredAt.toISOString()
+        data_expiracao: order.expiredAt.toISOString(),
+        strategy_explanation,
+        indicators_snapshot,
+        confidence_score: signal.confidence || 75,
+        market_conditions,
+        entry_price,
+        technical_summary
       }]);
 
 
@@ -582,7 +630,8 @@ class MivraTecBot {
       .update({
         resultado: resultado,
         pnl: position.pnl,
-        status: position.status
+        status: position.status,
+        exit_price: position.closePrice || position.price || null
       })
       .eq('external_id', positionId);
 
@@ -650,6 +699,11 @@ class MivraTecBot {
       if (candlesFormatted.length < 35) return null;
 
 
+      // ✅ CALCULATE INDICATORS (always needed for explanation)
+      const rsi = calculateRSI(candlesFormatted);
+      const macd = calculateMACD(candlesFormatted);
+      const bb = calculateBollinger(candlesFormatted);
+
       let analysis = null;
 
 
@@ -661,11 +715,6 @@ class MivraTecBot {
       } else if (this.strategy === 'balanced') {
         analysis = analyzeBalanced(candlesFormatted);
       } else {
-        const rsi = calculateRSI(candlesFormatted);
-        const macd = calculateMACD(candlesFormatted);
-        const bb = calculateBollinger(candlesFormatted);
-
-
         const signals = [];
         if (rsi.signal !== 'NEUTRO') signals.push(rsi.signal);
         if (macd.trend !== 'NEUTRO') signals.push(macd.trend);
@@ -684,12 +733,17 @@ class MivraTecBot {
       if (!analysis) return null;
 
 
+      // ✅ GET CURRENT PRICE FROM LAST CANDLE
+      const currentPrice = candlesFormatted[candlesFormatted.length - 1].close;
+
       return {
         activeId: active.id,
         activeName: active.name || active.ticker || `ID-${active.id}`,
         direction: analysis.consensus,
         confidence: analysis.confidence || (analysis.strength * 25),
-        strategyType: analysis.type || 'UNKNOWN'
+        strategyType: analysis.type || 'UNKNOWN',
+        currentPrice,
+        indicators: { rsi, macd, bb }
       };
     } catch (error) {
       return null;
@@ -876,10 +930,12 @@ class MivraTecBot {
       const signalForSave = {
         active: activeObj,
         consensus: signal.direction,
-        strategyType: signal.strategyType
+        strategyType: signal.strategyType,
+        confidence: signal.confidence,
+        currentPrice: signal.currentPrice
       };
 
-      await this.salvarNoSupabase(positionId, signalForSave, order);
+      await this.salvarNoSupabase(positionId, signalForSave, order, signal.indicators);
 
       // ✅ UPDATE STATUS: Now tracking (after database is updated)
       this.setStatus(`Tracking results...`, signal.activeName, signal.activeId);

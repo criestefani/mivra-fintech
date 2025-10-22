@@ -36,6 +36,13 @@ export type Trade = {
   strategy_id: string | null
   account_type: 'demo' | 'real'
   created_at: string
+  strategy_explanation?: string | null
+  indicators_snapshot?: Record<string, any> | null
+  confidence_score?: number | null
+  market_conditions?: Record<string, any> | null
+  entry_price?: number | null
+  exit_price?: number | null
+  technical_summary?: string | null
 }
 
 export type BotStatus = {

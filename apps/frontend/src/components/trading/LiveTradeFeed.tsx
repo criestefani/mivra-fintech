@@ -8,6 +8,7 @@ import confetti from 'canvas-confetti';
 import { useEffect, useState } from 'react';
 import { X, TrendingUp, ChevronRight } from 'lucide-react';
 import { GlassCard } from '@/components/ui/gamification';
+import { TradeExplanation, type TradeDetails } from './TradeExplanation';
 
 export interface Trade {
   id: string;
@@ -142,80 +143,23 @@ export function LiveTradeFeed({
         )}
       </AnimatePresence>
 
-      {/* ✅ Trade Details Modal */}
-      <AnimatePresence>
-        {selectedTrade && (
-          <>
-            {/* Backdrop */}
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              onClick={() => setSelectedTrade(null)}
-              className="fixed inset-0 bg-black/60 z-50 backdrop-blur-md"
-            />
-
-            {/* Modal */}
-            <motion.div
-              initial={{ opacity: 0, scale: 0.9, y: 20 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.9, y: 20 }}
-              transition={{ type: 'spring', damping: 30, stiffness: 400 }}
-              className="fixed inset-0 flex items-center justify-center z-50 p-4 pointer-events-none"
-            >
-              <GlassCard className="border-primary/30 shadow-2xl max-h-96 w-full max-w-md overflow-hidden flex flex-col pointer-events-auto">
-                {/* Header */}
-                <div className="border-b border-slate-700/50 p-4 flex items-center justify-between flex-shrink-0">
-                  <h2 className="text-lg font-semibold text-white">{selectedTrade.asset}</h2>
-                  <motion.button
-                    onClick={() => setSelectedTrade(null)}
-                    whileHover={{ rotate: 90 }}
-                    whileTap={{ scale: 0.9 }}
-                    className="p-1.5 hover:bg-slate-800/50 rounded-lg transition-colors"
-                  >
-                    <X className="w-5 h-5 text-slate-400" />
-                  </motion.button>
-                </div>
-
-                {/* Content */}
-                <div className="overflow-y-auto flex-1 p-4 space-y-3">
-                  {/* Direction & Result */}
-                  <div className="grid grid-cols-2 gap-2">
-                    <div className="bg-slate-800/30 rounded-lg p-3 border border-slate-700/30">
-                      <p className="text-xs text-slate-400 mb-1">Direction</p>
-                      <span className={`text-sm font-bold ${selectedTrade.direction === 'CALL' ? 'text-positive' : 'text-negative'}`}>
-                        {selectedTrade.direction}
-                      </span>
-                    </div>
-                    <div className={`rounded-lg p-3 border ${selectedTrade.result === 'WIN' ? 'bg-positive/10 border-positive/30' : 'bg-negative/10 border-negative/30'}`}>
-                      <p className="text-xs text-slate-400 mb-1">Result</p>
-                      <p className={`text-sm font-bold ${selectedTrade.result === 'WIN' ? 'text-positive' : 'text-negative'}`}>
-                        {selectedTrade.result}
-                      </p>
-                    </div>
-                  </div>
-
-                  {/* P&L */}
-                  <div className={`rounded-lg p-3 border ${selectedTrade.pnl >= 0 ? 'bg-positive/10 border-positive/30' : 'bg-negative/10 border-negative/30'}`}>
-                    <p className="text-xs text-slate-400 mb-1">Profit/Loss</p>
-                    <p className={`text-lg font-bold ${selectedTrade.pnl >= 0 ? 'text-positive' : 'text-negative'}`}>
-                      {selectedTrade.pnl >= 0 ? '+' : ''}R$ {selectedTrade.pnl.toFixed(2)}
-                    </p>
-                  </div>
-
-                  {/* Time */}
-                  <div className="bg-slate-800/30 rounded-lg p-3 border border-slate-700/30">
-                    <p className="text-xs text-slate-400 mb-1">Time</p>
-                    <p className="text-sm text-white">
-                      {new Date(typeof selectedTrade.timestamp === 'string' ? selectedTrade.timestamp : selectedTrade.timestamp).toLocaleTimeString('pt-BR')}
-                    </p>
-                  </div>
-                </div>
-              </GlassCard>
-            </motion.div>
-          </>
-        )}
-      </AnimatePresence>
+      {/* ✅ Trade Explanation Modal */}
+      <TradeExplanation
+        isOpen={selectedTrade !== null}
+        trade={selectedTrade ? {
+          id: selectedTrade.id,
+          asset: selectedTrade.asset,
+          direction: selectedTrade.direction,
+          result: selectedTrade.result,
+          pnl: selectedTrade.pnl,
+          valor: 0, // Not available in Trade interface, will be handled in component
+          strategy_id: null, // Not available in Trade interface
+          data_abertura: typeof selectedTrade.timestamp === 'string' ? selectedTrade.timestamp : new Date(selectedTrade.timestamp).toISOString(),
+          data_expiracao: new Date(Date.now() + 60000).toISOString(), // Placeholder
+          expiration_seconds: null, // Not available
+        } : null}
+        onClose={() => setSelectedTrade(null)}
+      />
     </>
   );
 }
