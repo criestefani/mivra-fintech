@@ -27,6 +27,7 @@ interface SessionSummaryProps {
   totalPnL: number;
   config: SessionConfig | null;
   onClose: () => void;
+  onTradeClick?: (trade: Trade) => void;
 }
 
 export function SessionSummary({
@@ -34,7 +35,8 @@ export function SessionSummary({
   sessionTrades,
   totalPnL,
   config,
-  onClose
+  onClose,
+  onTradeClick
 }: SessionSummaryProps) {
   const wins = sessionTrades.filter(t => t.resultado === 'WIN').length;
   const losses = sessionTrades.filter(t => t.resultado === 'LOSS').length;
@@ -204,7 +206,11 @@ export function SessionSummary({
                     <h3 className="text-sm font-semibold text-slate-400 mb-4 uppercase tracking-wider">Session Trades</h3>
                     <div className="space-y-2">
                       {sessionTrades.map((trade, idx) => (
-                        <div key={`${trade.id}-${idx}`} className="flex items-center justify-between bg-slate-800/50 p-2 rounded border border-slate-700/30">
+                        <button
+                          key={`${trade.id}-${idx}`}
+                          onClick={() => onTradeClick?.(trade)}
+                          className="w-full flex items-center justify-between bg-slate-800/50 p-2 rounded border border-slate-700/30 hover:bg-slate-800 hover:border-slate-600/50 transition-colors cursor-pointer"
+                        >
                           <div className="flex items-center gap-3 flex-1 min-w-0">
                             <span className={`text-sm font-bold flex-shrink-0 ${trade.resultado === 'WIN' ? 'text-positive' : 'text-negative'}`}>
                               {trade.resultado === 'WIN' ? '✓' : '✗'}
@@ -217,7 +223,7 @@ export function SessionSummary({
                           <span className={`text-sm font-bold flex-shrink-0 ml-2 ${(trade.pnl || 0) >= 0 ? 'text-positive' : 'text-negative'}`}>
                             {(trade.pnl || 0) >= 0 ? '+' : ''}R$ {(trade.pnl || 0).toFixed(0)}
                           </span>
-                        </div>
+                        </button>
                       ))}
                     </div>
                   </div>

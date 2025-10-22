@@ -34,6 +34,7 @@ import {
   MetricsGrid,
   QuestTracker,
   SessionSummary,
+  TradeExplanation,
   type Trade as TradeFeedTrade,
 } from "@/components/trading";
 import { StreakBadge, FloatingXP, DiagonalSection } from "@/components/ui/gamification";
@@ -141,6 +142,7 @@ const Operations = () => {
   const [sessionStartTime, setSessionStartTime] = useState<number | null>(null);
   const [sessionConfig, setSessionConfig] = useState<any>(null);
   const [showSessionSummary, setShowSessionSummary] = useState(false);
+  const [selectedTrade, setSelectedTrade] = useState<Trade | null>(null);
 
   // ✅ Calculate session trades (trades after START BOT was clicked)
   const sessionTrades = sessionStartTime
@@ -674,6 +676,15 @@ const Operations = () => {
       setSessionStartTime(Date.now());
       setSessionConfig(userConfig);
 
+      // ✅ RESET METRICS FOR NEW SESSION
+      setMetrics({
+        winRate: 0,
+        totalTrades: 0,
+        totalWins: 0,
+        totalLosses: 0,
+        pnl: 0
+      });
+
       // Reset data when starting
       if (botMode === "auto") {
         setPnlData([{ time: new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }), value: 0 }]);
@@ -717,6 +728,7 @@ const Operations = () => {
   // ✅ RESET SESSION HANDLER
   const handleResetSession = () => {
     setShowSessionSummary(false);
+    setSelectedTrade(null);
     setSessionStartTime(null);
     setSessionConfig(null);
     setTrades([]);
@@ -1438,7 +1450,16 @@ const Operations = () => {
         totalPnL={metrics.pnl}
         config={sessionConfig}
         onClose={handleResetSession}
+        onTradeClick={setSelectedTrade}
       />
+
+      {/* ✅ TRADE EXPLANATION MODAL - Shows when a trade is clicked from SessionSummary */}
+      {selectedTrade && (
+        <TradeExplanation
+          trade={selectedTrade as any}
+          onClose={() => setSelectedTrade(null)}
+        />
+      )}
 
     </div>
   );
