@@ -38,37 +38,6 @@ export function OrganicBackground({
       <div className="absolute inset-0 bg-gradient-to-br from-deep-space via-deep-space/95 to-deep-space" />
 
       {/* Animated blobs - DISABLED FOR TESTING */}
-      {/* {Array.from({ length: blobCount }).map((_, i) => (
-        <motion.div
-          key={i}
-          className="absolute rounded-full blur-3xl opacity-5"
-          style={{
-            background: colors[i % colors.length],
-            width: `${300 + i * 50}px`,
-            height: `${300 + i * 50}px`,
-            mixBlendMode: 'screen',
-          }}
-          animate={{
-            x: [
-              `${-20 + i * 30}%`,
-              `${80 - i * 20}%`,
-              `${-20 + i * 30}%`,
-            ],
-            y: [
-              `${-10 + i * 20}%`,
-              `${90 - i * 30}%`,
-              `${-10 + i * 20}%`,
-            ],
-            scale: [1, 1.2, 0.8, 1],
-            rotate: [0, 90, 180, 270, 360],
-          }}
-          transition={{
-            duration: (20 + i * 5) / speed,
-            repeat: Infinity,
-            ease: 'easeInOut',
-          }}
-        />
-      ))} */
 
       {/* Noise overlay for texture */}
       <div
