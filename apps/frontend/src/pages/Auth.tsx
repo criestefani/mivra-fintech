@@ -161,7 +161,7 @@ const Auth = () => {
         </CardHeader>
         <CardContent>
           <Tabs defaultValue="login" className="w-full">
-            <TabsList className="grid w-full grid-cols-2 bg-secondary/40">
+            <TabsList className="grid w-full grid-cols-2 bg-slate-800/20">
               <TabsTrigger value="login" className="text-muted-foreground data-[state=active]:text-foreground">
                 Login
               </TabsTrigger>
@@ -282,7 +282,7 @@ const Auth = () => {
                 </div>
 
                 {/* 🆕 AVISO SOBRE A CORRETORA */}
-                <div className="text-xs text-muted-foreground bg-secondary/40 p-3 rounded border border-border font-sans">
+                <div className="text-xs text-muted-foreground bg-slate-800/20 p-3 rounded border border-slate-700/30 font-sans">
                   <p>Ao se cadastrar, uma conta será criada automaticamente na nossa corretora parceira (Avalon Broker) usando seu email e senha.</p>
                 </div>
 
