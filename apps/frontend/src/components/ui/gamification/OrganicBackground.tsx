@@ -35,7 +35,7 @@ export function OrganicBackground({
       {...props}
     >
       {/* Gradient mesh background */}
-      <div className="absolute inset-0 bg-gradient-to-br from-deep-space via-deep-space to-deep-space" />
+      <div className="absolute inset-0" style={{ background: 'linear-gradient(to bottom right, #0a0e27, #0d1220, #0a0e27)' }} />
 
 
       {/* Noise overlay for texture */}
