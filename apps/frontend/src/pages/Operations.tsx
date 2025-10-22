@@ -980,7 +980,7 @@ const Operations = () => {
                 direction: t.direction as 'CALL' | 'PUT',
                 result: t.result as 'WIN' | 'LOSS' | undefined,
                 pnl: t.pnl,
-                timestamp: new Date(t.created_at).getTime(),
+                timestamp: t.created_at ? new Date(t.created_at).getTime() : Date.now(),
               }))}
             />
 
@@ -1207,7 +1207,7 @@ const Operations = () => {
                 direction: t.direction as 'CALL' | 'PUT',
                 result: t.result as 'WIN' | 'LOSS' | undefined,
                 pnl: t.pnl,
-                timestamp: new Date(t.created_at).getTime(),
+                timestamp: t.created_at ? new Date(t.created_at).getTime() : Date.now(),
               }))}
             />
 
