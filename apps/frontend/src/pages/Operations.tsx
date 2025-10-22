@@ -1134,6 +1134,56 @@ const Operations = () => {
         ) : (
           // MANUAL MODE
           <>
+            {/* ✅ Entry Value with Slider - Compact Design */}
+            <div className="space-y-2 p-4 rounded-lg bg-slate-900/50 border border-slate-700/50">
+              <div className="flex items-center justify-between">
+                <label className="text-sm font-medium text-white">Entry Value</label>
+                {editingEntryValue ? (
+                  <input
+                    autoFocus
+                    type="number"
+                    min="2"
+                    step="0.01"
+                    value={entryValue}
+                    onChange={(e) => setEntryValue(Number(e.target.value))}
+                    onBlur={() => setEditingEntryValue(false)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') setEditingEntryValue(false);
+                    }}
+                    className="w-24 px-2 py-1 rounded text-right text-sm font-semibold bg-slate-800 border border-primary text-primary focus:outline-none focus:ring-2 focus:ring-primary"
+                  />
+                ) : (
+                  <span
+                    onClick={() => setEditingEntryValue(true)}
+                    className="text-sm font-semibold text-primary cursor-pointer hover:opacity-80 transition-opacity px-2 py-1 rounded hover:bg-slate-800/50"
+                  >
+                    R$ {entryValue.toFixed(2)}
+                  </span>
+                )}
+              </div>
+
+              {/* Slider */}
+              <input
+                type="range"
+                min="5"
+                max="500"
+                step="5"
+                value={Math.min(entryValue, 500)}
+                onChange={(e) => setEntryValue(Number(e.target.value))}
+                disabled={isRunning}
+                className="w-full h-2 bg-slate-800 rounded-lg appearance-none cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed accent-primary"
+                style={{
+                  background: `linear-gradient(to right, rgb(59, 130, 246) 0%, rgb(59, 130, 246) ${Math.min((entryValue / 500) * 100, 100)}%, rgb(30, 41, 59) ${Math.min((entryValue / 500) * 100, 100)}%, rgb(30, 41, 59) 100%)`
+                }}
+              />
+
+              {/* Range Labels */}
+              <div className="flex justify-between text-xs text-slate-500">
+                <span>R$ 5</span>
+                <span>R$ 500</span>
+              </div>
+            </div>
+
             <TradingChart
               category={category}
               asset={asset}
@@ -1321,55 +1371,6 @@ const Operations = () => {
               />
             )}
 
-            {/* ✅ MANUAL MODE: Entry Value with Slider - Compact Design */}
-            <div className="space-y-2 p-4 rounded-lg bg-slate-900/50 border border-slate-700/50">
-              <div className="flex items-center justify-between">
-                <label className="text-sm font-medium text-white">Entry Value</label>
-                {editingEntryValue ? (
-                  <input
-                    autoFocus
-                    type="number"
-                    min="2"
-                    step="0.01"
-                    value={entryValue}
-                    onChange={(e) => setEntryValue(Number(e.target.value))}
-                    onBlur={() => setEditingEntryValue(false)}
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter') setEditingEntryValue(false);
-                    }}
-                    className="w-24 px-2 py-1 rounded text-right text-sm font-semibold bg-slate-800 border border-primary text-primary focus:outline-none focus:ring-2 focus:ring-primary"
-                  />
-                ) : (
-                  <span
-                    onClick={() => setEditingEntryValue(true)}
-                    className="text-sm font-semibold text-primary cursor-pointer hover:opacity-80 transition-opacity px-2 py-1 rounded hover:bg-slate-800/50"
-                  >
-                    R$ {entryValue.toFixed(2)}
-                  </span>
-                )}
-              </div>
-
-              {/* Slider */}
-              <input
-                type="range"
-                min="5"
-                max="500"
-                step="5"
-                value={Math.min(entryValue, 500)}
-                onChange={(e) => setEntryValue(Number(e.target.value))}
-                disabled={isRunning}
-                className="w-full h-2 bg-slate-800 rounded-lg appearance-none cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed accent-primary"
-                style={{
-                  background: `linear-gradient(to right, rgb(59, 130, 246) 0%, rgb(59, 130, 246) ${Math.min((entryValue / 500) * 100, 100)}%, rgb(30, 41, 59) ${Math.min((entryValue / 500) * 100, 100)}%, rgb(30, 41, 59) 100%)`
-                }}
-              />
-
-              {/* Range Labels */}
-              <div className="flex justify-between text-xs text-slate-500">
-                <span>R$ 5</span>
-                <span>R$ 500</span>
-              </div>
-            </div>
           </>
         )}
 

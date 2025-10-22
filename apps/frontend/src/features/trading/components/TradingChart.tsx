@@ -255,32 +255,12 @@ export const TradingChart: React.FC<TradingChartProps> = ({
     <GlassCard className="border-primary/30 shadow-[0_0_20px_rgba(255,140,26,0.15)]">
       <CardHeader>
         <div className="flex items-center justify-between">
-          <CardTitle className="text-lg md:text-xl flex items-center gap-2 text-primary">
-            <TrendingUp className="w-5 h-5" />
-            Manual Trading Chart
-          </CardTitle>
-          <div className="flex items-center gap-2">
-            {/* WebSocket connection status */}
-            <Badge variant={isConnected ? 'default' : 'secondary'} className={`gap-1.5 ${isConnected ? 'bg-positive text-white' : 'bg-negative text-white'}`}>
-              {isConnected ? (
-                <>
-                  <Wifi className="w-3 h-3" />
-                  Live
-                </>
-              ) : (
-                <>
-                  <WifiOff className="w-3 h-3" />
-                  Disconnected
-                </>
-              )}
+          {currentStatus && (
+            <Badge variant="outline" className="gap-2 bg-warning/10 text-warning border-warning/40">
+              <div className="w-2 h-2 bg-warning rounded-full animate-pulse" />
+              {currentStatus}
             </Badge>
-            {currentStatus && (
-              <Badge variant="outline" className="gap-2 bg-warning/10 text-warning border-warning/40">
-                <div className="w-2 h-2 bg-warning rounded-full animate-pulse" />
-                {currentStatus}
-              </Badge>
-            )}
-          </div>
+          )}
         </div>
       </CardHeader>
 
@@ -354,6 +334,23 @@ export const TradingChart: React.FC<TradingChartProps> = ({
 
         {/* Chart */}
         <div className="relative">
+          {/* Live Badge - Overlay inside chart */}
+          <div className="absolute top-3 right-3 z-20">
+            <Badge variant={isConnected ? 'default' : 'secondary'} className={`gap-1.5 backdrop-blur-sm bg-opacity-80 ${isConnected ? 'bg-positive text-white' : 'bg-negative text-white'}`}>
+              {isConnected ? (
+                <>
+                  <Wifi className="w-3 h-3" />
+                  Live
+                </>
+              ) : (
+                <>
+                  <WifiOff className="w-3 h-3" />
+                  Disconnected
+                </>
+              )}
+            </Badge>
+          </div>
+
           {candlesLoading && (
             <div className="absolute inset-0 flex items-center justify-center bg-background/80 z-10 rounded-lg">
               <div className="text-center space-y-2">
