@@ -190,6 +190,17 @@ const Operations = () => {
       if (data && data.length > 0) {
         console.log(`[Operations] Loaded ${data.length} trades from today`);
 
+        // 🔍 DEBUG: Log the RAW data from Supabase BEFORE any transformation
+        console.log(`📡 [RAW SUPABASE DATA] First trade:`, {
+          keys: Object.keys(data[0]),
+          strategy_explanation: (data[0] as any).strategy_explanation,
+          indicators_snapshot: (data[0] as any).indicators_snapshot,
+          confidence_score: (data[0] as any).confidence_score,
+          market_conditions: (data[0] as any).market_conditions,
+          technical_summary: (data[0] as any).technical_summary,
+          full_object: data[0]
+        });
+
         // Convert to Trade format - KEEP ALL FIELDS FROM SUPABASE
         const formattedTrades: Trade[] = data.map(trade => ({
           ...trade,  // ✅ SPREAD: Pass ALL fields from Supabase
