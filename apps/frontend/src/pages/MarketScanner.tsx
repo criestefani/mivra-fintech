@@ -261,7 +261,7 @@ export const MarketScanner: React.FC = () => {
         </div>
 
         {/* Help text */}
-        <Card className="glass bg-primary/5 border-primary/20">
+        <Card className="glass backdrop-blur-xl bg-slate-800/20 border-slate-700/30">
           <CardContent className="pt-4">
             <p className="text-sm text-muted-foreground">
               <strong className="text-foreground">Tip:</strong> Click on any asset card to
@@ -275,7 +275,7 @@ export const MarketScanner: React.FC = () => {
         {assets.length > 0 ? (
           <HeatmapGrid assets={assets} onAssetClick={handleAssetClick} />
         ) : (
-          <Card className="glass border-border/60">
+          <Card className="glass backdrop-blur-xl bg-slate-900/50 border-slate-700/50">
             <CardContent className="py-12 text-center space-y-3">
               <p className="text-lg font-semibold text-foreground">
                 No high-confidence signals right now
