@@ -70,6 +70,9 @@ export const TradingChart: React.FC<TradingChartProps> = ({
     pairs: []
   })
   const [loadingAssets, setLoadingAssets] = useState(true)
+  const [assetMenuOpen, setAssetMenuOpen] = useState(false)
+  const [selectedCategoryInMenu, setSelectedCategoryInMenu] = useState<string | null>(null)
+  const assetMenuRef = useRef<HTMLDivElement>(null)
 
   // Use WebSocket hook for real-time candles
   const {
@@ -251,6 +254,20 @@ export const TradingChart: React.FC<TradingChartProps> = ({
     onAssetChange(firstAsset)
   }
 
+  // Close menu when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (assetMenuRef.current && !assetMenuRef.current.contains(event.target as Node)) {
+        setAssetMenuOpen(false)
+      }
+    }
+
+    if (assetMenuOpen) {
+      document.addEventListener('mousedown', handleClickOutside)
+      return () => document.removeEventListener('mousedown', handleClickOutside)
+    }
+  }, [assetMenuOpen])
+
   return (
     <GlassCard className="border-primary/30 shadow-[0_0_20px_rgba(255,140,26,0.15)]">
       <CardHeader>
@@ -266,50 +283,79 @@ export const TradingChart: React.FC<TradingChartProps> = ({
 
       <CardContent className="space-y-4">
         {/* Controls */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          {/* Category Selection */}
-          <div className="space-y-2">
-            <Label htmlFor="category-select" className="text-xs">
-              Category
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {/* Asset Selection with Category Submenu */}
+          <div className="space-y-2 relative" ref={assetMenuRef}>
+            <Label className="text-xs">
+              Asset
             </Label>
-            <select
-              id="category-select"
-              value={category}
-              onChange={(e) => handleCategoryChange(e.target.value)}
-              className="w-full h-9 px-3 rounded-md border border-border bg-card text-foreground text-sm"
-            >
-              {categories.map((cat) => (
-                <option key={cat.id} value={cat.id}>
-                  {cat.name}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          {/* Asset Selection */}
-          <div className="space-y-2">
-            <Label htmlFor="asset-select" className="text-xs">
-              Asset {!loadingAssets && assetsByCategory[category] && (
-                <span className="text-muted-foreground">({assetsByCategory[category].length} available)</span>
-              )}
-            </Label>
-            <select
-              id="asset-select"
-              value={asset}
-              onChange={(e) => onAssetChange(e.target.value)}
+            <button
+              onClick={() => {
+                if (!assetMenuOpen) {
+                  setSelectedCategoryInMenu(null)
+                }
+                setAssetMenuOpen(!assetMenuOpen)
+              }}
               disabled={loadingAssets}
-              className="w-full h-9 px-3 rounded-md border border-border bg-card text-foreground text-sm disabled:opacity-50"
+              className="w-full h-9 px-3 rounded-md border border-border bg-card text-foreground text-sm text-left hover:border-primary/50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {loadingAssets ? (
-                <option>Loading assets...</option>
+                'Loading assets...'
               ) : (
-                assetsByCategory[category]?.map((assetOption) => (
-                  <option key={assetOption.key} value={assetOption.key}>
-                    {assetOption.name}
-                  </option>
-                ))
+                assetsByCategory[category]?.find((a) => a.key === asset)?.name || 'Select asset'
               )}
-            </select>
+            </button>
+
+            {/* Dropdown Menu */}
+            {assetMenuOpen && !loadingAssets && (
+              <div className="absolute top-full left-0 right-0 mt-1 bg-card border border-border rounded-md shadow-lg z-50 max-h-60 overflow-y-auto">
+                {selectedCategoryInMenu === null ? (
+                  // Show Categories
+                  <div className="p-2">
+                    {categories.map((cat) => (
+                      <button
+                        key={cat.id}
+                        onClick={() => {
+                          setSelectedCategoryInMenu(cat.id)
+                          handleCategoryChange(cat.id)
+                        }}
+                        className="w-full text-left px-3 py-2 hover:bg-primary/10 rounded text-sm transition-colors"
+                      >
+                        {cat.name}
+                      </button>
+                    ))}
+                  </div>
+                ) : (
+                  // Show Assets for selected category
+                  <div className="p-2">
+                    <button
+                      onClick={() => setSelectedCategoryInMenu(null)}
+                      className="w-full text-left px-3 py-2 hover:bg-primary/10 rounded text-sm transition-colors mb-2 flex items-center gap-2 text-primary font-semibold"
+                    >
+                      ← Back
+                    </button>
+                    <div className="border-t border-border my-2" />
+                    {assetsByCategory[selectedCategoryInMenu]?.map((assetOption) => (
+                      <button
+                        key={assetOption.key}
+                        onClick={() => {
+                          onAssetChange(assetOption.key)
+                          setAssetMenuOpen(false)
+                          setSelectedCategoryInMenu(null)
+                        }}
+                        className={`w-full text-left px-3 py-2 rounded text-sm transition-colors ${
+                          asset === assetOption.key
+                            ? 'bg-primary/20 text-primary font-semibold'
+                            : 'hover:bg-primary/10'
+                        }`}
+                      >
+                        {assetOption.name}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
           </div>
 
           {/* Timeframe Selection */}
