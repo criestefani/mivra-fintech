@@ -188,7 +188,7 @@ function TradeCard({ trade, index }: TradeCardProps) {
 
       <div className="flex items-center justify-between">
         <span className="text-xs text-gray-400">
-          {new Date(trade.timestamp).toLocaleTimeString('pt-BR', {
+          {new Date(Number(trade.timestamp)).toLocaleTimeString('pt-BR', {
             hour: '2-digit',
             minute: '2-digit',
           })}
