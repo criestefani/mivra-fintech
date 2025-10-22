@@ -18,70 +18,65 @@ interface AutoModeRunningProps {
   currentStatus: string | null
   currentAsset?: string
   currentAmount?: number
+  isRunning?: boolean
 }
 
 export const AutoModeRunning: React.FC<AutoModeRunningProps> = ({
   pnlData,
   currentStatus,
-  currentAsset
+  currentAsset,
+  isRunning = false
 }) => {
   const currentPnl = pnlData.length > 0 ? pnlData[pnlData.length - 1].value : 0
   const isProfitable = currentPnl >= 0
 
   return (
-    <div className="space-y-4">
-      {/* Current Status Card */}
-      <GlassCard className="border-primary/30 shadow-[0_0_20px_rgba(255,140,26,0.15)]">
-        <CardContent className="p-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="w-3 h-3 bg-positive rounded-full animate-pulse shadow-[0_0_10px_rgba(16,185,129,0.6)]" />
-              <div>
-                <p className="text-sm text-muted-foreground">Bot Status</p>
-                <p className="font-semibold text-primary">
-                  {currentStatus || 'Running...'}
-                </p>
-              </div>
-            </div>
+    <GlassCard className={`border-2 ${
+      isProfitable
+        ? 'border-positive/50 shadow-[0_0_20px_rgba(16,185,129,0.2)]'
+        : 'border-negative/50 shadow-[0_0_20px_rgba(235,47,47,0.2)]'
+    }`}>
+      {/* Status Bar - Acoplado ao gráfico */}
+      <div className="px-4 py-3 border-b border-slate-700/50 flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <div className={`w-3 h-3 rounded-full animate-pulse ${
+            isRunning ? 'bg-positive shadow-[0_0_10px_rgba(16,185,129,0.6)]' : 'bg-slate-600'
+          }`} />
+          <p className="font-semibold text-sm text-white">
+            {isRunning ? (currentStatus || 'Running') : 'Stopped'}
+          </p>
+        </div>
 
-            {currentAsset && (
-              <div className="text-right">
-                <p className="text-sm text-muted-foreground">Current Asset</p>
-                <p className="font-semibold text-warning">{currentAsset}</p>
-              </div>
-            )}
+        {currentAsset && (
+          <div className="text-right">
+            <p className="font-semibold text-sm text-warning">{currentAsset}</p>
           </div>
-        </CardContent>
-      </GlassCard>
+        )}
+      </div>
 
       {/* PnL Chart */}
-      <GlassCard className={`border-2 ${
-        isProfitable
-          ? 'border-positive/50 shadow-[0_0_20px_rgba(16,185,129,0.2)]'
-          : 'border-negative/50 shadow-[0_0_20px_rgba(235,47,47,0.2)]'
-      }`}>
-        <CardHeader>
-          <div className="flex items-center justify-between">
-            <CardTitle className="text-lg flex items-center gap-2 text-primary">
-              <Activity className="w-5 h-5" />
-              P&L Evolution
-            </CardTitle>
-            <div className="flex items-center gap-2">
-              {isProfitable ? (
-                <TrendingUp className="w-5 h-5 text-positive" />
-              ) : (
-                <TrendingDown className="w-5 h-5 text-negative" />
-              )}
-              <span
-                className={`text-xl font-bold font-mono ${
-                  isProfitable ? 'text-positive' : 'text-negative'
-                }`}
-              >
-                {isProfitable ? '+' : ''}R$ {currentPnl.toFixed(2)}
-              </span>
-            </div>
+      <CardHeader>
+        <div className="flex items-center justify-between">
+          <CardTitle className="text-lg flex items-center gap-2 text-primary">
+            <Activity className="w-5 h-5" />
+            P&L Evolution
+          </CardTitle>
+          <div className="flex items-center gap-2">
+            {isProfitable ? (
+              <TrendingUp className="w-5 h-5 text-positive" />
+            ) : (
+              <TrendingDown className="w-5 h-5 text-negative" />
+            )}
+            <span
+              className={`text-xl font-bold font-mono ${
+                isProfitable ? 'text-positive' : 'text-negative'
+              }`}
+            >
+              {isProfitable ? '+' : ''}R$ {currentPnl.toFixed(2)}
+            </span>
           </div>
-        </CardHeader>
+        </div>
+      </CardHeader>
 
         <CardContent>
           <div className="w-full h-64 md:h-80">
@@ -133,6 +128,5 @@ export const AutoModeRunning: React.FC<AutoModeRunningProps> = ({
           )}
         </CardContent>
       </GlassCard>
-    </div>
   )
 }

@@ -831,6 +831,7 @@ const Operations = () => {
               currentStatus={currentStatus}
               currentAsset={trades[0]?.asset}
               currentAmount={trades[0]?.pnl ? Math.abs(trades[0].pnl) : undefined}
+              isRunning={isRunning}
             />
 
             {/* ✅ Start/Stop Bot Button */}
