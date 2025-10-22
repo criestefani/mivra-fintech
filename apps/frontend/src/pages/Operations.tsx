@@ -11,7 +11,6 @@ import type { ScannerConfig } from "@/features/market-scanner";
 import {
   OperationsHeader,
   AutoModeConfig,
-  AutoModeRunning,
   MetricsCards,
   TradeHistory,
   TradingChart,
@@ -32,7 +31,6 @@ import {
   LiveTradeFeed,
   StreakOverlay,
   NextTradePreview,
-  CommandCenter,
   MetricsGrid,
   QuestTracker,
   type Trade as TradeFeedTrade,
@@ -850,22 +848,6 @@ const Operations = () => {
         {botMode === "auto" ? (
           // AUTO MODE
           <>
-            {/* ✅ Gamification: Command Center (Auto Mode HUD) */}
-            <CommandCenter
-              botStatus={isRunning ? "SCANNING" : "STOPPED"}
-              currentAsset={trades[0]?.asset}
-              sessionTime={sessionTime}
-              userLevel={progress?.current_level || 1}
-            />
-
-            {/* ✅ P&L Chart: Always visible (bot running or not) */}
-            <AutoModeRunning
-              pnlData={pnlData}
-              currentStatus={currentStatus}
-              currentAsset={trades[0]?.asset}
-              currentAmount={trades[0]?.pnl ? Math.abs(trades[0].pnl) : undefined}
-            />
-
             {/* ✅ Configuration Panel: Only show when bot is NOT running */}
             {!isRunning && (
               <AutoModeConfig
