@@ -315,33 +315,31 @@ export const TradingChart: React.FC<TradingChartProps> = ({
 
             {/* Dropdown Menu - Improved */}
             {assetMenuOpen && !loadingAssets && (
-              <div className="absolute top-full left-0 right-0 mt-1 bg-slate-950/95 border border-slate-700/50 rounded-lg shadow-xl z-50 max-h-64 overflow-hidden flex flex-col backdrop-blur-sm">
+              <div className="absolute top-full left-0 right-0 mt-1 bg-slate-950/95 border border-slate-700/50 rounded-lg shadow-xl z-50 max-h-80 backdrop-blur-sm">
                 {selectedCategoryInMenu === null ? (
                   // Show Categories
-                  <div className="overflow-y-auto">
-                    <div className="p-1">
-                      {categories.map((cat) => (
-                        <button
-                          key={cat.id}
-                          onClick={() => {
-                            setSelectedCategoryInMenu(cat.id)
-                            handleCategoryChange(cat.id)
-                          }}
-                          className={cn(
-                            'w-full text-left px-3 py-2 rounded-md text-sm transition-all font-medium',
-                            'hover:bg-primary/20 hover:text-primary text-slate-200',
-                            category === cat.id && 'bg-primary/20 text-primary'
-                          )}
-                        >
-                          {cat.name}
-                        </button>
-                      ))}
-                    </div>
+                  <div className="overflow-y-auto max-h-80 p-1">
+                    {categories.map((cat) => (
+                      <button
+                        key={cat.id}
+                        onClick={() => {
+                          setSelectedCategoryInMenu(cat.id)
+                          handleCategoryChange(cat.id)
+                        }}
+                        className={cn(
+                          'w-full text-left px-3 py-2 rounded-md text-sm transition-all font-medium',
+                          'hover:bg-primary/20 hover:text-primary text-slate-200',
+                          category === cat.id && 'bg-primary/20 text-primary'
+                        )}
+                      >
+                        {cat.name}
+                      </button>
+                    ))}
                   </div>
                 ) : (
                   // Show Assets for selected category
-                  <div className="overflow-y-auto flex flex-col">
-                    <div className="sticky top-0 bg-slate-950/95 border-b border-slate-700/30 p-1">
+                  <div>
+                    <div className="sticky top-0 bg-slate-950/95 border-b border-slate-700/30 p-1 z-10">
                       <button
                         onClick={() => setSelectedCategoryInMenu(null)}
                         className="w-full text-left px-3 py-2 hover:bg-slate-800/50 rounded-md text-xs transition-colors flex items-center gap-2 text-primary font-semibold"
@@ -349,7 +347,7 @@ export const TradingChart: React.FC<TradingChartProps> = ({
                         ← {categories.find((c) => c.id === selectedCategoryInMenu)?.name}
                       </button>
                     </div>
-                    <div className="p-1">
+                    <div className="overflow-y-auto max-h-72 p-1">
                       {assetsByCategory[selectedCategoryInMenu]?.map((assetOption) => (
                         <button
                           key={assetOption.key}
@@ -383,17 +381,18 @@ export const TradingChart: React.FC<TradingChartProps> = ({
               value={timeframe}
               onChange={(e) => onTimeframeChange(e.target.value)}
               className={cn(
-                'w-full h-8 px-3 rounded-lg border transition-all text-sm font-medium',
+                'w-full h-8 px-3 pr-8 rounded-lg border transition-all text-sm font-medium',
                 'bg-slate-900/50 border-slate-700/50 text-slate-200',
                 'hover:border-primary/50 hover:bg-slate-900/70',
                 'focus:outline-none focus:ring-2 focus:ring-primary/50',
-                'appearance-none cursor-pointer'
+                'appearance-none cursor-pointer',
+                'text-left'
               )}
               style={{
-                backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%236b7280' d='M10.293 3.293L6 7.586 1.707 3.293A1 1 0 00.293 4.707l5 5a1 1 0 001.414 0l5-5a1 1 0 10-1.414-1.414z'/%3E%3C/svg%3E")`,
+                backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23cbd5e1' d='M6 8L1 3h10z'/%3E%3C/svg%3E")`,
                 backgroundRepeat: 'no-repeat',
-                backgroundPosition: 'right 8px center',
-                paddingRight: '28px'
+                backgroundPosition: 'right 6px center',
+                backgroundSize: '12px 12px'
               }}
             >
               {timeframes.map((tf) => (
