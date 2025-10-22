@@ -31,7 +31,7 @@ export function OrganicBackground({
 }: OrganicBackgroundProps) {
   return (
     <div
-      className={cn('absolute inset-0 -z-10 overflow-hidden', className)}
+      className={cn('fixed inset-0 z-0 overflow-hidden pointer-events-none', className)}
       {...props}
     >
       {/* Gradient mesh background */}
@@ -41,11 +41,12 @@ export function OrganicBackground({
       {Array.from({ length: blobCount }).map((_, i) => (
         <motion.div
           key={i}
-          className="absolute rounded-full blur-3xl opacity-20"
+          className="absolute rounded-full blur-3xl opacity-5"
           style={{
             background: colors[i % colors.length],
             width: `${300 + i * 50}px`,
             height: `${300 + i * 50}px`,
+            mixBlendMode: 'screen',
           }}
           animate={{
             x: [
@@ -73,7 +74,9 @@ export function OrganicBackground({
       <div
         className="absolute inset-0 opacity-10"
         style={{
-          backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 400 400' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' /%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' /%3E%3C/svg%3E")`,
+          backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 400 400' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' /%3E%3C/filter%3E%3Crect width='400' height='400' filter='url(%23noiseFilter)' /%3E%3C/svg%3E")`,
+          backgroundSize: 'cover',
+          backgroundRepeat: 'repeat',
         }}
       />
     </div>

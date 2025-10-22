@@ -47,20 +47,6 @@ export function QuestTracker({ userId, maxQuests = 6 }: QuestTrackerProps) {
     return '🎯';
   };
 
-  // Get quest type color
-  const getQuestTypeColor = (questType: string): string => {
-    switch (questType) {
-      case 'daily':
-        return 'from-blue-900/40 to-blue-800/40 border-blue-500/30';
-      case 'weekly':
-        return 'from-purple-900/40 to-purple-800/40 border-purple-500/30';
-      case 'special':
-        return 'from-amber-900/40 to-amber-800/40 border-amber-500/30';
-      default:
-        return 'from-slate-900/40 to-slate-800/40 border-slate-500/30';
-    }
-  };
-
   // Calculate time remaining
   const getTimeRemaining = (expiresAt: string | undefined): string | null => {
     if (!expiresAt) return null;
@@ -129,8 +115,11 @@ export function QuestTracker({ userId, maxQuests = 6 }: QuestTrackerProps) {
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ delay: index * 0.1 }}
                 className={cn(
-                  'p-3 rounded-lg border backdrop-blur-lg transition-all',
-                  `bg-gradient-to-r ${getQuestTypeColor(quest.quest_type)}`,
+                  'p-3 rounded-lg border backdrop-blur-lg transition-all bg-gradient-to-r',
+                  quest.quest_type === 'daily' && 'from-blue-900/40 to-blue-800/40 border-blue-500/30',
+                  quest.quest_type === 'weekly' && 'from-purple-900/40 to-purple-800/40 border-purple-500/30',
+                  quest.quest_type === 'special' && 'from-amber-900/40 to-amber-800/40 border-amber-500/30',
+                  !['daily', 'weekly', 'special'].includes(quest.quest_type) && 'from-slate-900/40 to-slate-800/40 border-slate-500/30',
                   isClaimable && 'ring-2 ring-primary/50'
                 )}
               >

@@ -5,11 +5,12 @@ import React, { useEffect, useRef, useState } from 'react'
 import { Card, CardHeader, CardTitle, CardContent } from '@/shared/components/ui/card'
 import { Label } from '@/shared/components/ui/label'
 import { Badge } from '@/shared/components/ui/badge'
-import { createChart, IChartApi, ISeriesApi, CandlestickData, Time } from 'lightweight-charts'
+import { createChart, IChartApi, ISeriesApi, CandlestickData, Time, SeriesMarker } from 'lightweight-charts'
 import { useRealtimeCandles } from '@/shared/hooks/useRealtimeCandles'
 import { Loader2, TrendingUp, Wifi, WifiOff } from 'lucide-react'
 import axios from 'axios'
 import { GlassCard } from '@/components/ui/gamification'
+import { CHART_COLORS } from '@/utils/chartColors'
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:4001'
 
@@ -54,6 +55,7 @@ export const TradingChart: React.FC<TradingChartProps> = ({
   onCategoryChange,
   onAssetChange,
   onTimeframeChange,
+  tradeMarkers,
   currentStatus
 }) => {
   const chartContainerRef = useRef<HTMLDivElement>(null)
@@ -123,12 +125,12 @@ export const TradingChart: React.FC<TradingChartProps> = ({
       width: chartContainerRef.current.clientWidth,
       height: 400,
       layout: {
-        background: { color: 'transparent' },
-        textColor: '#888888'
+        background: { color: CHART_COLORS.BACKGROUND },
+        textColor: CHART_COLORS.TEXT
       },
       grid: {
-        vertLines: { color: 'rgba(42, 46, 57, 0.3)' },
-        horzLines: { color: 'rgba(42, 46, 57, 0.3)' }
+        vertLines: { color: CHART_COLORS.GRID_LINE },
+        horzLines: { color: CHART_COLORS.GRID_LINE }
       },
       timeScale: {
         timeVisible: true,
@@ -137,12 +139,12 @@ export const TradingChart: React.FC<TradingChartProps> = ({
     })
 
     const candleSeries = chart.addCandlestickSeries({
-      upColor: '#21C06C',        // hsl(152, 71%, 45%) - Green for up candles
-      downColor: '#EF4444',      // hsl(0, 84%, 55%) - Red for down candles
-      borderUpColor: '#21C06C',
-      borderDownColor: '#EF4444',
-      wickUpColor: '#21C06C',
-      wickDownColor: '#EF4444'
+      upColor: CHART_COLORS.CANDLE_UP,
+      downColor: CHART_COLORS.CANDLE_DOWN,
+      borderUpColor: CHART_COLORS.CANDLE_BORDER_UP,
+      borderDownColor: CHART_COLORS.CANDLE_BORDER_DOWN,
+      wickUpColor: CHART_COLORS.CANDLE_WICK_UP,
+      wickDownColor: CHART_COLORS.CANDLE_WICK_DOWN
     })
 
     chartRef.current = chart
@@ -174,6 +176,59 @@ export const TradingChart: React.FC<TradingChartProps> = ({
 
     candleSeriesRef.current.setData(formattedCandles)
   }, [candles])
+
+  // Update trade markers on chart (based on lightweight-charts official docs)
+  useEffect(() => {
+    if (!candleSeriesRef.current) return
+    if (!tradeMarkers || tradeMarkers.length === 0) {
+      console.log('[TradingChart] No markers, clearing chart markers')
+      candleSeriesRef.current.setMarkers([])
+      return
+    }
+
+    console.log(`[TradingChart] 📍 Adding ${tradeMarkers.length} markers to chart`)
+
+    try {
+      const markers: SeriesMarker<Time>[] = []
+
+      tradeMarkers.forEach((trade) => {
+        console.log('[TradingChart] Trade marker:', {
+          time: trade.time,
+          direction: trade.direction,
+          result: trade.result,
+        })
+
+        // Entry marker - direction indicator (CALL/PUT)
+        markers.push({
+          time: trade.time as Time,
+          position: trade.direction === 'CALL' ? 'belowBar' : 'aboveBar',
+          color: trade.direction === 'CALL' ? CHART_COLORS.POSITIVE : CHART_COLORS.NEGATIVE,
+          shape: trade.direction === 'CALL' ? 'arrowUp' : 'arrowDown',
+          text: trade.direction === 'CALL'
+            ? `▲ CALL${trade.pnl !== undefined ? ` (R$ ${trade.pnl >= 0 ? '+' : ''}${trade.pnl.toFixed(2)})` : ''}`
+            : `▼ PUT${trade.pnl !== undefined ? ` (R$ ${trade.pnl >= 0 ? '+' : ''}${trade.pnl.toFixed(2)})` : ''}`,
+          size: 2,
+        })
+
+        // Result marker - WIN/LOSS indicator (only if result exists)
+        if (trade.result) {
+          markers.push({
+            time: trade.time as Time,
+            position: trade.result === 'WIN' ? 'aboveBar' : 'belowBar',
+            color: trade.result === 'WIN' ? CHART_COLORS.POSITIVE : CHART_COLORS.NEGATIVE,
+            shape: 'circle',
+            text: trade.result === 'WIN' ? '✓ WIN' : '✗ LOSS',
+            size: 1,
+          })
+        }
+      })
+
+      console.log(`[TradingChart] ✅ Setting ${markers.length} total markers`)
+      candleSeriesRef.current.setMarkers(markers)
+    } catch (error) {
+      console.error('[TradingChart] ❌ Error setting markers:', error)
+    }
+  }, [tradeMarkers])
 
   // Handle window resize
   useEffect(() => {

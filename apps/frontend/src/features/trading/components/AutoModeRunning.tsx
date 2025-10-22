@@ -6,6 +6,7 @@ import { Card, CardHeader, CardTitle, CardContent } from '@/shared/components/ui
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, ReferenceLine } from 'recharts'
 import { Activity, TrendingUp, TrendingDown } from 'lucide-react'
 import { GlassCard } from '@/components/ui/gamification'
+import { CHART_COLORS } from '@/utils/chartColors'
 
 interface PnlDataPoint {
   time: string
@@ -88,13 +89,13 @@ export const AutoModeRunning: React.FC<AutoModeRunningProps> = ({
               <LineChart data={pnlData}>
                 <XAxis
                   dataKey="time"
-                  stroke="#888888"
+                  stroke={CHART_COLORS.TEXT}
                   fontSize={12}
                   tickLine={false}
                   axisLine={false}
                 />
                 <YAxis
-                  stroke="#888888"
+                  stroke={CHART_COLORS.TEXT}
                   fontSize={12}
                   tickLine={false}
                   axisLine={false}
@@ -109,14 +110,17 @@ export const AutoModeRunning: React.FC<AutoModeRunningProps> = ({
                   labelStyle={{ color: 'hsl(var(--foreground))' }}
                   formatter={(value: number) => [`R$ ${value.toFixed(2)}`, 'P&L']}
                 />
-                <ReferenceLine y={0} stroke="#888888" strokeDasharray="3 3" />
+                <ReferenceLine y={0} stroke={CHART_COLORS.ZERO_LINE} strokeDasharray="3 3" />
                 <Line
                   type="monotone"
                   dataKey="value"
-                  stroke={isProfitable ? '#21C06C' : '#EF4444'}
+                  stroke={isProfitable ? CHART_COLORS.POSITIVE : CHART_COLORS.NEGATIVE}
                   strokeWidth={2}
                   dot={false}
                   animationDuration={300}
+                  animationEasing="ease-in-out"
+                  isAnimationActive={true}
+                  connectNulls={true}
                 />
               </LineChart>
             </ResponsiveContainer>

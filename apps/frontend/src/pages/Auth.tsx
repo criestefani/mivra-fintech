@@ -9,6 +9,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/shared/components/ui
 import { toast } from "sonner";
 import { Zap, Mail, Lock, User, Loader2 } from "lucide-react";
 import { z } from "zod";
+import { OrganicBackground, DiagonalSection } from "@/components/ui/gamification";
 // 🆕 IMPORTAR O SERVIÇO AVALON
 import avalonService from "@/features/broker/services/avalon.service";
 
@@ -126,16 +127,41 @@ const Auth = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background flex items-center justify-center p-4">
-      <Card className="w-full max-w-md glass">
-        <CardHeader className="space-y-1 text-center">
-          <div className="flex items-center justify-center gap-2 mb-4">
-            <Zap className="h-8 w-8 text-primary" />
-            <h1 className="text-2xl font-bold text-foreground font-sans">MivraTech</h1>
+    <div className="min-h-screen bg-slate-900 relative overflow-hidden">
+      {/* Organic Background Animation */}
+      <OrganicBackground
+        blobCount={3}
+        colors={['#0EA5E9', '#F59E0B', '#10B981']}
+        speed={0.8}
+      />
+
+      {/* Diagonal Header - Brand Section */}
+      <DiagonalSection
+        direction="top-left"
+        gradientFrom="from-primary/40"
+        className="h-48 lg:h-56 relative z-20"
+      >
+        <div className="relative z-30 flex flex-col items-center justify-center h-full text-center px-4">
+          <div className="flex items-center justify-center gap-3 mb-4">
+            <Zap className="h-12 w-12 text-primary animate-pulse" />
+            <h1 className="text-4xl lg:text-5xl font-black text-white tracking-tight">
+              MivraTech
+            </h1>
           </div>
-          <CardTitle className="text-2xl text-foreground font-sans">Bot de Trading Automático</CardTitle>
-          <CardDescription className="text-muted-foreground">
-            Faça login ou crie sua conta para começar
+          <p className="text-lg text-primary/80 font-semibold">Bot de Trading Automático</p>
+          <p className="text-sm text-muted-foreground mt-2 max-w-md">
+            Plataforma inteligente para negociação automática com segurança e rentabilidade
+          </p>
+        </div>
+      </DiagonalSection>
+
+      {/* Auth Form - Centered */}
+      <div className="flex items-center justify-center px-4 -mt-24 lg:-mt-32 relative z-20">
+        <Card className="w-full max-w-md glass shadow-2xl border-primary/20">
+        <CardHeader className="pb-3">
+          <CardTitle className="text-center text-xl">Acesso à Plataforma</CardTitle>
+          <CardDescription className="text-center text-sm">
+            Login ou cadastro para acessar sua conta
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -284,6 +310,7 @@ const Auth = () => {
           </Tabs>
         </CardContent>
       </Card>
+      </div>
     </div>
   );
 };

@@ -37,7 +37,7 @@ import {
   QuestTracker,
   type Trade as TradeFeedTrade,
 } from "@/components/trading";
-import { XPBar, StreakBadge, FloatingXP } from "@/components/ui/gamification";
+import { XPBar, StreakBadge, FloatingXP, OrganicBackground, DiagonalSection } from "@/components/ui/gamification";
 import { BadgeUnlockModal, LevelUpModal } from "@/components/gamification";
 
 // ✅ Gamification Hooks
@@ -790,12 +790,19 @@ const Operations = () => {
   if (!user) return null;
 
   return (
-    <div className="min-h-screen pt-16">
+    <div className="min-h-screen bg-slate-900 relative overflow-hidden pt-16">
+      {/* Organic Background Animation */}
+      <OrganicBackground
+        blobCount={3}
+        colors={['#0EA5E9', '#F59E0B', '#10B981']}
+        speed={0.8}
+      />
+
       <DashboardHeader user={user} />
       <Sidebar />
 
       {/* Mobile-First Layout */}
-      <main className="lg:ml-64 container mx-auto px-4 py-6 space-y-6 animate-fade-in pb-20">
+      <main className="lg:ml-64 container mx-auto px-4 py-6 pb-20 space-y-6 animate-fade-in relative z-20">
 
         {/* ✅ Gamification: Bot Status Bar */}
         <BotStatusBar
@@ -815,6 +822,18 @@ const Operations = () => {
             compact
           />
         )}
+
+        {/* ✅ DIAGONAL SECTION HEADER */}
+        <DiagonalSection
+          direction="top-right"
+          gradientFrom="from-primary/40"
+          className="h-32 lg:h-40 relative z-20 -mx-4 lg:-ml-4"
+        >
+          <div className="relative z-30">
+            <h1 className="text-3xl lg:text-4xl font-bold text-white">Trading Operations</h1>
+            <p className="text-muted-foreground mt-1 text-sm lg:text-base">Auto & Manual Trading Control</p>
+          </div>
+        </DiagonalSection>
 
         {/* ✅ NEW HEADER */}
         <OperationsHeader
@@ -845,13 +864,6 @@ const Operations = () => {
               currentStatus={currentStatus}
               currentAsset={trades[0]?.asset}
               currentAmount={trades[0]?.pnl ? Math.abs(trades[0].pnl) : undefined}
-            />
-
-            {/* ✅ Gamification: Metrics Grid (Enhanced Auto Mode Metrics) */}
-            <MetricsGrid
-              winRate={metrics.winRate}
-              profit={metrics.pnl}
-              totalTrades={metrics.totalTrades}
             />
 
             {/* ✅ Configuration Panel: Only show when bot is NOT running */}
@@ -1116,14 +1128,6 @@ const Operations = () => {
             </div>
           </div>
         </div>
-
-        {/* ✅ TRADE HISTORY - Always visible */}
-        <TradeHistory
-          trades={trades}
-          onReset={handleResetHistory}
-          onRefresh={loadTodayTrades} // ✅ Manual refresh button
-          realtimeStatus={realtimeStatus} // ✅ Show connection status
-        />
 
       </main>
 

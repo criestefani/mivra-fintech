@@ -18,7 +18,8 @@ import {
   DialogTitle,
 } from '@/shared/components/ui/dialog';
 import { toast } from 'sonner';
-import { Loader2 } from 'lucide-react';
+import { Loader2, Settings as SettingsIcon } from 'lucide-react';
+import { DepositButton, WithdrawButton, OrganicBackground, DiagonalSection } from '@/components/ui/gamification';
 
 const Settings = () => {
   const navigate = useNavigate();
@@ -235,21 +236,36 @@ const Settings = () => {
   }
 
   return (
-    <div className="min-h-screen bg-background pt-16">
+    <div className="min-h-screen bg-slate-900 relative overflow-hidden">
+      {/* Organic Background Animation */}
+      <OrganicBackground
+        blobCount={3}
+        colors={['#0EA5E9', '#F59E0B', '#10B981']}
+        speed={0.8}
+      />
+
       {user ? (
         <DashboardHeader user={user} />
       ) : (
-        <div className="fixed top-0 left-0 right-0 h-16 glass border-b border-border/50" />
+        <div className="fixed top-0 left-0 right-0 h-16 glass border-b border-border/50 relative z-40" />
       )}
       <Sidebar />
-      <main className="lg:ml-64 container mx-auto px-4 py-6 pb-24">
+      <main className="lg:ml-64 container mx-auto px-4 py-6 pb-24 relative z-20">
         <div className="space-y-6 max-w-3xl mx-auto">
-          <div>
-            <h1 className="text-3xl font-bold text-foreground">Settings</h1>
-            <p className="text-muted-foreground mt-2">
-              Configure your trading bot parameters
-            </p>
-          </div>
+          {/* Diagonal Section Header */}
+          <DiagonalSection
+            direction="bottom-right"
+            gradientFrom="from-primary/40"
+            className="h-40 lg:h-48 relative z-20 -mx-4 lg:-ml-4"
+          >
+            <div className="relative z-30">
+              <h1 className="text-3xl lg:text-4xl font-bold text-white flex items-center gap-2">
+                <SettingsIcon className="w-8 h-8 text-primary" />
+                Settings
+              </h1>
+              <p className="text-muted-foreground mt-1 text-sm lg:text-base">Configure your trading bot parameters</p>
+            </div>
+          </DiagonalSection>
 
           <div className="grid grid-cols-1 gap-6">
             {/* Broker Connection */}
@@ -376,6 +392,29 @@ const Settings = () => {
                   <Button onClick={() => setShowPasswordDialog(true)} variant="outline">
                     Alterar Senha
                   </Button>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Deposit & Withdrawal Section */}
+            <Card>
+              <CardHeader>
+                <CardTitle>Transações Financeiras</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="flex flex-col sm:flex-row gap-4">
+                  <DepositButton
+                    size="lg"
+                    onClick={() => toast.info('Modal de depósito em breve')}
+                  >
+                    Depositar
+                  </DepositButton>
+                  <WithdrawButton
+                    size="lg"
+                    onClick={() => toast.info('Modal de saque em breve')}
+                  >
+                    Sacar
+                  </WithdrawButton>
                 </div>
               </CardContent>
             </Card>

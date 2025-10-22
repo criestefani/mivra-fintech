@@ -6,6 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/sha
 import { Badge } from '@/shared/components/ui/badge'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/shared/components/ui/table'
 import { TrendingUp, TrendingDown, Activity, DollarSign } from 'lucide-react'
+import { OrganicBackground, DiagonalSection } from '@/components/ui/gamification'
 
 interface Trade {
   id: string
@@ -107,19 +108,29 @@ export default function History() {
   }
 
   return (
-    <div className="min-h-screen bg-background pt-16">
+    <div className="min-h-screen bg-slate-900 relative overflow-hidden">
+      {/* Organic Background Animation */}
+      <OrganicBackground
+        blobCount={3}
+        colors={['#0EA5E9', '#F59E0B', '#10B981']}
+        speed={0.8}
+      />
+
       <DashboardHeader user={user} />
       <Sidebar />
 
-      <main className="lg:ml-64 container mx-auto px-4 py-6 pb-24 space-y-6">
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <div>
-            <h1 className="text-3xl font-bold tracking-tight">Trade History</h1>
-            <p className="text-muted-foreground mt-1">
-              View your complete trading history and performance metrics
-            </p>
+      <main className="lg:ml-64 container mx-auto px-4 py-6 pb-24 space-y-6 relative z-20">
+        {/* Diagonal Section Header */}
+        <DiagonalSection
+          direction="bottom-left"
+          gradientFrom="from-primary/40"
+          className="h-40 lg:h-48 relative z-20 -mx-4 lg:-ml-4"
+        >
+          <div className="relative z-30">
+            <h1 className="text-3xl lg:text-4xl font-bold text-white">Trade History</h1>
+            <p className="text-muted-foreground mt-1 text-sm lg:text-base">Complete trading performance and historical records</p>
           </div>
-        </div>
+        </DiagonalSection>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           <Card>

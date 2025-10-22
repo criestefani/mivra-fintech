@@ -11,6 +11,7 @@ import type { ScannerAsset, ScannerConfig } from '@/features/market-scanner';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/shared/components/ui/card';
 import { Button } from '@/shared/components/ui/button';
 import { Loader2, RefreshCw, Activity, Zap } from 'lucide-react';
+import { OrganicBackground, DiagonalSection } from '@/components/ui/gamification';
 import axios from 'axios';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:4001';
@@ -169,10 +170,15 @@ export const MarketScanner: React.FC = () => {
   // Initial loading state
   if (loading) {
     return (
-      <div className="min-h-screen bg-background pt-16">
+      <div className="min-h-screen bg-slate-900 relative overflow-hidden pt-16">
+        <OrganicBackground
+          blobCount={3}
+          colors={['#0EA5E9', '#F59E0B', '#10B981']}
+          speed={0.8}
+        />
         <DashboardHeader user={user} />
         <Sidebar />
-        <div className="lg:ml-64 container mx-auto px-4 py-6">
+        <div className="lg:ml-64 container mx-auto px-4 py-6 relative z-20">
           <div className="flex flex-col items-center justify-center min-h-[60vh] space-y-4">
             <Loader2 className="w-12 h-12 animate-spin text-primary" />
             <p className="text-muted-foreground text-lg">Loading Market Scanner...</p>
@@ -188,10 +194,15 @@ export const MarketScanner: React.FC = () => {
   // Error state
   if (error) {
     return (
-      <div className="min-h-screen bg-background pt-16">
+      <div className="min-h-screen bg-slate-900 relative overflow-hidden pt-16">
+        <OrganicBackground
+          blobCount={3}
+          colors={['#0EA5E9', '#F59E0B', '#10B981']}
+          speed={0.8}
+        />
         <DashboardHeader user={user} />
         <Sidebar />
-        <div className="lg:ml-64 container mx-auto px-4 py-6">
+        <div className="lg:ml-64 container mx-auto px-4 py-6 relative z-20">
           <Card className="glass border-destructive">
             <CardHeader>
               <CardTitle className="text-destructive flex items-center gap-2">
@@ -213,50 +224,58 @@ export const MarketScanner: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-background pt-16">
+    <div className="min-h-screen bg-slate-900 relative overflow-hidden">
+      {/* Organic Background Animation */}
+      <OrganicBackground
+        blobCount={3}
+        colors={['#0EA5E9', '#F59E0B', '#10B981']}
+        speed={0.8}
+      />
+
       <DashboardHeader user={user} />
       <Sidebar />
-      <div className="lg:ml-64 container mx-auto px-4 py-6 space-y-6 pb-20">
-        {/* Header Card */}
-        <Card className="glass border-border shadow-card">
-          <CardHeader>
-            <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-              <div>
-                <CardTitle className="text-2xl md:text-3xl flex items-center gap-2">
-                  <Zap className="w-6 h-6 md:w-7 md:h-7 text-primary" />
-                  Market Scanner
-                </CardTitle>
-                <CardDescription className="mt-2">
-                  Real-time performance heatmap with hybrid strategy analysis
-                </CardDescription>
-                {lastUpdate && (
-                  <div className="text-xs text-muted-foreground/60 mt-1">
-                    Last update: {lastUpdate.toLocaleTimeString()}
-                  </div>
-                )}
-              </div>
+      <div className="lg:ml-64 container mx-auto px-4 py-6 space-y-6 pb-20 relative z-20">
+        {/* Diagonal Section Header */}
+        <DiagonalSection
+          direction="top-left"
+          gradientFrom="from-primary/40"
+          className="h-40 lg:h-48 relative z-20 -mx-4 lg:-ml-4"
+        >
+          <div className="relative z-30">
+            <h1 className="text-3xl lg:text-4xl font-bold text-white flex items-center gap-2">
+              <Zap className="w-8 h-8 text-primary" />
+              Market Scanner
+            </h1>
+            <p className="text-muted-foreground mt-1 text-sm lg:text-base">Real-time performance heatmap with hybrid strategy analysis</p>
+          </div>
+        </DiagonalSection>
 
-              <div className="flex items-center gap-2">
-                {/* Refresh button */}
-                <Button
-                  onClick={handleRefresh}
-                  variant="outline"
-                  size="sm"
-                  disabled={isRefreshing}
-                  className="gap-2"
-                >
-                  <RefreshCw className={`w-4 h-4 ${isRefreshing ? 'animate-spin' : ''}`} />
-                  <span className="hidden md:inline">Refresh</span>
-                </Button>
-
-                {/* Asset count */}
-                <div className="px-3 py-2 bg-primary/10 text-primary rounded-lg text-sm font-semibold">
-                  {assets.length} {assets.length === 1 ? 'Asset' : 'Assets'}
-                </div>
-              </div>
+        {/* Last Update and Refresh Info */}
+        <div className="flex items-center justify-between gap-4">
+          {lastUpdate && (
+            <div className="text-sm text-muted-foreground">
+              Last update: {lastUpdate.toLocaleTimeString()}
             </div>
-          </CardHeader>
-        </Card>
+          )}
+          <div className="flex items-center gap-2">
+            {/* Refresh button */}
+            <Button
+              onClick={handleRefresh}
+              variant="outline"
+              size="sm"
+              disabled={isRefreshing}
+              className="gap-2"
+            >
+              <RefreshCw className={`w-4 h-4 ${isRefreshing ? 'animate-spin' : ''}`} />
+              <span className="hidden md:inline">Refresh</span>
+            </Button>
+
+            {/* Asset count */}
+            <div className="px-3 py-2 bg-primary/10 text-primary rounded-lg text-sm font-semibold">
+              {assets.length} {assets.length === 1 ? 'Asset' : 'Assets'}
+            </div>
+          </div>
+        </div>
 
         {/* Help text */}
         <Card className="glass bg-primary/5 border-primary/20">

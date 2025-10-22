@@ -34,14 +34,14 @@ export function LiveTradeFeed({
 
   return (
     <>
-      {/* ✅ Floating Button (Small) */}
+      {/* ✅ Floating Button (Small) - Positioned at bottom-right of chart */}
       <motion.button
         onClick={() => setIsOpen(!isOpen)}
-        className={`fixed bottom-8 right-8 w-14 h-14 rounded-full bg-gradient-to-r from-primary to-neon-cyan shadow-2xl flex items-center justify-center z-40 hover:scale-110 transition-transform ${className}`}
+        className={`fixed bottom-32 right-6 w-11 h-11 rounded-full bg-gradient-to-r from-primary to-neon-cyan shadow-2xl flex items-center justify-center z-40 hover:scale-110 transition-transform ${className}`}
         whileHover={{ scale: 1.1 }}
         whileTap={{ scale: 0.95 }}
       >
-        <TrendingUp className="w-6 h-6 text-white" />
+        <TrendingUp className="w-5 h-5 text-white" />
         {winCount > 0 && (
           <motion.div
             initial={{ scale: 0 }}

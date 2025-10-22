@@ -131,7 +131,13 @@ export function BadgesCollection({ userId, maxColumns = 4 }: BadgesCollectionPro
       </div>
 
       {/* Badges Grid */}
-      <div className={`grid gap-3 grid-cols-${maxColumns}`}>
+      <div className={cn('grid gap-3',
+        maxColumns === 2 && 'grid-cols-2',
+        maxColumns === 3 && 'grid-cols-3',
+        maxColumns === 4 && 'grid-cols-4',
+        maxColumns === 5 && 'grid-cols-5',
+        maxColumns === 6 && 'grid-cols-6'
+      )}>
         {isLoading ? (
           <div className="col-span-full flex items-center justify-center p-8">
             <div className="animate-spin w-8 h-8 border-2 border-primary border-t-transparent rounded-full" />
