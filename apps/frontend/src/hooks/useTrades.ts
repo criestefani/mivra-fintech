@@ -6,16 +6,26 @@ export interface Trade {
   id: number;
   external_id: number;
   active_id: number;
+  ativo_nome: string;
   type: string;
   direction: string;
   valor: number;
   profit_esperado: number | null;
   data_abertura: string;
   data_expiracao: string;
+  expiration_seconds: number | null;
   status: string | null;
   resultado: string | null;
   pnl: number | null;
+  strategy_id: string | null;
+  account_type: 'demo' | 'real';
   created_at: string;
+  // ✅ NEW FIELDS FROM BOT ANALYSIS
+  strategy_explanation?: string | null;
+  indicators_snapshot?: Record<string, any> | null;
+  confidence_score?: number | null;
+  market_conditions?: Record<string, any> | null;
+  technical_summary?: string | null;
 }
 
 export const useTrades = (limit?: number) => {

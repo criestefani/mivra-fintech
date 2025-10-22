@@ -196,20 +196,10 @@ export function TradeExplanation({ isOpen, trade, onClose }: TradeExplanationPro
                   </div>
                 </div>
 
-                {/* Duration & Prices */}
-                <div className="grid grid-cols-3 gap-3">
-                  <div className="bg-slate-800/30 rounded-lg p-3 border border-slate-700/30">
-                    <p className="text-xs text-slate-400 mb-1">Duration</p>
-                    <p className="text-sm font-medium text-white">{duration}</p>
-                  </div>
-                  <div className="bg-slate-800/30 rounded-lg p-3 border border-slate-700/30">
-                    <p className="text-xs text-slate-400 mb-1">Entry Price</p>
-                    <p className="text-sm font-medium text-white">{trade.entry_price ? `R$ ${trade.entry_price.toFixed(2)}` : 'N/A'}</p>
-                  </div>
-                  <div className="bg-slate-800/30 rounded-lg p-3 border border-slate-700/30">
-                    <p className="text-xs text-slate-400 mb-1">Exit Price</p>
-                    <p className="text-sm font-medium text-white">{trade.exit_price ? `R$ ${trade.exit_price.toFixed(2)}` : 'N/A'}</p>
-                  </div>
+                {/* Duration */}
+                <div className="bg-slate-800/30 rounded-lg p-3 border border-slate-700/30">
+                  <p className="text-xs text-slate-400 mb-1">Duration</p>
+                  <p className="text-sm font-medium text-white">{duration}</p>
                 </div>
 
                 {/* Indicators - Display if available */}
