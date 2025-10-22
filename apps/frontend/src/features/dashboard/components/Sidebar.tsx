@@ -23,7 +23,7 @@ const links: SidebarLink[] = [
   {
     to: '/market-scanner',
     icon: <TrendingUp className="w-5 h-5" />,
-    label: 'Market Scanner',
+    label: 'Scanner',
   },
   {
     to: '/history',
