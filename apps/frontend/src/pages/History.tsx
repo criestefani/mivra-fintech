@@ -128,7 +128,7 @@ export default function History() {
         </DiagonalSection>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <Card>
+          <Card className="backdrop-blur-xl bg-slate-900/50 border-slate-700/50">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Total Trades</CardTitle>
               <Activity className="h-4 w-4 text-muted-foreground" />
@@ -139,7 +139,7 @@ export default function History() {
             </CardContent>
           </Card>
 
-          <Card>
+          <Card className="backdrop-blur-xl bg-slate-900/50 border-slate-700/50">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Win Rate</CardTitle>
               <TrendingUp className="h-4 w-4 text-muted-foreground" />
@@ -150,7 +150,7 @@ export default function History() {
             </CardContent>
           </Card>
 
-          <Card>
+          <Card className="backdrop-blur-xl bg-slate-900/50 border-slate-700/50">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Total P&L</CardTitle>
               <DollarSign className="h-4 w-4 text-muted-foreground" />
@@ -162,7 +162,7 @@ export default function History() {
           </Card>
         </div>
 
-        <Card>
+        <Card className="backdrop-blur-xl bg-slate-900/50 border-slate-700/50">
           <CardHeader>
             <CardTitle>Trading Activity</CardTitle>
             <CardDescription>
@@ -170,10 +170,10 @@ export default function History() {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="rounded-md border overflow-x-auto">
+            <div className="rounded-md overflow-x-auto backdrop-blur-xl bg-slate-900/50 border border-slate-700/50">
               <Table className="min-w-[840px]">
-                <TableHeader>
-                  <TableRow>
+                <TableHeader className="bg-slate-800/50 border-b border-slate-700/50">
+                  <TableRow className="border-slate-700/50">
                     <TableHead>Asset</TableHead>
                     <TableHead>Account</TableHead>
                     <TableHead>Direction</TableHead>
@@ -206,7 +206,7 @@ export default function History() {
                     </TableRow>
                   ) : (
                     formattedTrades.map((trade) => (
-                      <TableRow key={trade.id}>
+                      <TableRow key={trade.id} className="border-slate-700/30 hover:bg-slate-700/20">
                         <TableCell className="font-medium">{trade.ativo_nome}</TableCell>
                         <TableCell>
                           <Badge variant="outline">{trade.accountLabel}</Badge>
