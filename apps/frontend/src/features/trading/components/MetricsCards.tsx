@@ -29,7 +29,7 @@ export const MetricsCards: React.FC<MetricsCardsProps> = ({
       <GlassCard className={`border-2 ${
         winRate >= 50
           ? 'border-positive/50 shadow-[0_0_20px_rgba(16,185,129,0.15)]'
-          : 'border-negative/50 shadow-[0_0_20px_rgba(235,47,47,0.15)]'
+          : 'border-primary/30 shadow-[0_0_20px_rgba(255,140,26,0.10)]'
       }`}>
         <CardContent className="p-4 md:p-6">
           <div className="space-y-2">
@@ -71,7 +71,7 @@ export const MetricsCards: React.FC<MetricsCardsProps> = ({
         className={`border-2 ${
           isProfitable
             ? 'border-positive/50 shadow-[0_0_20px_rgba(16,185,129,0.2)]'
-            : 'border-negative/50 shadow-[0_0_20px_rgba(235,47,47,0.2)]'
+            : 'border-primary/30 shadow-[0_0_20px_rgba(255,140,26,0.10)]'
         }`}
       >
         <CardContent className="p-4 md:p-6">

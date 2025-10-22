@@ -34,7 +34,7 @@ export const AutoModeRunning: React.FC<AutoModeRunningProps> = ({
     <GlassCard className={`border-2 ${
       isProfitable
         ? 'border-positive/50 shadow-[0_0_20px_rgba(16,185,129,0.2)]'
-        : 'border-negative/50 shadow-[0_0_20px_rgba(235,47,47,0.2)]'
+        : 'border-primary/30 shadow-[0_0_20px_rgba(255,140,26,0.10)]'
     }`}>
       {/* Status Bar - Acoplado ao gráfico */}
       <div className="px-4 py-3 border-b border-slate-700/50 flex items-center justify-between">
