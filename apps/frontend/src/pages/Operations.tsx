@@ -792,11 +792,11 @@ const Operations = () => {
   return (
     <div className="min-h-screen bg-slate-900 relative overflow-hidden pt-16">
       {/* Organic Background Animation */}
-      <OrganicBackground
+      {/* <OrganicBackground
         blobCount={3}
         colors={['#0EA5E9', '#F59E0B', '#10B981']}
         speed={0.8}
-      />
+      /> */}
 
       <DashboardHeader user={user} />
       <Sidebar />
