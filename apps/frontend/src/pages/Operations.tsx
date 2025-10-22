@@ -103,11 +103,6 @@ const Operations = () => {
   const [showManualAdvanced, setShowManualAdvanced] = useState(false);
   const [showStrategyHelp, setShowStrategyHelp] = useState(false);
   const [editingEntryValue, setEditingEntryValue] = useState(false);
-  useEffect(() => {
-    if (typeof window !== "undefined" && window.innerWidth >= 768) {
-      setShowManualAdvanced(true);
-    }
-  }, []);
   // ✅ manualStrategy removed - manual mode always uses hybrid strategy
 
   // ✅ Real-time Data
