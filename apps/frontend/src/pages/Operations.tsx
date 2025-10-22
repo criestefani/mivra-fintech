@@ -35,7 +35,7 @@ import {
   QuestTracker,
   type Trade as TradeFeedTrade,
 } from "@/components/trading";
-import { XPBar, StreakBadge, FloatingXP, DiagonalSection } from "@/components/ui/gamification";
+import { StreakBadge, FloatingXP, DiagonalSection } from "@/components/ui/gamification";
 import { BadgeUnlockModal, LevelUpModal } from "@/components/gamification";
 
 // ✅ Gamification Hooks
@@ -801,17 +801,6 @@ const Operations = () => {
 
       {/* Mobile-First Layout */}
       <main className="lg:ml-64 container mx-auto px-4 py-6 pb-20 space-y-6 animate-fade-in relative z-20" style={{ marginTop: 'max(1.5rem, calc(env(safe-area-inset-top) + 1.5rem))' }}>
-
-        {/* ✅ Gamification: XP Bar */}
-        {progress && (
-          <XPBar
-            level={progress.current_level}
-            currentXP={progress.xp_current_level}
-            nextLevelXP={progress.xp_next_level}
-            levelTitle={progress.level_title}
-            compact
-          />
-        )}
 
         {/* ✅ DIAGONAL SECTION HEADER */}
         <DiagonalSection
