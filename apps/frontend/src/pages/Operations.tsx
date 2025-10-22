@@ -928,7 +928,7 @@ const Operations = () => {
             )}
 
             {/* ✅ MANUAL MODE: Entry Value */}
-            <Card className="glass border-border">
+            <Card className="glass backdrop-blur-xl bg-slate-900/50 border-slate-700/50">
               <CardContent className="p-6">
                 <div className="space-y-4">
                   <div>
@@ -976,7 +976,7 @@ const Operations = () => {
               </CardContent>
             </Card>
 
-            <Card className="glass border-border">
+            <Card className="glass backdrop-blur-xl bg-slate-900/50 border-slate-700/50">
               <CardHeader className="p-0">
                 <button
                   type="button"
@@ -1104,12 +1104,12 @@ const Operations = () => {
         {/* ✅ GAMIFICATION WIDGETS */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Quests Widget */}
-          <div className="lg:col-span-1 backdrop-blur-xl bg-card/50 border border-card-border rounded-lg p-4">
+          <div className="lg:col-span-1 backdrop-blur-xl bg-slate-900/50 border border-slate-700/50 rounded-lg p-4">
             <QuestTrackerWidget userId={user?.id || null} maxQuests={4} />
           </div>
 
           {/* Leaderboard Widget */}
-          <div className="lg:col-span-1 backdrop-blur-xl bg-card/50 border border-card-border rounded-lg p-4">
+          <div className="lg:col-span-1 backdrop-blur-xl bg-slate-900/50 border border-slate-700/50 rounded-lg p-4">
             <div className="space-y-3">
               <h3 className="text-lg font-bold text-white">Top Rankings</h3>
               <p className="text-xs text-muted-foreground">
@@ -1119,7 +1119,7 @@ const Operations = () => {
           </div>
 
           {/* Badges Widget */}
-          <div className="lg:col-span-1 backdrop-blur-xl bg-card/50 border border-card-border rounded-lg p-4">
+          <div className="lg:col-span-1 backdrop-blur-xl bg-slate-900/50 border border-slate-700/50 rounded-lg p-4">
             <div className="space-y-3">
               <h3 className="text-lg font-bold text-white">Badges</h3>
               <p className="text-xs text-muted-foreground">
