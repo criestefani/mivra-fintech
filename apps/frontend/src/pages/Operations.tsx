@@ -102,6 +102,7 @@ const Operations = () => {
   });
   const [showManualAdvanced, setShowManualAdvanced] = useState(false);
   const [showStrategyHelp, setShowStrategyHelp] = useState(false);
+  const [editingEntryValue, setEditingEntryValue] = useState(false);
   useEffect(() => {
     if (typeof window !== "undefined" && window.innerWidth >= 768) {
       setShowManualAdvanced(true);
@@ -920,7 +921,28 @@ const Operations = () => {
             <div className="space-y-2 p-4 rounded-lg bg-slate-900/50 border border-slate-700/50">
               <div className="flex items-center justify-between">
                 <label className="text-sm font-medium text-white">Entry Value</label>
-                <span className="text-sm font-semibold text-primary">R$ {entryValue.toFixed(2)}</span>
+                {editingEntryValue ? (
+                  <input
+                    autoFocus
+                    type="number"
+                    min="2"
+                    step="0.01"
+                    value={entryValue}
+                    onChange={(e) => setEntryValue(Number(e.target.value))}
+                    onBlur={() => setEditingEntryValue(false)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') setEditingEntryValue(false);
+                    }}
+                    className="w-24 px-2 py-1 rounded text-right text-sm font-semibold bg-slate-800 border border-primary text-primary focus:outline-none focus:ring-2 focus:ring-primary"
+                  />
+                ) : (
+                  <span
+                    onClick={() => setEditingEntryValue(true)}
+                    className="text-sm font-semibold text-primary cursor-pointer hover:opacity-80 transition-opacity px-2 py-1 rounded hover:bg-slate-800/50"
+                  >
+                    R$ {entryValue.toFixed(2)}
+                  </span>
+                )}
               </div>
 
               {/* Slider */}
@@ -939,22 +961,10 @@ const Operations = () => {
               />
 
               {/* Range Labels */}
-              <div className="flex justify-between text-xs text-slate-500 mb-2">
+              <div className="flex justify-between text-xs text-slate-500">
                 <span>R$ 5</span>
                 <span>R$ 500</span>
               </div>
-
-              {/* Manual Input */}
-              <Input
-                type="number"
-                min="2"
-                step="0.01"
-                value={entryValue}
-                onChange={(e) => setEntryValue(Number(e.target.value))}
-                disabled={isRunning}
-                placeholder="Enter custom value (R$ 2+)"
-                className="bg-card text-center font-mono text-sm h-9"
-              />
             </div>
 
             {/* ✅ P&L Chart: Always visible (bot running or not) */}
