@@ -4,8 +4,8 @@
  */
 
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, TrendingUp, TrendingDown, Zap } from 'lucide-react';
-import { LiveTradeFeed, type Trade } from './LiveTradeFeed';
+import { X, Zap } from 'lucide-react';
+import type { Trade } from '@/hooks/useTrades';
 
 interface SessionConfig {
   mode: 'auto' | 'manual';
@@ -209,13 +209,13 @@ export function SessionSummary({
                             <span className={`text-sm font-bold flex-shrink-0 ${trade.resultado === 'WIN' ? 'text-positive' : 'text-negative'}`}>
                               {trade.resultado === 'WIN' ? '✓' : '✗'}
                             </span>
-                            <span className="text-sm font-medium text-white truncate">{(trade as any).ativo_nome || trade.asset}</span>
+                            <span className="text-sm font-medium text-white truncate">{(trade as any).ativo_nome}</span>
                             <span className={`text-xs px-1.5 py-0.5 rounded flex-shrink-0 ${trade.direction === 'CALL' ? 'bg-positive/20 text-positive' : 'bg-negative/20 text-negative'}`}>
                               {trade.direction}
                             </span>
                           </div>
-                          <span className={`text-sm font-bold flex-shrink-0 ml-2 ${trade.pnl >= 0 ? 'text-positive' : 'text-negative'}`}>
-                            {trade.pnl >= 0 ? '+' : ''}R$ {trade.pnl.toFixed(0)}
+                          <span className={`text-sm font-bold flex-shrink-0 ml-2 ${(trade.pnl || 0) >= 0 ? 'text-positive' : 'text-negative'}`}>
+                            {(trade.pnl || 0) >= 0 ? '+' : ''}R$ {(trade.pnl || 0).toFixed(0)}
                           </span>
                         </div>
                       ))}

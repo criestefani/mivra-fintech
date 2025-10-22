@@ -33,6 +33,7 @@ import {
   NextTradePreview,
   MetricsGrid,
   QuestTracker,
+  SessionSummary,
   type Trade as TradeFeedTrade,
 } from "@/components/trading";
 import { StreakBadge, FloatingXP, DiagonalSection } from "@/components/ui/gamification";
@@ -143,7 +144,7 @@ const Operations = () => {
 
   // ✅ Calculate session trades (trades after START BOT was clicked)
   const sessionTrades = sessionStartTime
-    ? trades.filter(t => new Date(t.data_abertura).getTime() >= sessionStartTime)
+    ? trades.filter(t => new Date((t as any).data_abertura).getTime() >= sessionStartTime)
     : [];
 
   useEffect(() => {
@@ -669,6 +670,10 @@ const Operations = () => {
       await startBotRuntime(user!.id, userConfig);
       console.log('✅ [handleStartBot] startBotRuntime completed successfully');
 
+      // ✅ SAVE SESSION START TIME AND CONFIG
+      setSessionStartTime(Date.now());
+      setSessionConfig(userConfig);
+
       // Reset data when starting
       if (botMode === "auto") {
         setPnlData([{ time: new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }), value: 0 }]);
@@ -691,6 +696,10 @@ const Operations = () => {
   const handleStopBot = async () => {
     try {
       await stopBotRuntime(user!.id);
+
+      // ✅ SHOW SESSION SUMMARY MODAL
+      setShowSessionSummary(true);
+
       toast({
         title: "Bot Stopped",
         description: "Trading bot has been stopped",
@@ -703,6 +712,24 @@ const Operations = () => {
         variant: "destructive",
       });
     }
+  };
+
+  // ✅ RESET SESSION HANDLER
+  const handleResetSession = () => {
+    setShowSessionSummary(false);
+    setSessionStartTime(null);
+    setSessionConfig(null);
+    setTrades([]);
+    setPnlData([]);
+    setTradeMarkers([]);
+    setMetrics({
+      winRate: 0,
+      totalTrades: 0,
+      totalWins: 0,
+      totalLosses: 0,
+      pnl: 0
+    });
+    setSessionTime(0);
   };
 
   // Handle mode change (with localStorage persistence)
@@ -1403,6 +1430,15 @@ const Operations = () => {
 
       {/* Level Up Modal - Celebration for level ups */}
       <LevelUpModal />
+
+      {/* ✅ SESSION SUMMARY MODAL - Shows when STOP BOT is clicked */}
+      <SessionSummary
+        isOpen={showSessionSummary}
+        sessionTrades={sessionTrades as any}
+        totalPnL={metrics.pnl}
+        config={sessionConfig}
+        onClose={handleResetSession}
+      />
 
     </div>
   );
