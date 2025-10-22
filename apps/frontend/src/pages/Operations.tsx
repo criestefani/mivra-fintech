@@ -135,6 +135,17 @@ const Operations = () => {
 
   // ✅ Session Timer
   const [sessionTime, setSessionTime] = useState(0);
+
+  // ✅ Session Tracking
+  const [sessionStartTime, setSessionStartTime] = useState<number | null>(null);
+  const [sessionConfig, setSessionConfig] = useState<any>(null);
+  const [showSessionSummary, setShowSessionSummary] = useState(false);
+
+  // ✅ Calculate session trades (trades after START BOT was clicked)
+  const sessionTrades = sessionStartTime
+    ? trades.filter(t => new Date(t.data_abertura).getTime() >= sessionStartTime)
+    : [];
+
   useEffect(() => {
     if (isRunning) {
       const interval = setInterval(() => {
