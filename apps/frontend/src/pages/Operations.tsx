@@ -981,15 +981,7 @@ const Operations = () => {
               currentAsset={trades[0]?.asset}
               currentAmount={trades[0]?.pnl ? Math.abs(trades[0].pnl) : undefined}
               isRunning={isRunning}
-              trades={trades.slice(0, 8).map((t) => ({
-                ...t,
-                id: t.id,
-                asset: t.ativo_nome || t.asset,
-                direction: t.direction as 'CALL' | 'PUT',
-                result: t.resultado as 'WIN' | 'LOSS' | undefined,
-                pnl: t.pnl,
-                timestamp: t.created_at ? new Date(t.created_at).getTime() : Date.now(),
-              }))}
+              trades={trades.slice(0, 8) as any}
             />
 
             {/* ✅ Start/Stop Bot Button + Advanced Settings Icon */}
@@ -1209,15 +1201,7 @@ const Operations = () => {
               onTimeframeChange={setTimeframe}
               tradeMarkers={tradeMarkers}
               currentStatus={currentStatus}
-              trades={trades.slice(0, 8).map((t) => ({
-                ...t,
-                id: t.id,
-                asset: t.ativo_nome || t.asset,
-                direction: t.direction as 'CALL' | 'PUT',
-                result: t.resultado as 'WIN' | 'LOSS' | undefined,
-                pnl: t.pnl,
-                timestamp: t.created_at ? new Date(t.created_at).getTime() : Date.now(),
-              }))}
+              trades={trades.slice(0, 8) as any}
             />
 
             {/* ✅ Start/Stop Bot Button + Advanced Settings Icon */}
