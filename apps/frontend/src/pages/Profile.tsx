@@ -60,7 +60,7 @@ const ProfilePage_Wrapper = () => {
       <DashboardHeader user={user} />
       <Sidebar />
 
-      <main className="lg:ml-64 relative z-20" style={{ marginTop: 'max(1.5rem, calc(env(safe-area-inset-top) + 1.5rem))' }}>
+      <main className="lg:ml-64 pt-8 pb-32 relative z-20">
         {/* Diagonal Section Header with Title */}
         <DiagonalSection
           direction="bottom-left"

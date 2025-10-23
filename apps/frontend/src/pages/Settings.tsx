@@ -243,7 +243,7 @@ const Settings = () => {
         <div className="fixed top-0 left-0 right-0 h-16 glass border-b border-border/50 relative z-40" />
       )}
       <Sidebar />
-      <main className="lg:ml-64 container mx-auto px-4 py-6 pb-24 relative z-20" style={{ marginTop: 'max(1.5rem, calc(env(safe-area-inset-top) + 1.5rem))' }}>
+      <main className="lg:ml-64 container mx-auto px-4 pt-8 pb-32 relative z-20">
         <div className="space-y-6 max-w-3xl mx-auto">
           {/* Diagonal Section Header */}
           <DiagonalSection
