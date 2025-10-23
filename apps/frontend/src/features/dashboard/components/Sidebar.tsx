@@ -81,17 +81,17 @@ export const Sidebar = () => {
       </aside>
 
       {/* Mobile Bottom Nav */}
-      <nav className="lg:hidden fixed bottom-0 left-0 right-0 z-50 backdrop-blur-xl bg-slate-900/80 border-t border-slate-700/50 shadow-2xl">
+      <nav className="lg:hidden fixed bottom-0 left-0 right-0 z-50 backdrop-blur-xl bg-slate-900/80 border-t border-slate-700/50 shadow-2xl pb-4">
         <div className="flex items-center justify-around px-2 py-3 gap-1">
           {links.map((link) => (
             <Link
               key={link.to}
               to={link.to}
               className={cn(
-                'flex min-w-[56px] flex-col items-center gap-1.5 rounded-lg px-3 py-2 text-xs font-medium transition-all duration-300 border',
+                'flex min-w-[56px] flex-col items-center gap-1.5 rounded-t-lg px-3 py-2 text-xs font-medium transition-all duration-300 border-b-2 relative',
                 isActive(link.to)
-                  ? 'border-primary/50 bg-gradient-to-b from-primary/40 to-primary/20 text-primary-foreground shadow-lg shadow-primary/20'
-                  : 'border-slate-700/30 text-slate-400 hover:border-slate-700/50 hover:bg-slate-800/50 hover:text-slate-200'
+                  ? 'border-b-primary text-primary-foreground before:absolute before:inset-x-0 before:top-0 before:h-0.5 before:bg-gradient-to-r before:from-transparent before:via-primary before:to-transparent'
+                  : 'border-b-transparent text-slate-400 hover:text-slate-200 hover:border-b-slate-700/50'
               )}
             >
               {link.icon}
