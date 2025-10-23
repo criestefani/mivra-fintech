@@ -51,13 +51,6 @@ import { useBotSocket } from "@/shared/hooks/useBotSocket";
 // ✅ Phase 3 Gamification Components
 import { QuestTracker as QuestTrackerWidget } from "@/features/gamification/components/QuestTracker";
 
-interface TradeMarker {
-  time: number;
-  direction: "CALL" | "PUT";
-  result?: "WIN" | "LOSS";
-  pnl?: number;
-}
-
 interface PnlDataPoint {
   time: string;
   value: number;
@@ -112,7 +105,6 @@ const Operations = () => {
   // ✅ Real-time Data
   const [pnlData, setPnlData] = useState<PnlDataPoint[]>([]);
   const [trades, setTrades] = useState<Trade[]>([]);
-  const [tradeMarkers, setTradeMarkers] = useState<TradeMarker[]>([]);
   const [metrics, setMetrics] = useState({
     winRate: 0,
     totalTrades: 0,
@@ -156,37 +148,8 @@ const Operations = () => {
     botModeRef.current = botMode;
   }, [botMode]);
 
-  // 🧪 TEST: Hard-code markers to validate TradeArrows rendering
-  useEffect(() => {
-    console.log('[TEST] 🧪 Test effect triggered - botMode:', botMode, 'isRunning:', isRunning);
-
-    if (botMode === "manual" && isRunning) {
-      console.log('[TEST] ✅ CONDITIONS MET - Creating test markers');
-      const testMarkers: TradeMarker[] = [
-        {
-          time: Math.floor(Date.now() / 1000) - 120, // 2 min atrás
-          direction: 'CALL',
-          pnl: 25.50,
-          result: undefined
-        },
-        {
-          time: Math.floor(Date.now() / 1000) - 60, // 1 min atrás
-          direction: 'PUT',
-          pnl: -15.00,
-          result: undefined
-        }
-      ];
-      console.log('[TEST] 🧪 Test markers:', testMarkers);
-      setTradeMarkers(testMarkers);
-      console.log('[TEST] ✅ setTradeMarkers called');
-    } else {
-      console.log('[TEST] ❌ Conditions not met - botMode:', botMode, 'isRunning:', isRunning);
-      if (!isRunning) {
-        console.log('[TEST] 🧪 Bot not running, clearing test markers');
-        setTradeMarkers([]);
-      }
-    }
-  }, [botMode, isRunning]);
+  // ✅ Store preset config from Market Scanner to reapply after assets load
+  const presetConfigRef = useRef<ScannerConfig | null>(null);
 
   // ✅ Session Timer
   const [sessionTime, setSessionTime] = useState(0);
@@ -381,12 +344,17 @@ const Operations = () => {
     return 'forex';
   };
 
-  // Handle preset config from Market Scanner
+  // Handle preset config from Market Scanner - Part 1: Capture on initial load
   useEffect(() => {
+    console.log('[Operations] 📍 useEffect triggered - location.state:', location.state);
+
     const presetConfig = location.state?.presetConfig as ScannerConfig | undefined;
 
     if (presetConfig) {
-      console.log('✅ [Operations] Applying preset config from Market Scanner:', presetConfig);
+      console.log('✅ [Operations] Received preset config from Market Scanner:', presetConfig);
+
+      // Store in ref to reapply after assets load
+      presetConfigRef.current = presetConfig;
 
       const assetKey = presetConfig.assetKey ?? presetConfig.assetName ?? presetConfig.assetId;
       const assetLabel = presetConfig.assetName ?? presetConfig.assetKey ?? presetConfig.assetId;
@@ -410,12 +378,44 @@ const Operations = () => {
         duration: 5000,
       });
 
-      console.log(`✅ [Operations] Manual mode configured: ${determinedCategory} → ${assetKey} (${assetLabel}) → ${presetConfig.timeframe}s`);
+      console.log(`✅ [Operations] Initial Manual mode configured: ${determinedCategory} → ${assetKey} (${assetLabel}) → ${presetConfig.timeframe}s`);
 
       // Clear location state
       window.history.replaceState({}, document.title);
     }
   }, [location.state, toast]);
+
+  // Handle preset config from Market Scanner - Part 2: Reapply after chart loads (to ensure assets are available)
+  useEffect(() => {
+    const presetConfig = presetConfigRef.current;
+
+    if (presetConfig && botMode === 'manual' && category) {
+      console.log('[Operations] 🔄 Reapplying preset config after chart load:', presetConfig);
+
+      const assetKey = presetConfig.assetKey ?? presetConfig.assetName ?? presetConfig.assetId;
+      const assetLabel = presetConfig.assetName ?? presetConfig.assetKey ?? presetConfig.assetId;
+      const determinedCategory = determineCategoryFromAsset(assetLabel || assetKey);
+
+      // Ensure category, asset, and timeframe are set correctly
+      if (determinedCategory && determinedCategory !== category) {
+        setCategory(determinedCategory);
+        console.log('[Operations] 📌 Category corrected:', determinedCategory);
+      }
+
+      if (assetKey && asset !== assetKey) {
+        setAsset(assetKey);
+        console.log('[Operations] 📌 Asset corrected:', assetKey);
+      }
+
+      if (presetConfig.timeframe && timeframe !== presetConfig.timeframe.toString()) {
+        setTimeframe(presetConfig.timeframe.toString());
+        console.log('[Operations] 📌 Timeframe corrected:', presetConfig.timeframe);
+      }
+
+      // Clear ref to prevent infinite reapply
+      presetConfigRef.current = null;
+    }
+  }, [botMode, category, asset, timeframe, determineCategoryFromAsset]);
 
   // Auth state management
   useEffect(() => {
@@ -535,19 +535,6 @@ const Operations = () => {
           console.log('[Operations] Adding new PENDING trade:', formattedTrade);
           setTrades(prev => [formattedTrade, ...prev]);
 
-          // ✅ CREATE MARKER FOR MANUAL MODE WHEN POSITION OPENS (INSERT)
-          if (botModeRef.current === "manual") {
-            const entryTimeInSeconds = Math.floor(new Date(newTrade.data_abertura).getTime() / 1000);
-            const newMarker = {
-              time: entryTimeInSeconds,
-              direction: newTrade.direction.toUpperCase() as "CALL" | "PUT",
-              result: undefined, // No result yet - position just opened
-              pnl: 0
-            };
-            console.log('[Operations] 🎯 MARKER CREATED ON POSITION OPEN:', newMarker);
-            setTradeMarkers(prev => [...prev, newMarker]);
-          }
-
           // ✅ Initialize PNL data if empty (works for auto mode - that's where it's displayed)
           if (pnlData.length === 1 && pnlData[0].value === 0) {
             setPnlData([{
@@ -591,17 +578,6 @@ const Operations = () => {
                 time: new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }),
                 value: newValue
               }];
-            });
-          }
-
-          // ✅ REMOVE MARKER WHEN POSITION CLOSES (marker disappears when position ends)
-          if (botModeRef.current === "manual" && updatedTrade.resultado) {
-            console.log('[Operations] 🎯 MARKER REMOVED - POSITION CLOSED:', { resultado: updatedTrade.resultado, pnl: updatedTrade.pnl });
-            setTradeMarkers(prev => {
-              const entryTimeInSeconds = Math.floor(new Date(updatedTrade.data_abertura).getTime() / 1000);
-
-              // Remove marker when position closes - filter out the marker with matching entry time
-              return prev.filter(m => m.time !== entryTimeInSeconds);
             });
           }
         }
@@ -924,8 +900,6 @@ const Operations = () => {
       // Reset data when starting
       if (botMode === "auto") {
         setPnlData([{ time: new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }), value: 0 }]);
-      } else {
-        setTradeMarkers([]);
       }
     } catch (error) {
       console.error("❌ [handleStartBot] Failed to start bot:", error);
@@ -969,7 +943,6 @@ const Operations = () => {
     setSessionConfig(null);
     setTrades([]);
     setPnlData([]);
-    setTradeMarkers([]);
     setMetrics({
       winRate: 0,
       totalTrades: 0,
@@ -1025,7 +998,6 @@ const Operations = () => {
       // Clear local state
       setTrades([]);
       setPnlData([{ time: new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }), value: 0 }]);
-      setTradeMarkers([]);
       setMetrics({
         winRate: 0,
         totalTrades: 0,
@@ -1586,7 +1558,6 @@ const Operations = () => {
               onCategoryChange={setCategory}
               onAssetChange={setAsset}
               onTimeframeChange={setTimeframe}
-              tradeMarkers={tradeMarkers}
               currentStatus={currentStatus}
               currentAsset={asset}
               isRunning={isRunning}

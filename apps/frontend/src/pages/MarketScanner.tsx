@@ -109,9 +109,24 @@ export const MarketScanner: React.FC = () => {
   }, []);
 
   const buildPresetConfig = (asset: ScannerAsset): ScannerConfig => {
+    console.log('[MarketScanner] 🔍 Building preset config for asset:', {
+      active_id: asset.active_id,
+      ativo_nome: asset.ativo_nome,
+      timeframe: asset.timeframe,
+      assetLookupByIdLength: Object.keys(assetLookup.byId).length,
+      assetLookupByNameLength: Object.keys(assetLookup.byName).length
+    });
+
     const assetId = Number(asset.active_id);
     const lookupById = Number.isFinite(assetId) ? assetLookup.byId[assetId] : undefined;
     const lookupByName = assetLookup.byName[asset.ativo_nome?.toUpperCase() || ''];
+
+    console.log('[MarketScanner] 🔎 Lookup results:', {
+      assetId,
+      lookupById,
+      lookupByName,
+      assetNameForLookup: asset.ativo_nome?.toUpperCase()
+    });
 
     const resolvedEntry = lookupById ?? lookupByName;
 
@@ -127,18 +142,22 @@ export const MarketScanner: React.FC = () => {
       return hasOtc ? `${cleaned}-OTC` : cleaned;
     })();
 
-    return {
+    const result = {
       assetKey: resolvedEntry?.key ?? fallbackKey,
       assetName: resolvedEntry?.name ?? asset.ativo_nome,
       assetId: String(asset.active_id),
       timeframe: asset.timeframe
     };
+
+    console.log('[MarketScanner] ✅ Final preset config:', result);
+
+    return result;
   };
 
   const handleAssetClick = (asset: ScannerAsset) => {
     const presetConfig = buildPresetConfig(asset);
 
-    navigate('/', {
+    navigate('/operations', {
       state: {
         presetConfig: {
           ...presetConfig,

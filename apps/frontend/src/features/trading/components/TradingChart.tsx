@@ -15,16 +15,8 @@ import { CHART_COLORS } from '@/utils/chartColors'
 import { cn } from '@/shared/utils/cn'
 import { getApiUrl } from '@/shared/utils/getApiUrl'
 import { LiveTradeFeed, Trade } from '@/components/trading'
-import { TradeArrows } from './TradeArrows'
 
 const API_URL = getApiUrl()
-
-interface TradeMarker {
-  time: number
-  direction: 'CALL' | 'PUT'
-  result?: 'WIN' | 'LOSS'
-  pnl?: number
-}
 
 interface TradingChartProps {
   category: string
@@ -33,7 +25,6 @@ interface TradingChartProps {
   onCategoryChange: (category: string) => void
   onAssetChange: (asset: string) => void
   onTimeframeChange: (timeframe: string) => void
-  tradeMarkers: TradeMarker[]
   currentStatus: string | null
   currentAsset?: string
   isRunning?: boolean
@@ -65,15 +56,12 @@ export const TradingChart: React.FC<TradingChartProps> = ({
   onCategoryChange,
   onAssetChange,
   onTimeframeChange,
-  tradeMarkers,
   currentStatus,
   currentAsset,
   isRunning,
   currentPnL,
   trades
 }) => {
-  // ✅ Log when component receives markers
-  console.log('[TradingChart] 📊 Component rendered with tradeMarkers:', tradeMarkers?.length || 0, 'markers');
 
   const chartContainerRef = useRef<HTMLDivElement>(null)
   const chartRef = useRef<IChartApi | null>(null)
@@ -90,10 +78,8 @@ export const TradingChart: React.FC<TradingChartProps> = ({
   const [assetMenuOpen, setAssetMenuOpen] = useState(false)
   const [selectedCategoryInMenu, setSelectedCategoryInMenu] = useState<string | null>(null)
   const [timeframeMenuOpen, setTimeframeMenuOpen] = useState(false)
-  const [chartContainerRect, setChartContainerRect] = useState<DOMRect | null>(null)
   const assetMenuRef = useRef<HTMLDivElement>(null)
   const timeframeMenuRef = useRef<HTMLDivElement>(null)
-  const chartWrapperRef = useRef<HTMLDivElement>(null)
 
   // Use WebSocket hook for real-time candles
   const {
@@ -203,34 +189,6 @@ export const TradingChart: React.FC<TradingChartProps> = ({
     candleSeriesRef.current.setData(formattedCandles)
   }, [candles])
 
-  // ✅ DEBUG: Log what we're passing to TradeArrows
-  useEffect(() => {
-    console.log('[TradingChart] Props to TradeArrows:', {
-      tradeMarkers: tradeMarkers?.length || 0,
-      hasChart: !!chartRef.current,
-      hasCandleSeries: !!candleSeriesRef.current,
-      hasRect: !!chartContainerRect,
-      rectSize: chartContainerRect ? `${chartContainerRect.width}x${chartContainerRect.height}` : 'null'
-    });
-  }, [tradeMarkers, chartContainerRect]);
-
-  // Track chart container rect for arrow positioning
-  useEffect(() => {
-    if (!chartWrapperRef.current) return
-
-    const updateRect = () => {
-      const rect = chartWrapperRef.current?.getBoundingClientRect()
-      if (rect) {
-        setChartContainerRect(rect)
-      }
-    }
-
-    updateRect()
-    const resizeObserver = new ResizeObserver(updateRect)
-    resizeObserver.observe(chartWrapperRef.current)
-
-    return () => resizeObserver.disconnect()
-  }, [])
 
   // Handle window resize
   useEffect(() => {
@@ -239,12 +197,6 @@ export const TradingChart: React.FC<TradingChartProps> = ({
         chartRef.current.applyOptions({
           width: chartContainerRef.current.clientWidth
         })
-      }
-
-      // Update chart container rect on resize
-      if (chartWrapperRef.current) {
-        const rect = chartWrapperRef.current.getBoundingClientRect()
-        setChartContainerRect(rect)
       }
     }
 
@@ -326,7 +278,7 @@ export const TradingChart: React.FC<TradingChartProps> = ({
               <span className="truncate">
                 {loadingAssets
                   ? 'Loading...'
-                  : assetsByCategory[category]?.find((a) => a.key === asset)?.name?.split('/')[0] || 'Asset'}
+                  : assetsByCategory[category]?.find((a) => a.key === asset)?.name || 'Asset'}
               </span>
               <ChevronDown className="w-3.5 h-3.5 opacity-70 group-hover:opacity-100 transition-opacity flex-shrink-0 ml-1" />
             </button>
@@ -484,16 +436,8 @@ export const TradingChart: React.FC<TradingChartProps> = ({
             </div>
           )}
 
-          <div ref={chartWrapperRef} className="relative w-full h-[400px] rounded-lg overflow-hidden">
+          <div className="relative w-full h-[400px] rounded-lg overflow-hidden">
             <div ref={chartContainerRef} className="w-full h-full" />
-
-            {/* ✅ Trade Arrows Overlay - Real-time position markers */}
-            <TradeArrows
-              tradeMarkers={tradeMarkers}
-              chart={chartRef.current}
-              candleSeries={candleSeriesRef.current}
-              chartContainerRect={chartContainerRect}
-            />
 
             {/* ✅ PnL Overlay - Top Left */}
             {currentPnL !== undefined && (
