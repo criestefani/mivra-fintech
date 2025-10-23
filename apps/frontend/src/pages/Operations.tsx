@@ -1024,7 +1024,7 @@ const Operations = () => {
             <AutoModeRunning
               pnlData={pnlData}
               currentStatus={currentStatus}
-              currentAsset={isRunning ? (sessionTrades[0]?.asset || sessionConfig?.asset) : trades[0]?.asset}
+              currentAsset={(trades[0]?.asset || (trades[0] as any)?.ativo_nome)}
               currentAmount={trades[0]?.pnl ? Math.abs(trades[0].pnl) : undefined}
               isRunning={isRunning}
               trades={trades.slice(0, 8) as any}
