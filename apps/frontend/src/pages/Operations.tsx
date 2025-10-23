@@ -221,13 +221,25 @@ const Operations = () => {
       if (data && data.length > 0) {
         console.log(`[Operations] Loaded ${data.length} trades from today`);
 
-        // ✅ PASS DATA DIRECTLY - NO TRANSFORMATIONS!
-        // All fields from Supabase must flow untouched to TradeExplanation
-        setTrades(data as any);
+        // ✅ TRANSFORM: Map Supabase 'resultado' field to Trade 'result' field
+        const formattedTrades = data.map((rawTrade: any) => ({
+          id: rawTrade.id,
+          timestamp: rawTrade.data_abertura || rawTrade.timestamp,
+          asset: rawTrade.ativo_nome || `ID-${rawTrade.active_id}`,
+          direction: (rawTrade.direction || '').toUpperCase() as "CALL" | "PUT",
+          expiration: rawTrade.expiration_seconds || 0,
+          result: (rawTrade.resultado || "PENDING") as "WIN" | "LOSS" | "PENDING",
+          pnl: rawTrade.pnl || 0,
+          // ✅ Keep all original fields for TradeExplanation component
+          ...rawTrade
+        }));
+
+        console.log('✅ [Operations] Formatted trades:', formattedTrades.slice(0, 2));
+        setTrades(formattedTrades);
 
         // Calculate cumulative PNL data for chart (oldest to newest)
         let cumulativePnl = 0;
-        const pnlDataPoints: PnlDataPoint[] = [...data]
+        const pnlDataPoints: PnlDataPoint[] = [...formattedTrades]
           .reverse() // ✅ Reverse for cumulative calc (oldest first)
           .map(trade => {
             cumulativePnl += trade.pnl;
