@@ -147,6 +147,9 @@ const Operations = () => {
   // ✅ Track last streak sound played
   const lastStreakSoundRef = useRef<number | null>(null);
 
+  // ✅ Track if initial trade marking has been done (only mark once on page load)
+  const initialLoadDoneRef = useRef(false);
+
   // ✅ Session Timer
   const [sessionTime, setSessionTime] = useState(0);
 
@@ -245,13 +248,14 @@ const Operations = () => {
         console.log('✅ [Operations] Formatted trades:', formattedTrades.slice(0, 2));
         setTrades(formattedTrades);
 
-        // ✅ Mark the most recent trade as already processed ONLY on initial page load (no session)
-        // During active sessions, let the trade result effect process new trades normally
-        if (formattedTrades.length > 0 && !sessionStartTime) {
+        // ✅ Mark the most recent trade as already processed ONLY ONCE on initial page load
+        // Never mark again on subsequent calls (polling, real-time updates) to avoid interfering with active sessions
+        if (formattedTrades.length > 0 && !initialLoadDoneRef.current) {
           lastProcessedTradeRef.current = formattedTrades[0].id?.toString() || null;
-          console.log('✅ [Operations] Marked initial trade as processed (no session):', lastProcessedTradeRef.current);
-        } else if (sessionStartTime) {
-          console.log('[Operations] Active session - NOT marking trades as processed, letting trade result effect handle them');
+          initialLoadDoneRef.current = true;
+          console.log('✅ [Operations] Initial trade marked as processed (one-time only):', lastProcessedTradeRef.current);
+        } else if (initialLoadDoneRef.current) {
+          console.log('[Operations] Trades loaded (not marking as processed - already did initial load)');
         }
 
         // ✅ Only calculate historical PnL if bot is currently running (active session)
