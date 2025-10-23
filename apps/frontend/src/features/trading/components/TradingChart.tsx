@@ -208,7 +208,10 @@ export const TradingChart: React.FC<TradingChartProps> = ({
     try {
       const markers: SeriesMarker<Time>[] = []
 
-      tradeMarkers.forEach((trade) => {
+      // ✅ IMPORTANT: lightweight-charts requires markers to be sorted in ASCENDING order by time
+      const sortedMarkers = [...tradeMarkers].sort((a, b) => a.time - b.time)
+
+      sortedMarkers.forEach((trade) => {
         // ✅ Ensure time is in seconds (lightweight-charts requirement)
         // If time is still in milliseconds (> 1000000), divide by 1000
         const timeInSeconds = trade.time > 1000000
@@ -247,7 +250,7 @@ export const TradingChart: React.FC<TradingChartProps> = ({
         }
       })
 
-      console.log(`[TradingChart] ✅ Setting ${markers.length} total markers`)
+      console.log(`[TradingChart] ✅ Setting ${markers.length} total markers (sorted ascending by time)`)
       candleSeriesRef.current.setMarkers(markers)
     } catch (error) {
       console.error('[TradingChart] ❌ Error setting markers:', error)

@@ -462,8 +462,17 @@ const Operations = () => {
   useEffect(() => {
     if (!user?.id) return;
 
+    console.log('[Operations] 📥 useEffect: Loading trades on component mount or user change');
     loadTodayTrades();
   }, [user?.id]);
+
+  // ✅ In manual mode, force load trades if they're empty
+  useEffect(() => {
+    if (botMode === 'manual' && trades.length === 0 && user?.id) {
+      console.log('[Operations] 📥 Manual mode with no trades - forcing load');
+      loadTodayTrades();
+    }
+  }, [botMode, user?.id]);
 
   // ✅ Sync pending positions on component mount (runs once when page loads)
   useEffect(() => {
