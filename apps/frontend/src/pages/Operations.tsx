@@ -372,12 +372,6 @@ const Operations = () => {
         setTimeframe(presetConfig.timeframe.toString());
       }
 
-      toast({
-        title: "Configuração do Scanner Aplicada",
-        description: `${assetLabel} • ${(presetConfig.timeframeLabel ?? `${presetConfig.timeframe}s`)} • Manual Mode`,
-        duration: 5000,
-      });
-
       console.log(`✅ [Operations] Initial Manual mode configured: ${determinedCategory} → ${assetKey} (${assetLabel}) → ${presetConfig.timeframe}s`);
 
       // Clear location state
