@@ -209,15 +209,22 @@ export const TradingChart: React.FC<TradingChartProps> = ({
       const markers: SeriesMarker<Time>[] = []
 
       tradeMarkers.forEach((trade) => {
+        // ✅ Ensure time is in seconds (lightweight-charts requirement)
+        // If time is still in milliseconds (> 1000000), divide by 1000
+        const timeInSeconds = trade.time > 1000000
+          ? Math.floor(trade.time / 1000)
+          : trade.time
+
         console.log('[TradingChart] Trade marker:', {
           time: trade.time,
+          timeInSeconds,
           direction: trade.direction,
           result: trade.result,
         })
 
         // Entry marker - direction indicator (CALL/PUT)
         markers.push({
-          time: trade.time as Time,
+          time: timeInSeconds as Time,
           position: trade.direction === 'CALL' ? 'belowBar' : 'aboveBar',
           color: trade.direction === 'CALL' ? CHART_COLORS.POSITIVE : CHART_COLORS.NEGATIVE,
           shape: trade.direction === 'CALL' ? 'arrowUp' : 'arrowDown',
@@ -230,7 +237,7 @@ export const TradingChart: React.FC<TradingChartProps> = ({
         // Result marker - WIN/LOSS indicator (only if result exists)
         if (trade.result) {
           markers.push({
-            time: trade.time as Time,
+            time: timeInSeconds as Time,
             position: trade.result === 'WIN' ? 'aboveBar' : 'belowBar',
             color: trade.result === 'WIN' ? CHART_COLORS.POSITIVE : CHART_COLORS.NEGATIVE,
             shape: 'circle',
@@ -245,7 +252,7 @@ export const TradingChart: React.FC<TradingChartProps> = ({
     } catch (error) {
       console.error('[TradingChart] ❌ Error setting markers:', error)
     }
-  }, [tradeMarkers])
+  }, [tradeMarkers, candles.length])
 
   // Handle window resize
   useEffect(() => {

@@ -72,7 +72,8 @@ export function useSoundEffects(config: SoundConfig = {}) {
           const playPromise = sound.play();
 
           // Handle async play (modern browsers)
-          if (playPromise !== undefined) {
+          // Howler.js may return undefined or a Promise depending on browser
+          if (playPromise && typeof playPromise.catch === 'function') {
             playPromise
               .catch((error: any) => {
                 // Log only if not autoplay policy error (expected on mobile)
