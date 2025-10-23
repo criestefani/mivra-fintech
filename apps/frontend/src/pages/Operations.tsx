@@ -577,6 +577,23 @@ const Operations = () => {
     });
   }, [trades]);
 
+  // ✅ RECALCULATE PNL DATA BASED ON SESSION TRADES ONLY (when session is active)
+  useEffect(() => {
+    if (sessionStartTime && sessionTrades.length > 0) {
+      let cumulativePnl = 0;
+      const pnlDataPoints: PnlDataPoint[] = [...sessionTrades]
+        .reverse() // ✅ Oldest first
+        .map(trade => {
+          cumulativePnl += (trade.pnl || 0);
+          return {
+            time: new Date((trade as any).timestamp).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }),
+            value: cumulativePnl
+          };
+        });
+      setPnlData(pnlDataPoints);
+    }
+  }, [sessionTrades, sessionStartTime]);
+
   // ✅ Play sounds and show XP when trade result changes
   useEffect(() => {
     if (trades.length === 0) return;
@@ -1007,7 +1024,7 @@ const Operations = () => {
             <AutoModeRunning
               pnlData={pnlData}
               currentStatus={currentStatus}
-              currentAsset={isRunning ? (sessionConfig?.asset || trades[0]?.asset) : trades[0]?.asset}
+              currentAsset={isRunning ? (sessionTrades[0]?.asset || sessionConfig?.asset) : trades[0]?.asset}
               currentAmount={trades[0]?.pnl ? Math.abs(trades[0].pnl) : undefined}
               isRunning={isRunning}
               trades={trades.slice(0, 8) as any}

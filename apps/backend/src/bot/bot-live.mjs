@@ -605,6 +605,7 @@ class MivraTecBot {
           console.log(`✅ [MARTINGALE] WIN after ${this.consecutiveLosses} loss(es) → Resetting leverage`);
         }
         this.consecutiveLosses = 0;
+        this.totalConsecutiveLosses = 0; // ✅ RESET CONSECUTIVE LOSS COUNTER FOR SAFETY STOP
         this.currentLeverageAmount = null;
       }
 
