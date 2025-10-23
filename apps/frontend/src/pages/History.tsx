@@ -335,7 +335,7 @@ export default function History() {
       <DashboardHeader user={user} />
       <Sidebar />
 
-      <main className="lg:ml-64 container mx-auto px-4 pt-8 pb-32 space-y-6 relative z-20">
+      <main className="lg:ml-64 container mx-auto px-4 pt-20 pb-32 space-y-6 relative z-20">
         {/* Header */}
         <DiagonalSection
           direction="bottom-left"
@@ -349,17 +349,17 @@ export default function History() {
         </DiagonalSection>
 
         {/* Records Section - Above Filters */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="grid grid-cols-3 gap-2 md:gap-4">
           {/* Best Streak */}
           <Card className="backdrop-blur-xl bg-gradient-to-br from-yellow-900/30 to-yellow-800/20 border-yellow-600/30 relative overflow-hidden">
             <div className="absolute inset-0 bg-gradient-to-r from-yellow-500/10 to-transparent opacity-50" />
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 relative z-10">
-              <CardTitle className="text-sm font-medium">Best Streak</CardTitle>
-              <Trophy className="h-5 w-5 text-yellow-400" />
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-1 p-2 md:p-4 md:pb-2 relative z-10">
+              <CardTitle className="text-xs md:text-sm font-medium">Best Streak</CardTitle>
+              <Trophy className="h-4 w-4 md:h-5 md:w-5 text-yellow-400 flex-shrink-0" />
             </CardHeader>
-            <CardContent className="relative z-10">
-              <div className="text-3xl font-bold text-yellow-400">{records.bestStreak}</div>
-              <p className="text-xs text-yellow-200/70 mt-1">Consecutive wins</p>
+            <CardContent className="relative z-10 p-2 md:p-4 pt-0 md:pt-0">
+              <div className="text-xl md:text-3xl font-bold text-yellow-400">{records.bestStreak}</div>
+              <p className="text-xs text-yellow-200/70 mt-0.5 md:mt-1 leading-tight">Consecutive wins</p>
             </CardContent>
           </Card>
 
@@ -367,15 +367,15 @@ export default function History() {
           {records.bestTrade && (
             <Card className="backdrop-blur-xl bg-gradient-to-br from-green-900/30 to-green-800/20 border-green-600/30 relative overflow-hidden cursor-pointer hover:border-green-500/50 transition-colors" onClick={() => handleTradeClick(records.bestTrade)}>
               <div className="absolute inset-0 bg-gradient-to-r from-green-500/10 to-transparent opacity-50" />
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 relative z-10">
-                <CardTitle className="text-sm font-medium">Best Trade</CardTitle>
-                <Trophy className="h-5 w-5 text-green-400" />
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-1 p-2 md:p-4 md:pb-2 relative z-10">
+                <CardTitle className="text-xs md:text-sm font-medium">Best Trade</CardTitle>
+                <Trophy className="h-4 w-4 md:h-5 md:w-5 text-green-400 flex-shrink-0" />
               </CardHeader>
-              <CardContent className="relative z-10">
-                <div className="text-2xl font-bold text-green-400">
+              <CardContent className="relative z-10 p-2 md:p-4 pt-0 md:pt-0">
+                <div className="text-lg md:text-2xl font-bold text-green-400">
                   ${(records.bestTrade.pnl || 0).toFixed(2)}
                 </div>
-                <p className="text-xs text-green-200/70 mt-1">
+                <p className="text-xs text-green-200/70 mt-0.5 md:mt-1 truncate">
                   {records.bestTrade.ativo_nome}
                 </p>
               </CardContent>
@@ -386,15 +386,15 @@ export default function History() {
           {records.bestDay !== null && records.bestDay !== 0 && (
             <Card className="backdrop-blur-xl bg-gradient-to-br from-blue-900/30 to-blue-800/20 border-blue-600/30 relative overflow-hidden">
               <div className="absolute inset-0 bg-gradient-to-r from-blue-500/10 to-transparent opacity-50" />
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 relative z-10">
-                <CardTitle className="text-sm font-medium">Best Day</CardTitle>
-                <Trophy className="h-5 w-5 text-blue-400" />
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-1 p-2 md:p-4 md:pb-2 relative z-10">
+                <CardTitle className="text-xs md:text-sm font-medium">Best Day</CardTitle>
+                <Trophy className="h-4 w-4 md:h-5 md:w-5 text-blue-400 flex-shrink-0" />
               </CardHeader>
-              <CardContent className="relative z-10">
-                <div className="text-2xl font-bold text-blue-400">
+              <CardContent className="relative z-10 p-2 md:p-4 pt-0 md:pt-0">
+                <div className="text-lg md:text-2xl font-bold text-blue-400">
                   ${records.bestDay.toFixed(2)}
                 </div>
-                <p className="text-xs text-blue-200/70 mt-1">Highest daily profit</p>
+                <p className="text-xs text-blue-200/70 mt-0.5 md:mt-1 leading-tight">Highest daily profit</p>
               </CardContent>
             </Card>
           )}
