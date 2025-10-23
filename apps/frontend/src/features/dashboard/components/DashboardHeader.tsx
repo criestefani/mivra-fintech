@@ -86,13 +86,13 @@ export const DashboardHeader = ({ user }: DashboardHeaderProps) => {
     <button
       onClick={onClick}
       className={cn(
-        'w-full flex items-center gap-3 px-4 py-3 mx-2 rounded-lg transition-all duration-200 group',
+        'w-full flex items-center gap-3 px-3 py-2.5 rounded-md transition-all duration-200 group text-sm',
         isDestructive
-          ? 'text-destructive hover:bg-destructive/15 hover:shadow-lg hover:shadow-destructive/20'
-          : 'text-foreground hover:bg-primary/15 hover:shadow-lg hover:shadow-primary/20'
+          ? 'text-destructive hover:bg-destructive/20'
+          : 'text-slate-300 hover:text-slate-100 hover:bg-slate-800/50'
       )}
     >
-      <Icon className={cn('w-5 h-5 transition-transform duration-200', isDestructive ? 'group-hover:scale-110' : 'group-hover:scale-110 group-hover:text-primary')} />
+      <Icon className={cn('w-4 h-4 transition-all duration-200 opacity-70 group-hover:opacity-100', isDestructive ? 'group-hover:scale-110' : 'group-hover:scale-105')} />
       <span className="font-medium">{label}</span>
     </button>
   )
@@ -143,74 +143,70 @@ export const DashboardHeader = ({ user }: DashboardHeaderProps) => {
           <Button
             onClick={handleDeposit}
             size="sm"
-            className="bg-gradient-to-r from-positive via-positive to-positive/80 hover:from-positive/95 hover:via-positive/90 hover:to-positive/75 text-positive-foreground shadow-lg shadow-positive/50 font-bold text-xs transition-all duration-300 hover:shadow-2xl hover:shadow-positive/60 hover:scale-105 active:scale-95 px-3"
+            className="bg-gradient-to-r from-positive via-positive to-positive/80 hover:from-positive/95 hover:via-positive/90 hover:to-positive/75 text-positive-foreground shadow-lg shadow-positive/50 font-bold text-sm transition-all duration-300 hover:shadow-2xl hover:shadow-positive/60 hover:scale-105 active:scale-95 px-6"
           >
             Deposit
           </Button>
 
-          {/* User Menu Button */}
-          <Button
+          {/* User Menu Button - Modern & Elegant */}
+          <button
             onClick={() => setMenuOpen(!menuOpen)}
-            variant="outline"
-            size="sm"
             className={cn(
-              'gap-2 border-primary/50 hover:bg-primary/20 font-semibold transition-all duration-300 p-2',
-              menuOpen && 'bg-primary/20 border-primary/80 shadow-lg shadow-primary/30'
+              'relative p-2 rounded-lg transition-all duration-300 group',
+              'hover:bg-slate-800/40 active:scale-95',
+              menuOpen && 'bg-slate-800/50'
             )}
+            title="Menu"
           >
-            <Menu className="w-5 h-5" />
-          </Button>
+            <Menu
+              className={cn(
+                'w-5 h-5 transition-all duration-300',
+                menuOpen ? 'text-primary' : 'text-slate-400 group-hover:text-slate-200'
+              )}
+            />
+            {menuOpen && (
+              <div className="absolute inset-0 rounded-lg bg-primary/5 animate-pulse pointer-events-none" />
+            )}
+          </button>
 
-          {/* Premium Menu Dropdown */}
+          {/* Modern Menu Dropdown */}
           {menuOpen && (
-            <div className="absolute right-0 top-full mt-3 w-56 bg-gradient-to-br from-slate-900/95 via-slate-800/90 to-slate-900/95 border border-primary/40 rounded-xl shadow-2xl shadow-primary/40 backdrop-blur-xl z-50 py-3 space-y-1 animate-in fade-in slide-in-from-top-3 duration-200">
-              {/* Header */}
-              <div className="px-4 py-2 border-b border-primary/20">
-                <p className="text-xs font-bold text-primary/60 uppercase tracking-widest">Transações</p>
+            <div className="absolute right-0 top-full mt-2 w-48 bg-slate-950 border border-slate-700/50 rounded-lg shadow-xl z-50 overflow-hidden animate-in fade-in slide-in-from-top-2 duration-150">
+              {/* Transaction Section */}
+              <div className="px-3 py-2">
+                <MenuItem
+                  icon={ArrowUpRight}
+                  label="Withdraw"
+                  onClick={handleWithdraw}
+                  isDestructive={false}
+                />
               </div>
 
-              {/* Withdraw */}
-              <MenuItem
-                icon={ArrowUpRight}
-                label="Withdraw"
-                onClick={handleWithdraw}
-                isDestructive={false}
-              />
-
-              {/* Divider */}
-              <div className="h-px bg-gradient-to-r from-transparent via-primary/20 to-transparent my-2" />
-
-              {/* Settings Section Header */}
-              <div className="px-4 py-2">
-                <p className="text-xs font-bold text-primary/60 uppercase tracking-widest">Conta</p>
+              {/* Account Section */}
+              <div className="px-3 py-2 border-t border-slate-700/30 space-y-1">
+                <MenuItem
+                  icon={RotateCw}
+                  label="Reload Demo"
+                  onClick={handleReloadDemo}
+                  isDestructive={false}
+                />
+                <MenuItem
+                  icon={Settings}
+                  label="Settings"
+                  onClick={handleSettings}
+                  isDestructive={false}
+                />
               </div>
 
-              {/* Reload Demo Account */}
-              <MenuItem
-                icon={RotateCw}
-                label="Reload Demo"
-                onClick={handleReloadDemo}
-                isDestructive={false}
-              />
-
-              {/* Settings */}
-              <MenuItem
-                icon={Settings}
-                label="Settings"
-                onClick={handleSettings}
-                isDestructive={false}
-              />
-
-              {/* Divider */}
-              <div className="h-px bg-gradient-to-r from-transparent via-destructive/20 to-transparent my-2" />
-
-              {/* Logout */}
-              <MenuItem
-                icon={LogOut}
-                label="Logout"
-                onClick={handleSignOut}
-                isDestructive={true}
-              />
+              {/* Logout Section */}
+              <div className="px-3 py-2 border-t border-slate-700/30">
+                <MenuItem
+                  icon={LogOut}
+                  label="Logout"
+                  onClick={handleSignOut}
+                  isDestructive={true}
+                />
+              </div>
             </div>
           )}
         </div>
