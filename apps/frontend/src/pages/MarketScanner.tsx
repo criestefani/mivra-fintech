@@ -237,7 +237,7 @@ export const MarketScanner: React.FC = () => {
     <div className="min-h-screen bg-black relative overflow-hidden">
       <DashboardHeader user={user} />
       <Sidebar />
-      <div className="lg:ml-64 container mx-auto px-4 pt-8 pb-32 space-y-6 relative z-20">
+      <div className="lg:ml-64 container mx-auto px-4 pt-20 pb-32 space-y-6 relative z-20">
         {/* Diagonal Section Header */}
         <DiagonalSection
           direction="top-left"
