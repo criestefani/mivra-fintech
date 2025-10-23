@@ -174,6 +174,8 @@ export const TradingChart: React.FC<TradingChartProps> = ({
     chartRef.current = chart
     candleSeriesRef.current = candleSeries
 
+    console.log('[TradingChart] ✅ Chart initialized:', { hasChart: !!chart, hasSeries: !!candleSeries });
+
     // Cleanup on unmount
     return () => {
       if (chartRef.current) {
@@ -200,6 +202,17 @@ export const TradingChart: React.FC<TradingChartProps> = ({
 
     candleSeriesRef.current.setData(formattedCandles)
   }, [candles])
+
+  // ✅ DEBUG: Log what we're passing to TradeArrows
+  useEffect(() => {
+    console.log('[TradingChart] Props to TradeArrows:', {
+      tradeMarkers: tradeMarkers?.length || 0,
+      hasChart: !!chartRef.current,
+      hasCandleSeries: !!candleSeriesRef.current,
+      hasRect: !!chartContainerRect,
+      rectSize: chartContainerRect ? `${chartContainerRect.width}x${chartContainerRect.height}` : 'null'
+    });
+  }, [tradeMarkers, chartContainerRect]);
 
   // Track chart container rect for arrow positioning
   useEffect(() => {
