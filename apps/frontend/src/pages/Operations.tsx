@@ -135,7 +135,7 @@ const Operations = () => {
   const { currentWinStreak, currentStreak } = useStreaks(user?.id || null);
   const { dailyQuests } = useQuests(user?.id || null);
   const { xpInstances, showXP } = useFloatingXP();
-  const { pnlInstances, showPnL } = useFloatingPnL();
+  const { pnlInstances, showPnL, showLoss } = useFloatingPnL();
   const sounds = useSoundEffects({ volume: 0.5, enabled: true });
 
   // ✅ Track last processed trade to avoid infinite loops
@@ -705,14 +705,21 @@ const Operations = () => {
       showXP(20, centerX - 40, centerY); // Show +20 XP (slightly left)
       console.log('✅ [Trade Result Effect] Called showXP()');
 
-      // Show PnL animation (only on wins)
+      // Show PnL animation (only on wins) - 2 second duration
       if (latestTrade.pnl && latestTrade.pnl > 0) {
-        showPnL(latestTrade.pnl, centerX + 40, centerY - 30); // Show profit (slightly right and above)
+        showPnL(latestTrade.pnl, centerX + 40, centerY - 30, 'win'); // Show profit (slightly right and above)
         console.log('✅ [Trade Result Effect] Called showPnL() with amount:', latestTrade.pnl);
       }
     } else if (latestTrade.result === "LOSS") {
-      console.log('❌ [Trade Result Effect] LOSS detected');
-      // No sound for losses (not configured)
+      console.log('❌ [Trade Result Effect] LOSS detected - showing loss animation (no sound)');
+
+      // Show floating loss animation (1.5 second duration, no sound)
+      if (latestTrade.pnl && latestTrade.pnl < 0) {
+        const centerX = window.innerWidth / 2;
+        const centerY = window.innerHeight / 2;
+        showLoss(Math.abs(latestTrade.pnl), centerX + 40, centerY - 30); // Show loss amount
+        console.log('❌ [Trade Result Effect] Called showLoss() with amount:', latestTrade.pnl);
+      }
     }
   }, [trades]);
 
@@ -1766,7 +1773,7 @@ const Operations = () => {
         />
       ))}
 
-      {/* Floating PnL Instances - Animated profit amounts (wins only) */}
+      {/* Floating PnL Instances - Animated profit/loss amounts (wins: 2s green, losses: 1.5s red) */}
       {pnlInstances.length > 0 && console.log('💰 [Render] PnL Instances:', pnlInstances.length)}
       {pnlInstances.map((instance) => (
         <FloatingPnL
@@ -1774,6 +1781,8 @@ const Operations = () => {
           amount={instance.amount}
           x={instance.x}
           y={instance.y}
+          variant={instance.variant}
+          duration={instance.duration}
           onComplete={() => {}}
         />
       ))}
