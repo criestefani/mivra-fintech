@@ -604,13 +604,17 @@ const Operations = () => {
     if (trades.length === 0) return;
 
     const latestTrade = trades[0];
+    console.log('🎵 [Trade Result Effect] Latest trade result:', latestTrade.result);
+
     if (latestTrade.result === "WIN") {
+      console.log('✅ [Trade Result Effect] WIN detected - showing XP animation');
       sounds.playWin();
       showXP(20, window.innerWidth / 2, window.innerHeight / 2); // Show +20 XP
     } else if (latestTrade.result === "LOSS") {
+      console.log('❌ [Trade Result Effect] LOSS detected - playing sound');
       sounds.playLoss();
     }
-  }, [trades.length, trades[0]?.result]);
+  }, [trades.length, trades[0]?.result, sounds, showXP]);
 
   // START BOT handler
   const handleStartBot = async () => {
@@ -860,7 +864,7 @@ const Operations = () => {
       <Sidebar />
 
       {/* Mobile-First Layout */}
-      <main className="lg:ml-64 container mx-auto px-4 pt-7 pb-32 space-y-6 animate-fade-in relative z-20">
+      <main className="lg:ml-64 container mx-auto px-4 pt-8 pb-32 space-y-6 animate-fade-in relative z-20">
 
         {/* ✅ DIAGONAL SECTION HEADER */}
         <DiagonalSection
@@ -1645,6 +1649,7 @@ const Operations = () => {
       />
 
       {/* Floating XP Instances - Animated XP numbers */}
+      {xpInstances.length > 0 && console.log('🎆 [Render] XP Instances:', xpInstances.length)}
       {xpInstances.map((instance) => (
         <FloatingXP
           key={instance.id}
