@@ -47,6 +47,10 @@ export default function History() {
   const [directionFilter, setDirectionFilter] = useState<DirectionFilter>('all')
   const [showFilters, setShowFilters] = useState(false)
 
+  // Pagination
+  const [currentPage, setCurrentPage] = useState(1)
+  const TRADES_PER_PAGE = 25
+
   useEffect(() => {
     supabase.auth.getUser().then(({ data: { user } }) => {
       if (user) {
@@ -225,9 +229,23 @@ export default function History() {
     setDateFilter('all')
     setAccountFilter('all')
     setDirectionFilter('all')
+    setCurrentPage(1)
   }
 
   const hasActiveFilters = dateFilter !== 'all' || accountFilter !== 'all' || directionFilter !== 'all'
+
+  // Pagination
+  useEffect(() => {
+    setCurrentPage(1)
+  }, [filteredTrades])
+
+  const paginatedTrades = useMemo(() => {
+    const startIndex = (currentPage - 1) * TRADES_PER_PAGE
+    const endIndex = startIndex + TRADES_PER_PAGE
+    return formattedTrades.slice(startIndex, endIndex)
+  }, [formattedTrades, currentPage])
+
+  const totalPages = Math.ceil(formattedTrades.length / TRADES_PER_PAGE)
 
   if (!user) {
     return (
@@ -369,52 +387,52 @@ export default function History() {
         )}
 
         {/* Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-2 lg:grid-cols-4 gap-2 md:gap-4">
           {/* Total Trades */}
           <Card className="backdrop-blur-xl bg-slate-900/50 border-slate-700/50">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Total Trades</CardTitle>
-              <Activity className="h-4 w-4 text-muted-foreground" />
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-1 md:pb-2 p-2 md:p-4">
+              <CardTitle className="text-xs md:text-sm font-medium">Total Trades</CardTitle>
+              <Activity className="h-3 w-3 md:h-4 md:w-4 text-muted-foreground" />
             </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{stats.totalTrades}</div>
-              <p className="text-xs text-muted-foreground mt-1">Total trades</p>
+            <CardContent className="p-2 md:p-4 pt-0 md:pt-0">
+              <div className="text-lg md:text-2xl font-bold">{stats.totalTrades}</div>
+              <p className="text-xs text-muted-foreground mt-0.5 md:mt-1 hidden sm:block">Total trades</p>
             </CardContent>
           </Card>
 
           {/* Win Rate */}
           <Card className="backdrop-blur-xl bg-slate-900/50 border-slate-700/50">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Win Rate</CardTitle>
-              <TrendingUp className="h-4 w-4 text-muted-foreground" />
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-1 md:pb-2 p-2 md:p-4">
+              <CardTitle className="text-xs md:text-sm font-medium">Win Rate</CardTitle>
+              <TrendingUp className="h-3 w-3 md:h-4 md:w-4 text-muted-foreground" />
             </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-green-400">{stats.winRate}%</div>
-              <p className="text-xs text-muted-foreground mt-1">Success rate</p>
+            <CardContent className="p-2 md:p-4 pt-0 md:pt-0">
+              <div className="text-lg md:text-2xl font-bold text-green-400">{stats.winRate}%</div>
+              <p className="text-xs text-muted-foreground mt-0.5 md:mt-1 hidden sm:block">Success rate</p>
             </CardContent>
           </Card>
 
           {/* Total P&L */}
           <Card className="backdrop-blur-xl bg-slate-900/50 border-slate-700/50">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Total P&L</CardTitle>
-              <DollarSign className="h-4 w-4 text-muted-foreground" />
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-1 md:pb-2 p-2 md:p-4">
+              <CardTitle className="text-xs md:text-sm font-medium">Total P&L</CardTitle>
+              <DollarSign className="h-3 w-3 md:h-4 md:w-4 text-muted-foreground" />
             </CardHeader>
-            <CardContent>
-              <div className={`text-2xl font-bold ${pnlClass}`}>${stats.totalPnL.toFixed(2)}</div>
-              <p className="text-xs text-muted-foreground mt-1">Net profit/loss</p>
+            <CardContent className="p-2 md:p-4 pt-0 md:pt-0">
+              <div className={`text-lg md:text-2xl font-bold ${pnlClass}`}>${stats.totalPnL.toFixed(2)}</div>
+              <p className="text-xs text-muted-foreground mt-0.5 md:mt-1 hidden sm:block">Net profit/loss</p>
             </CardContent>
           </Card>
 
           {/* Best Streak */}
           <Card className="backdrop-blur-xl bg-slate-900/50 border-slate-700/50">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Best Streak</CardTitle>
-              <TrendingUp className="h-4 w-4 text-muted-foreground" />
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-1 md:pb-2 p-2 md:p-4">
+              <CardTitle className="text-xs md:text-sm font-medium">Best Streak</CardTitle>
+              <TrendingUp className="h-3 w-3 md:h-4 md:w-4 text-muted-foreground" />
             </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-yellow-400">{stats.bestStreak}</div>
-              <p className="text-xs text-muted-foreground mt-1">Consecutive wins</p>
+            <CardContent className="p-2 md:p-4 pt-0 md:pt-0">
+              <div className="text-lg md:text-2xl font-bold text-yellow-400">{stats.bestStreak}</div>
+              <p className="text-xs text-muted-foreground mt-0.5 md:mt-1 hidden sm:block">Consecutive wins</p>
             </CardContent>
           </Card>
         </div>
@@ -462,7 +480,7 @@ export default function History() {
           <CardHeader>
             <CardTitle>Trading Activity</CardTitle>
             <CardDescription>
-              {formattedTrades.length} trades showing {hasActiveFilters ? '(filtered)' : ''}
+              {paginatedTrades.length} of {formattedTrades.length} trades {hasActiveFilters ? '(filtered)' : ''} • Page {currentPage} of {totalPages || 1}
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -502,7 +520,7 @@ export default function History() {
                       </TableCell>
                     </TableRow>
                   ) : (
-                    formattedTrades.map((trade) => (
+                    paginatedTrades.map((trade) => (
                       <TableRow
                         key={trade.id}
                         className="border-slate-700/30 hover:bg-slate-700/20 cursor-pointer transition-colors"
@@ -545,8 +563,8 @@ export default function History() {
               </Table>
             </div>
 
-            {/* Mobile Cards */}
-            <div className="md:hidden space-y-3">
+            {/* Mobile Rows */}
+            <div className="md:hidden space-y-2">
               {loading ? (
                 <div className="flex items-center justify-center gap-2 py-8">
                   <div className="skeleton w-4 h-4 rounded-full" />
@@ -559,72 +577,64 @@ export default function History() {
                   <p className="text-sm text-muted-foreground">Start trading to see your history here</p>
                 </div>
               ) : (
-                formattedTrades.map((trade) => (
-                  <Card
+                paginatedTrades.map((trade) => (
+                  <div
                     key={trade.id}
-                    className="backdrop-blur-xl bg-slate-900/30 border-slate-700/30 cursor-pointer hover:border-primary/50 transition-colors"
+                    className="flex items-center justify-between gap-2 p-3 rounded-md border border-slate-700/30 bg-slate-900/20 hover:bg-slate-900/40 hover:border-primary/50 cursor-pointer transition-colors"
                     onClick={() => handleTradeClick(trade)}
                   >
-                    <CardContent className="pt-4">
-                      <div className="space-y-3">
-                        {/* Header row */}
-                        <div className="flex items-start justify-between gap-2">
-                          <div>
-                            <p className="font-bold text-sm">{trade.ativo_nome}</p>
-                            <p className="text-xs text-muted-foreground">{trade.formattedDate}</p>
-                          </div>
-                          <Badge variant={trade.resultado === 'WIN' ? 'success' : 'destructive'}>
-                            {trade.resultado || 'PENDING'}
-                          </Badge>
-                        </div>
-
-                        {/* Details grid */}
-                        <div className="grid grid-cols-2 gap-3 text-sm">
-                          <div>
-                            <p className="text-xs text-muted-foreground">Direction</p>
-                            <Badge variant={trade.directionVariant} className="text-xs mt-1">
-                              {trade.directionVariant === 'success' ? (
-                                <>
-                                  <TrendingUp className="w-3 h-3 mr-1" /> {trade.directionLabel}
-                                </>
-                              ) : (
-                                <>
-                                  <TrendingDown className="w-3 h-3 mr-1" /> {trade.directionLabel}
-                                </>
-                              )}
-                            </Badge>
-                          </div>
-                          <div>
-                            <p className="text-xs text-muted-foreground">Account</p>
-                            <Badge variant="outline" className="text-xs mt-1">
-                              {trade.accountLabel}
-                            </Badge>
-                          </div>
-                          <div>
-                            <p className="text-xs text-muted-foreground">Amount</p>
-                            <p className="font-semibold text-xs">{trade.formattedAmount}</p>
-                          </div>
-                          <div>
-                            <p className="text-xs text-muted-foreground">Duration</p>
-                            <Badge variant="outline" className="text-xs mt-1">
-                              {trade.formattedDuration}
-                            </Badge>
-                          </div>
-                        </div>
-
-                        {/* P&L row */}
-                        <div className="flex justify-between items-center pt-2 border-t border-slate-700/30">
-                          <p className="text-xs text-muted-foreground">P&L</p>
-                          <span className={`font-bold text-sm ${(trade.pnl || 0) >= 0 ? 'text-green-400' : 'text-red-400'}`}>
-                            {trade.formattedPnl}
-                          </span>
-                        </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 mb-1">
+                        <p className="font-semibold text-sm truncate">{trade.ativo_nome}</p>
+                        <Badge variant={trade.resultado === 'WIN' ? 'success' : 'destructive'} className="text-xs flex-shrink-0">
+                          {trade.resultado || 'PENDING'}
+                        </Badge>
                       </div>
-                    </CardContent>
-                  </Card>
+                      <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                        <Badge variant={trade.directionVariant} className="text-xs h-5">
+                          {trade.directionLabel}
+                        </Badge>
+                        <span>•</span>
+                        <span className="text-muted-foreground text-xs">{trade.accountLabel}</span>
+                        <span>•</span>
+                        <span className="text-muted-foreground text-xs">{trade.formattedDate}</span>
+                      </div>
+                    </div>
+                    <div className="flex-shrink-0 text-right">
+                      <p className={`font-bold text-sm ${(trade.pnl || 0) >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                        {trade.formattedPnl}
+                      </p>
+                      <p className="text-xs text-muted-foreground">{trade.formattedAmount}</p>
+                    </div>
+                  </div>
                 ))
               )}
             </div>
+
+            {/* Pagination Controls */}
+            {totalPages > 1 && (
+              <div className="flex items-center justify-between gap-2 mt-4 pt-4 border-t border-slate-700/30">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
+                  disabled={currentPage === 1}
+                >
+                  Previous
+                </Button>
+                <span className="text-sm text-muted-foreground">
+                  Page {currentPage} of {totalPages}
+                </span>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
+                  disabled={currentPage === totalPages}
+                >
+                  Next
+                </Button>
+              </div>
+            )}
           </CardContent>
         </Card>
       </main>
