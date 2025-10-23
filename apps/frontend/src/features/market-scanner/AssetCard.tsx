@@ -58,7 +58,7 @@ export const AssetCard = React.memo<AssetCardProps>(({ asset, onClick }) => {
     <Card
       className={`px-4 py-3 cursor-pointer hover:bg-slate-800/50 transition-all duration-200 ${getHeatmapColor(winRate)} border-l-4 border-r border-y active:opacity-80 flex items-center justify-between gap-4 ${
         isPerfect
-          ? 'shadow-lg shadow-yellow-500/50 border-l-yellow-400 animate-pulse'
+          ? 'shadow-lg shadow-yellow-500/50 border-l-yellow-400'
           : hasEffect
           ? 'shadow-md shadow-yellow-400/30 border-l-yellow-400'
           : 'shadow-sm'
