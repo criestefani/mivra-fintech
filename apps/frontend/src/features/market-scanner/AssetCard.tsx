@@ -3,7 +3,7 @@
 
 import React from 'react';
 import { Card } from '@/shared/components/ui/card';
-import { TrendingUp, TrendingDown, Activity } from 'lucide-react';
+import { TrendingUp, TrendingDown, Activity, Star, Zap } from 'lucide-react';
 import type { ScannerAsset } from './types/scanner.types';
 
 interface AssetCardProps {
@@ -26,11 +26,20 @@ export const AssetCard = React.memo<AssetCardProps>(({ asset, onClick }) => {
     return 'bg-negative/10 border-negative/70 hover:bg-negative/20';
   };
 
+  // Get special effects for high win rates
+  const getSpecialEffects = (winRate: number | null) => {
+    if (winRate === null || winRate === 0) return { hasEffect: false, isPerfect: false };
+    if (winRate >= 100) return { hasEffect: true, isPerfect: true };
+    if (winRate >= 90) return { hasEffect: true, isPerfect: false };
+    return { hasEffect: false, isPerfect: false };
+  };
+
   const winRate = asset.win_rate ?? 0;
   const totalSignals = asset.total_signals ?? 0;
   const totalWins = asset.total_wins ?? 0;
   const totalLosses = asset.total_losses ?? 0;
   const isProfitable = winRate >= 50;
+  const { hasEffect, isPerfect } = getSpecialEffects(winRate);
 
   // Format timeframe using known scanner values from Supabase view
   const timeframeLabels: Record<number, string> = {
@@ -47,7 +56,13 @@ export const AssetCard = React.memo<AssetCardProps>(({ asset, onClick }) => {
 
   return (
     <Card
-      className={`px-4 py-3 cursor-pointer hover:bg-slate-800/50 transition-all duration-200 ${getHeatmapColor(winRate)} border-l-4 border-r border-y shadow-sm active:opacity-80 flex items-center justify-between gap-4`}
+      className={`px-4 py-3 cursor-pointer hover:bg-slate-800/50 transition-all duration-200 ${getHeatmapColor(winRate)} border-l-4 border-r border-y active:opacity-80 flex items-center justify-between gap-4 ${
+        isPerfect
+          ? 'shadow-lg shadow-yellow-500/50 border-l-yellow-400 animate-pulse'
+          : hasEffect
+          ? 'shadow-md shadow-yellow-400/30 border-l-yellow-400'
+          : 'shadow-sm'
+      }`}
       onClick={onClick}
     >
       {/* Left: Asset name and timeframe */}
@@ -62,13 +77,23 @@ export const AssetCard = React.memo<AssetCardProps>(({ asset, onClick }) => {
 
       {/* Middle: Win rate with icon */}
       <div className="flex items-center gap-2 flex-shrink-0">
-        {isProfitable ? (
+        {isPerfect ? (
+          <Star className="w-4 h-4 text-yellow-400 fill-yellow-400" />
+        ) : hasEffect ? (
+          <Zap className="w-4 h-4 text-yellow-400" />
+        ) : isProfitable ? (
           <TrendingUp className="w-4 h-4 text-positive" />
         ) : (
           <TrendingDown className="w-4 h-4 text-negative" />
         )}
         <span className={`text-base md:text-lg font-bold font-mono min-w-fit ${
-          isProfitable ? 'text-positive' : 'text-negative'
+          isPerfect
+            ? 'text-yellow-400'
+            : hasEffect
+            ? 'text-yellow-400'
+            : isProfitable
+            ? 'text-positive'
+            : 'text-negative'
         }`}>
           {winRate.toFixed(1)}%
         </span>
