@@ -150,6 +150,12 @@ const Operations = () => {
   // ✅ Track if initial trade marking has been done (only mark once per asset/manual session)
   const initialLoadDoneRef = useRef(false);
 
+  // ✅ Capture current botMode in ref so subscription can always access latest value
+  const botModeRef = useRef(botMode);
+  useEffect(() => {
+    botModeRef.current = botMode;
+  }, [botMode]);
+
 
   // ✅ Session Timer
   const [sessionTime, setSessionTime] = useState(0);
@@ -499,7 +505,7 @@ const Operations = () => {
           setTrades(prev => [formattedTrade, ...prev]);
 
           // ✅ CREATE MARKER FOR MANUAL MODE WHEN POSITION OPENS (INSERT)
-          if (botMode === "manual") {
+          if (botModeRef.current === "manual") {
             const entryTimeInSeconds = Math.floor(new Date(newTrade.data_abertura).getTime() / 1000);
             const newMarker = {
               time: entryTimeInSeconds,
@@ -558,7 +564,7 @@ const Operations = () => {
           }
 
           // ✅ REMOVE MARKER WHEN POSITION CLOSES (marker disappears when position ends)
-          if (botMode === "manual" && updatedTrade.resultado) {
+          if (botModeRef.current === "manual" && updatedTrade.resultado) {
             console.log('[Operations] 🎯 MARKER REMOVED - POSITION CLOSED:', { resultado: updatedTrade.resultado, pnl: updatedTrade.pnl });
             setTradeMarkers(prev => {
               const entryTimeInSeconds = Math.floor(new Date(updatedTrade.data_abertura).getTime() / 1000);
@@ -570,12 +576,12 @@ const Operations = () => {
         }
       )
       .subscribe((status) => {
-        console.log('[Operations] 📡 Subscription status:', status, 'botMode:', botMode);
+        console.log('[Operations] 📡 Subscription status:', status, 'botMode:', botModeRef.current);
 
         // ✅ Update status state based on subscription result
         if (status === 'SUBSCRIBED') {
           setRealtimeStatus('connected');
-          console.log('✅ [Operations] Real-time subscription ACTIVE - botMode:', botMode, 'userId:', user?.id);
+          console.log('✅ [Operations] Real-time subscription ACTIVE - botMode:', botModeRef.current, 'userId:', user?.id);
         } else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT' || status === 'CLOSED') {
           setRealtimeStatus('error');
           console.error('❌ [Operations] Real-time subscription FAILED:', status);
