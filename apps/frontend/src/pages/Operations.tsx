@@ -638,7 +638,7 @@ const Operations = () => {
       // Reset when modal closes
       lastSessionPnLRef.current = null;
     }
-  }, [showSessionSummary, sessionPnL, sounds]);
+  }, [showSessionSummary, sessionPnL]);
 
   // ✅ Play streak sound when win streak reaches 3+
   useEffect(() => {
@@ -647,22 +647,29 @@ const Operations = () => {
       sounds.playStreak();
       lastStreakSoundRef.current = currentWinStreak;
     }
-  }, [currentWinStreak, sounds]);
+  }, [currentWinStreak]);
 
   // ✅ Play sounds and show XP when trade result changes (avoid infinite loop)
   useEffect(() => {
-    if (trades.length === 0) return;
+    if (trades.length === 0) {
+      console.log('🎵 [Trade Result Effect] No trades yet');
+      return;
+    }
 
     const latestTrade = trades[0];
     const tradeId = latestTrade.id?.toString();
 
+    console.log('🎵 [Trade Result Effect] Processing trade - ID:', tradeId, 'Result:', latestTrade.result, 'LastProcessed:', lastProcessedTradeRef.current);
+
     // Only process if this is a new trade we haven't processed yet
     if (tradeId === lastProcessedTradeRef.current) {
+      console.log('🎵 [Trade Result Effect] Trade already processed, skipping');
       return;
     }
 
     // Skip trades with undefined results
     if (!latestTrade.result || latestTrade.result === "PENDING") {
+      console.log('🎵 [Trade Result Effect] Trade result is', latestTrade.result, '- skipping for now');
       return;
     }
 
@@ -672,14 +679,16 @@ const Operations = () => {
     lastProcessedTradeRef.current = tradeId || null;
 
     if (latestTrade.result === "WIN") {
-      console.log('✅ [Trade Result Effect] WIN detected - showing XP animation');
+      console.log('✅ [Trade Result Effect] WIN detected - playing sound and showing XP');
       sounds.playWin();
+      console.log('✅ [Trade Result Effect] Called playWin()');
       showXP(20, window.innerWidth / 2, window.innerHeight / 2); // Show +20 XP
+      console.log('✅ [Trade Result Effect] Called showXP()');
     } else if (latestTrade.result === "LOSS") {
-      console.log('❌ [Trade Result Effect] LOSS detected - playing sound');
-      sounds.playLoss();
+      console.log('❌ [Trade Result Effect] LOSS detected');
+      // No sound for losses (not configured)
     }
-  }, [trades.length, trades[0]?.id, trades[0]?.result]);
+  }, [trades]);
 
   // START BOT handler
   const handleStartBot = async () => {
@@ -776,6 +785,11 @@ const Operations = () => {
         totalLosses: 0,
         pnl: 0
       });
+
+      // ✅ RESET REF TRACKING FOR NEW SESSION
+      lastProcessedTradeRef.current = null;
+      lastSessionPnLRef.current = null;
+      lastStreakSoundRef.current = null;
 
       // Reset data when starting
       if (botMode === "auto") {

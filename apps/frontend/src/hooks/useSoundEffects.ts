@@ -19,33 +19,38 @@ export function useSoundEffects(config: SoundConfig = {}) {
   const { volume = 0.5, enabled = true } = config;
   const soundsRef = useRef<Record<string, Howl>>({});
 
-  // Initialize sounds
+  // Initialize sounds with mobile fallback support
   useEffect(() => {
     soundsRef.current = {
       win: new Howl({
         src: ['/sounds/win.mp3'],
         volume,
-        preload: true,
+        preload: 'auto', // Better mobile support
+        html5: true, // Enable HTML5 audio fallback for mobile
       }),
       levelup: new Howl({
         src: ['/sounds/level-up.mp3'],
         volume: volume * 1.2, // Louder for level ups
-        preload: true,
+        preload: 'auto',
+        html5: true,
       }),
       winnersession: new Howl({
         src: ['/sounds/winner-session.mp3'],
         volume: volume * 1.1, // Slightly louder for session celebrations
-        preload: true,
+        preload: 'auto',
+        html5: true,
       }),
       switchpages: new Howl({
         src: ['/sounds/switch-pages.mp3'],
         volume: volume * 0.6, // Quieter for navigation
-        preload: true,
+        preload: 'auto',
+        html5: true,
       }),
       streak: new Howl({
         src: ['/sounds/streak.mp3'],
         volume: volume * 0.9,
-        preload: true,
+        preload: 'auto',
+        html5: true,
       }),
     };
 
@@ -55,7 +60,7 @@ export function useSoundEffects(config: SoundConfig = {}) {
     };
   }, [volume]);
 
-  // Play sound with error handling
+  // Play sound with error handling and mobile support
   const playSound = useCallback(
     (soundName: keyof typeof soundsRef.current) => {
       if (!enabled) return;
@@ -63,7 +68,21 @@ export function useSoundEffects(config: SoundConfig = {}) {
       const sound = soundsRef.current[soundName];
       if (sound) {
         try {
-          sound.play();
+          // Attempt to play the sound
+          const playPromise = sound.play();
+
+          // Handle async play (modern browsers)
+          if (playPromise !== undefined) {
+            playPromise
+              .catch((error: any) => {
+                // Log only if not autoplay policy error (expected on mobile)
+                if (error.name !== 'NotAllowedError') {
+                  console.warn(`Failed to play sound: ${soundName}`, error);
+                } else {
+                  console.log(`Mobile autoplay restricted for: ${soundName} (expected behavior)`);
+                }
+              });
+          }
         } catch (error) {
           console.warn(`Failed to play sound: ${soundName}`, error);
         }
