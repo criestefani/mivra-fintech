@@ -136,6 +136,9 @@ const Operations = () => {
   const { xpInstances, showXP } = useFloatingXP();
   const sounds = useSoundEffects({ volume: 0.5, enabled: true });
 
+  // ✅ Track last processed trade to avoid infinite loops
+  const lastProcessedTradeRef = useRef<string | null>(null);
+
   // ✅ Session Timer
   const [sessionTime, setSessionTime] = useState(0);
 
@@ -616,12 +619,27 @@ const Operations = () => {
     }
   }, [sessionTrades, sessionStartTime, isRunning]);
 
-  // ✅ Play sounds and show XP when trade result changes
+  // ✅ Play sounds and show XP when trade result changes (avoid infinite loop)
   useEffect(() => {
     if (trades.length === 0) return;
 
     const latestTrade = trades[0];
-    console.log('🎵 [Trade Result Effect] Latest trade result:', latestTrade.result);
+    const tradeId = latestTrade.id?.toString();
+
+    // Only process if this is a new trade we haven't processed yet
+    if (tradeId === lastProcessedTradeRef.current) {
+      return;
+    }
+
+    // Skip trades with undefined results
+    if (!latestTrade.result || latestTrade.result === "PENDING") {
+      return;
+    }
+
+    console.log('🎵 [Trade Result Effect] New trade ID:', tradeId, 'Result:', latestTrade.result);
+
+    // Mark this trade as processed
+    lastProcessedTradeRef.current = tradeId || null;
 
     if (latestTrade.result === "WIN") {
       console.log('✅ [Trade Result Effect] WIN detected - showing XP animation');
@@ -631,7 +649,7 @@ const Operations = () => {
       console.log('❌ [Trade Result Effect] LOSS detected - playing sound');
       sounds.playLoss();
     }
-  }, [trades.length, trades[0]?.result, sounds, showXP]);
+  }, [trades.length, trades[0]?.id, trades[0]?.result]);
 
   // START BOT handler
   const handleStartBot = async () => {
