@@ -546,12 +546,19 @@ const Operations = () => {
 
           // Add trade marker for manual mode chart
           if (botMode === "manual" && updatedTrade.resultado) {
-            setTradeMarkers(prev => [...prev, {
-              time: Math.floor(new Date(updatedTrade.data_abertura).getTime() / 1000),
-              direction: updatedTrade.direction.toUpperCase() as "CALL" | "PUT",
-              result: updatedTrade.resultado as "WIN" | "LOSS",
-              pnl: updatedTrade.pnl || 0
-            }]);
+            console.log('[Operations] 📍 Creating marker for manual mode - botMode:', botMode, 'resultado:', updatedTrade.resultado);
+            setTradeMarkers(prev => {
+              const newMarker = {
+                time: Math.floor(new Date(updatedTrade.data_abertura).getTime() / 1000),
+                direction: updatedTrade.direction.toUpperCase() as "CALL" | "PUT",
+                result: updatedTrade.resultado as "WIN" | "LOSS",
+                pnl: updatedTrade.pnl || 0
+              };
+              console.log('[Operations] ✅ Marker added:', newMarker, 'Total markers:', prev.length + 1);
+              return [...prev, newMarker];
+            });
+          } else {
+            console.log('[Operations] ⚠️ Not creating marker - botMode:', botMode, 'resultado:', updatedTrade.resultado);
           }
         }
       )
@@ -598,11 +605,38 @@ const Operations = () => {
     onPositionClosed((position) => {
       console.log('[Operations] 🔔 Position closed detected via Socket.io, auto-refreshing data...');
       console.log('[Operations] Position:', position);
+      console.log('[Operations] Current botMode:', botMode);
+
+      // ✅ CREATE MARKER IMMEDIATELY FOR MANUAL MODE (don't wait for DB)
+      if (botMode === "manual" && position.resultado) {
+        console.log('[Operations] 📍 Creating marker directly from Socket.io callback - resultado:', position.resultado);
+
+        // Use current timestamp as the entry time (when position was opened)
+        const entryTime = Math.floor(new Date(position.timestamp).getTime() / 1000);
+
+        const newMarker = {
+          time: entryTime,
+          direction: position.direction?.toUpperCase() as "CALL" | "PUT" || "CALL",
+          result: position.resultado as "WIN" | "LOSS",
+          pnl: position.pnl || 0
+        };
+
+        console.log('[Operations] ✅ Marker created via Socket.io:', newMarker);
+        setTradeMarkers(prev => {
+          const updated = [...prev, newMarker];
+          console.log('[Operations] ✅ Trade markers updated - total:', updated.length);
+          return updated;
+        });
+      } else if (botMode !== "manual") {
+        console.log('[Operations] ℹ️ Not in manual mode, skipping marker creation');
+      } else {
+        console.log('[Operations] ⚠️ Position has no resultado, skipping marker');
+      }
 
       // Refresh trades data
       loadTodayTrades();
     });
-  }, [user?.id, onPositionClosed]);
+  }, [user?.id, onPositionClosed, botMode]);
 
   // ✅ Calculate metrics from trades (respects session state)
   // Only calculate metrics if there's an active session, otherwise keep at zero

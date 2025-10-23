@@ -37,47 +37,85 @@ export const TradeArrows: React.FC<TradeArrowsProps> = ({
   const [arrowPositions, setArrowPositions] = useState<Map<string, TradeArrowPosition>>(new Map())
   const containerRef = useRef<HTMLDivElement>(null)
 
+  // Log render to confirm component is mounted
+  console.log('[TradeArrows] 🎯 Component rendered - markers:', tradeMarkers?.length || 0)
+
   useEffect(() => {
-    if (!chart || !candleSeries || !chartContainerRect || tradeMarkers.length === 0) return
+    console.log('[TradeArrows] Effect triggered - chart:', !!chart, 'candleSeries:', !!candleSeries, 'chartContainerRect:', !!chartContainerRect, 'markers:', tradeMarkers.length)
+
+    if (!chart || !candleSeries || !chartContainerRect || tradeMarkers.length === 0) {
+      if (tradeMarkers.length > 0) {
+        console.log('[TradeArrows] ⚠️ Missing dependencies - chart:', !!chart, 'candleSeries:', !!candleSeries, 'rect:', !!chartContainerRect)
+      }
+      return
+    }
 
     const newPositions = new Map<string, TradeArrowPosition>()
+    console.log('[TradeArrows] Processing', tradeMarkers.length, 'markers')
 
     tradeMarkers.forEach((marker, index) => {
       try {
         const markerId = generateMarkerId(marker, index)
+        console.log(`[TradeArrows] Processing marker ${index}:`, { time: marker.time, direction: marker.direction })
 
         // Get time coordinate (X position)
         const timeScale = chart.timeScale()
         const xCoord = timeScale.timeToCoordinate(marker.time as any)
+        console.log(`[TradeArrows] X coordinate for marker ${index}:`, xCoord)
 
-        if (xCoord === null || xCoord === undefined) return
+        if (xCoord === null || xCoord === undefined) {
+          console.log(`[TradeArrows] ⚠️ No X coordinate for marker ${index}`)
+          return
+        }
 
         // Get the last candle price for Y positioning
         // For entry markers, position above/below the price at that time
         const seriesData = candleSeries.data()
-        const relevantCandle = seriesData.find((candle: any) => candle.time === marker.time)
+        console.log(`[TradeArrows] Series data length:`, seriesData.length, 'looking for time:', marker.time)
 
-        if (!relevantCandle) return
+        // Use the most recent candle as reference if exact time not found
+        let relevantCandle = seriesData.find((candle: any) => {
+          const candleTime = typeof candle.time === 'number' ? candle.time : (candle.time as any)
+          return candleTime === marker.time
+        })
+
+        if (!relevantCandle && seriesData.length > 0) {
+          // Fallback: use the last candle
+          relevantCandle = seriesData[seriesData.length - 1]
+          console.log(`[TradeArrows] Using last candle as fallback for marker ${index}`)
+        }
+
+        if (!relevantCandle) {
+          console.log(`[TradeArrows] ⚠️ No candle found for marker ${index}`)
+          return
+        }
 
         // Use close price as reference
         const price = relevantCandle.close
         const yCoord = candleSeries.priceToCoordinate(price)
+        console.log(`[TradeArrows] Y coordinate for marker ${index}:`, { price, yCoord })
 
-        if (yCoord === null || yCoord === undefined) return
+        if (yCoord === null || yCoord === undefined) {
+          console.log(`[TradeArrows] ⚠️ No Y coordinate for marker ${index}`)
+          return
+        }
 
-        newPositions.set(markerId, {
+        const finalPosition = {
           markerId,
           x: xCoord,
           y: marker.direction === 'CALL' ? yCoord + 25 : yCoord - 25,
           direction: marker.direction,
           pnl: marker.pnl,
           result: marker.result
-        })
+        }
+        console.log(`[TradeArrows] ✅ Arrow ${index} positioned at:`, { x: finalPosition.x, y: finalPosition.y })
+        newPositions.set(markerId, finalPosition)
       } catch (error) {
-        console.error('[TradeArrows] Error calculating position:', error)
+        console.error(`[TradeArrows] Error calculating position for marker ${index}:`, error)
       }
     })
 
+    console.log(`[TradeArrows] Setting ${newPositions.size} arrows`)
     setArrowPositions(newPositions)
   }, [tradeMarkers, chart, candleSeries, chartContainerRect])
 
