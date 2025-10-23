@@ -139,6 +139,12 @@ const Operations = () => {
   // ✅ Track last processed trade to avoid infinite loops
   const lastProcessedTradeRef = useRef<string | null>(null);
 
+  // ✅ Track session summary display to play winner sound once
+  const lastSessionPnLRef = useRef<number | null>(null);
+
+  // ✅ Track last streak sound played
+  const lastStreakSoundRef = useRef<number | null>(null);
+
   // ✅ Session Timer
   const [sessionTime, setSessionTime] = useState(0);
 
@@ -619,6 +625,30 @@ const Operations = () => {
     }
   }, [sessionTrades, sessionStartTime, isRunning]);
 
+  // ✅ Play winner session sound when positive session ends
+  useEffect(() => {
+    if (showSessionSummary && sessionPnL > 0) {
+      // Only play once per session (check if we haven't played for this PnL value)
+      if (lastSessionPnLRef.current !== sessionPnL) {
+        console.log('🏆 [Session Summary] Positive session - playing winner sound');
+        sounds.playWinnerSession();
+        lastSessionPnLRef.current = sessionPnL;
+      }
+    } else if (!showSessionSummary) {
+      // Reset when modal closes
+      lastSessionPnLRef.current = null;
+    }
+  }, [showSessionSummary, sessionPnL, sounds]);
+
+  // ✅ Play streak sound when win streak reaches 3+
+  useEffect(() => {
+    if (currentWinStreak >= 3 && currentWinStreak !== lastStreakSoundRef.current) {
+      console.log('🔥 [Streak] 3+ win streak - playing streak sound');
+      sounds.playStreak();
+      lastStreakSoundRef.current = currentWinStreak;
+    }
+  }, [currentWinStreak, sounds]);
+
   // ✅ Play sounds and show XP when trade result changes (avoid infinite loop)
   useEffect(() => {
     if (trades.length === 0) return;
@@ -818,6 +848,7 @@ const Operations = () => {
     }
     setBotMode(mode);
     localStorage.setItem('botMode', mode); // ✅ Save to localStorage
+    sounds.playSwitchPages(); // ✅ Play switch pages sound
     console.log(`✅ [Operations] Mode changed to ${mode.toUpperCase()} and saved to localStorage`);
   };
 

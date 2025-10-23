@@ -21,42 +21,30 @@ export function useSoundEffects(config: SoundConfig = {}) {
 
   // Initialize sounds
   useEffect(() => {
-    // Note: You'll need to add actual sound files to public/sounds/
-    // These are placeholder paths
     soundsRef.current = {
       win: new Howl({
         src: ['/sounds/win.mp3'],
         volume,
         preload: true,
       }),
-      loss: new Howl({
-        src: ['/sounds/loss.mp3'],
-        volume: volume * 0.7, // Quieter for losses
-        preload: true,
-      }),
       levelup: new Howl({
-        src: ['/sounds/levelup.mp3'],
+        src: ['/sounds/level-up.mp3'],
         volume: volume * 1.2, // Louder for level ups
         preload: true,
       }),
-      achievement: new Howl({
-        src: ['/sounds/achievement.mp3'],
-        volume,
+      winnersession: new Howl({
+        src: ['/sounds/winner-session.mp3'],
+        volume: volume * 1.1, // Slightly louder for session celebrations
         preload: true,
       }),
-      xp: new Howl({
-        src: ['/sounds/xp.mp3'],
-        volume: volume * 0.5, // Very subtle
-        preload: true,
-      }),
-      click: new Howl({
-        src: ['/sounds/click.mp3'],
-        volume: volume * 0.3,
+      switchpages: new Howl({
+        src: ['/sounds/switch-pages.mp3'],
+        volume: volume * 0.6, // Quieter for navigation
         preload: true,
       }),
       streak: new Howl({
         src: ['/sounds/streak.mp3'],
-        volume: volume * 0.8,
+        volume: volume * 0.9,
         preload: true,
       }),
     };
@@ -86,20 +74,16 @@ export function useSoundEffects(config: SoundConfig = {}) {
 
   // Specific sound methods
   const playWin = useCallback(() => playSound('win'), [playSound]);
-  const playLoss = useCallback(() => playSound('loss'), [playSound]);
   const playLevelUp = useCallback(() => playSound('levelup'), [playSound]);
-  const playAchievement = useCallback(() => playSound('achievement'), [playSound]);
-  const playXP = useCallback(() => playSound('xp'), [playSound]);
-  const playClick = useCallback(() => playSound('click'), [playSound]);
+  const playWinnerSession = useCallback(() => playSound('winnersession'), [playSound]);
+  const playSwitchPages = useCallback(() => playSound('switchpages'), [playSound]);
   const playStreak = useCallback(() => playSound('streak'), [playSound]);
 
   return {
     playWin,
-    playLoss,
     playLevelUp,
-    playAchievement,
-    playXP,
-    playClick,
+    playWinnerSession,
+    playSwitchPages,
     playStreak,
     playSound,
   };

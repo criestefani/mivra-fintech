@@ -36,6 +36,7 @@ interface TradingChartProps {
   currentStatus: string | null
   currentAsset?: string
   isRunning?: boolean
+  currentPnL?: number
   trades?: Trade[]
 }
 
@@ -66,6 +67,7 @@ export const TradingChart: React.FC<TradingChartProps> = ({
   currentStatus,
   currentAsset,
   isRunning,
+  currentPnL,
   trades
 }) => {
   const chartContainerRef = useRef<HTMLDivElement>(null)
@@ -306,7 +308,7 @@ export const TradingChart: React.FC<TradingChartProps> = ({
         )}
       </div>
 
-      <CardContent className="space-y-3">
+      <CardContent className="space-y-3 pt-6">
         {/* Controls Title */}
         <Label className="text-sm font-medium text-white">Choose the asset and timeframe</Label>
 
@@ -343,7 +345,7 @@ export const TradingChart: React.FC<TradingChartProps> = ({
               <div className="fixed inset-0 z-40" onClick={() => setAssetMenuOpen(false)} />
             )}
             {assetMenuOpen && !loadingAssets && (
-              <div ref={assetMenuRef} onClick={(e) => e.stopPropagation()} className="absolute top-full left-0 right-0 mt-1 bg-slate-950/95 border border-slate-700/50 rounded-lg shadow-xl z-50 max-h-96 backdrop-blur-sm overflow-hidden flex flex-col">
+              <div ref={assetMenuRef} onClick={(e) => e.stopPropagation()} className="absolute top-full left-0 right-0 mt-1 bg-slate-950/95 border border-slate-700/50 rounded-lg shadow-xl z-50 max-h-96 backdrop-blur-sm overflow-y-auto flex flex-col">
                 {selectedCategoryInMenu === null ? (
                   // Show Categories (Level 1)
                   <div className="overflow-y-auto flex-1 p-1">
@@ -491,7 +493,18 @@ export const TradingChart: React.FC<TradingChartProps> = ({
             </div>
           )}
 
-          <div ref={chartContainerRef} className="w-full h-[400px] rounded-lg overflow-hidden" />
+          <div className="relative w-full h-[400px] rounded-lg overflow-hidden">
+            <div ref={chartContainerRef} className="w-full h-full" />
+
+            {/* ✅ PnL Overlay - Top Left */}
+            {currentPnL !== undefined && (
+              <div className="absolute top-3 left-3 bg-slate-950/80 backdrop-blur-sm px-3 py-1 rounded-lg border border-slate-700/50 flex items-center h-7">
+                <span className={`text-sm font-semibold ${currentPnL >= 0 ? 'text-positive' : 'text-negative'}`}>
+                  {currentPnL >= 0 ? '+' : ''}R$ {currentPnL.toFixed(2)}
+                </span>
+              </div>
+            )}
+          </div>
 
           {/* ✅ Floating Button for Recent Trades */}
           {trades && trades.length > 0 && (
