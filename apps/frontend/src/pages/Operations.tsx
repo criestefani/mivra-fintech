@@ -582,9 +582,23 @@ const Operations = () => {
     });
   }, [trades]);
 
+  // ✅ RESET PNL DATA WHEN BOT STARTS (new session)
+  useEffect(() => {
+    if (isRunning && sessionStartTime) {
+      console.log('🚀 [isRunning Effect] Bot started - resetting PnL data for new session');
+      // Initialize to zero for the new session
+      setPnlData([{ time: new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }), value: 0 }]);
+    } else if (!isRunning && !sessionStartTime) {
+      console.log('🛑 [isRunning Effect] Bot stopped - reloading full day history');
+      // Reload full day history when bot stops
+      loadTodayTrades();
+    }
+  }, [isRunning, sessionStartTime]);
+
   // ✅ RECALCULATE PNL DATA BASED ON SESSION TRADES ONLY (when session is active)
   useEffect(() => {
-    if (sessionStartTime && sessionTrades.length > 0) {
+    if (isRunning && sessionStartTime && sessionTrades.length > 0) {
+      console.log('📊 [SessionTrades Effect] Updating PnL with', sessionTrades.length, 'session trades');
       let cumulativePnl = 0;
       const pnlDataPoints: PnlDataPoint[] = [...sessionTrades]
         .reverse() // ✅ Oldest first
@@ -597,7 +611,7 @@ const Operations = () => {
         });
       setPnlData(pnlDataPoints);
     }
-  }, [sessionTrades, sessionStartTime]);
+  }, [sessionTrades, sessionStartTime, isRunning]);
 
   // ✅ Play sounds and show XP when trade result changes
   useEffect(() => {
@@ -1073,10 +1087,10 @@ const Operations = () => {
             <AutoModeRunning
               pnlData={pnlData}
               currentStatus={currentStatus}
-              currentAsset={(trades[0]?.asset || (trades[0] as any)?.ativo_nome)}
-              currentAmount={trades[0]?.pnl ? Math.abs(trades[0].pnl) : undefined}
+              currentAsset={isRunning ? (sessionTrades[0]?.asset || (sessionTrades[0] as any)?.ativo_nome) : (trades[0]?.asset || (trades[0] as any)?.ativo_nome)}
+              currentAmount={isRunning ? (sessionTrades[0]?.pnl ? Math.abs(sessionTrades[0].pnl) : undefined) : (trades[0]?.pnl ? Math.abs(trades[0].pnl) : undefined)}
               isRunning={isRunning}
-              trades={trades.slice(0, 8) as any}
+              trades={isRunning ? sessionTrades.slice(0, 8) as any : trades.slice(0, 8) as any}
             />
 
             {/* ✅ Start/Stop Bot Button + Advanced Settings Icon */}
