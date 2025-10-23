@@ -623,17 +623,18 @@ const Operations = () => {
                 const latestTrade = currentTrades[0]; // Most recent first
 
                 if (latestTrade.resultado) {
-                  // Use data_abertura (when position opened) not timestamp (when position closed)
-                  const entryTime = Math.floor(new Date(latestTrade.timestamp).getTime() / 1000);
+                  // Use CURRENT TIME (when position closes = now) so arrow appears on current candle
+                  // Not on historical timestamp of when position opened
+                  const currentTime = Math.floor(Date.now() / 1000);
 
                   const newMarker = {
-                    time: entryTime,
+                    time: currentTime,
                     direction: latestTrade.direction.toUpperCase() as "CALL" | "PUT",
                     result: latestTrade.resultado as "WIN" | "LOSS",
                     pnl: latestTrade.pnl || 0
                   };
 
-                  console.log('[Operations] ✅ Marker created with entry time:', { entryTime, trade: latestTrade });
+                  console.log('[Operations] ✅ Marker created with CURRENT time:', { currentTime, latestTradeTime: Math.floor(new Date(latestTrade.timestamp).getTime() / 1000) });
                   setTradeMarkers(prev => {
                     const updated = [...prev, newMarker];
                     console.log('[Operations] ✅ Trade markers updated - total:', updated.length);

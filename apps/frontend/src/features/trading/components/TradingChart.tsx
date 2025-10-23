@@ -39,6 +39,7 @@ interface TradingChartProps {
   isRunning?: boolean
   currentPnL?: number
   trades?: Trade[]
+  candles?: CandlestickData[]
 }
 
 const categories = [
