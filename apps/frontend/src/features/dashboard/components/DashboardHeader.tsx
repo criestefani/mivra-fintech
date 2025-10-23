@@ -100,8 +100,11 @@ export const DashboardHeader = ({ user }: DashboardHeaderProps) => {
   return (
     <header className="fixed top-0 left-0 right-0 z-50 bg-gradient-to-r from-slate-900/95 via-slate-800/95 to-slate-900/95 border-b border-primary/30 shadow-2xl backdrop-blur-md" style={{ paddingTop: 'max(1rem, env(safe-area-inset-top))', paddingBottom: '1rem', minHeight: '4rem' }}>
       <div className="container mx-auto h-full px-4 flex items-center justify-between">
-        {/* Left: Empty space */}
-        <div />
+        {/* Left: Demo Indicator */}
+        {balance && accountType === 'demo' && (
+          <span className="text-xs text-yellow-400/70 font-medium">Demo</span>
+        )}
+        {!balance || accountType !== 'demo' && <div />}
 
         {/* Left-Center: Balance & Account Toggle */}
         <div className="flex items-center gap-4">
@@ -112,14 +115,9 @@ export const DashboardHeader = ({ user }: DashboardHeaderProps) => {
             ) : error ? (
               <span className="text-sm text-destructive font-semibold">Desconectado</span>
             ) : balance ? (
-              <>
-                <span className={`text-lg font-bold ${accountType === 'demo' ? 'text-yellow-400' : 'text-green-400'}`}>
-                  {formatBalance(balance.amount)}
-                </span>
-                {accountType === 'demo' && (
-                  <span className="text-xs text-yellow-400/70">Demo</span>
-                )}
-              </>
+              <span className={`text-lg font-bold ${accountType === 'demo' ? 'text-yellow-400' : 'text-green-400'}`}>
+                {formatBalance(balance.amount)}
+              </span>
             ) : (
               <span className="text-sm text-muted-foreground">Sem saldo</span>
             )}
