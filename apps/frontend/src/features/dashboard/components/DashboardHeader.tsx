@@ -99,15 +99,14 @@ export const DashboardHeader = ({ user }: DashboardHeaderProps) => {
 
   return (
     <header className="fixed top-0 left-0 right-0 z-50 bg-gradient-to-r from-slate-900/95 via-slate-800/95 to-slate-900/95 border-b border-primary/30 shadow-2xl backdrop-blur-md" style={{ paddingTop: 'max(1rem, env(safe-area-inset-top))', paddingBottom: '1rem', minHeight: '4rem' }}>
-      <div className="container mx-auto h-full px-4 flex items-center justify-between">
-        {/* Left: Demo Indicator */}
-        {balance && accountType === 'demo' && (
-          <span className="text-xs text-yellow-400/70 font-medium">Demo</span>
-        )}
-        {!balance || accountType !== 'demo' && <div />}
+      <div className="container mx-auto h-full px-4 flex items-center justify-between gap-4">
+        {/* Left: Demo + Balance + Account Toggle */}
+        <div className="flex items-center gap-3 md:gap-4">
+          {/* Demo Indicator */}
+          {balance && accountType === 'demo' && (
+            <span className="text-xs text-yellow-400/70 font-medium">Demo</span>
+          )}
 
-        {/* Left-Center: Balance & Account Toggle */}
-        <div className="flex items-center gap-4">
           {/* Balance Display - Clean */}
           <div className="flex flex-col gap-0">
             {isLoading ? (
@@ -134,6 +133,9 @@ export const DashboardHeader = ({ user }: DashboardHeaderProps) => {
             </button>
           )}
         </div>
+
+        {/* Center: Spacer */}
+        <div className="flex-1" />
 
         {/* Right: Deposit & User Menu */}
         <div className="flex items-center gap-2 relative" ref={menuRef}>
