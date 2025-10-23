@@ -19,7 +19,7 @@ import {
 } from '@/shared/components/ui/dialog';
 import { toast } from 'sonner';
 import { Loader2, Settings as SettingsIcon } from 'lucide-react';
-import { DepositButton, WithdrawButton, DiagonalSection } from '@/components/ui/gamification';
+import { DiagonalSection } from '@/components/ui/gamification';
 
 const Settings = () => {
   const navigate = useNavigate();
@@ -243,7 +243,7 @@ const Settings = () => {
         <div className="fixed top-0 left-0 right-0 h-16 glass border-b border-border/50 relative z-40" />
       )}
       <Sidebar />
-      <main className="lg:ml-64 container mx-auto px-4 pt-8 pb-32 relative z-20">
+      <main className="lg:ml-64 container mx-auto px-4 pt-20 pb-32 relative z-20">
         <div className="space-y-6 max-w-3xl mx-auto">
           {/* Diagonal Section Header */}
           <DiagonalSection
@@ -366,57 +366,67 @@ const Settings = () => {
                   <p className="text-sm text-muted-foreground mt-1">E-mail vinculado à sua conta</p>
                 </div>
 
-                <div className="flex flex-col sm:flex-row gap-3">
-                  <Button
-                    onClick={handleSaveProfile}
-                    disabled={isSavingProfile}
-                    className="bg-primary hover:bg-primary/90"
-                  >
-                    {isSavingProfile ? (
-                      <>
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                        Salvando...
-                      </>
-                    ) : (
-                      'Salvar Dados'
-                    )}
-                  </Button>
-
-                  <Button onClick={() => setShowPasswordDialog(true)} variant="outline">
-                    Alterar Senha
-                  </Button>
-                </div>
+                <Button
+                  onClick={handleSaveProfile}
+                  disabled={isSavingProfile}
+                  className="bg-primary hover:bg-primary/90"
+                >
+                  {isSavingProfile ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Salvando...
+                    </>
+                  ) : (
+                    'Salvar Dados'
+                  )}
+                </Button>
               </CardContent>
             </Card>
 
-            {/* Deposit & Withdrawal Section */}
+            {/* Password Section */}
             <Card className="backdrop-blur-xl bg-slate-900/50 border-slate-700/50">
               <CardHeader>
-                <CardTitle>Transações Financeiras</CardTitle>
+                <CardTitle>Segurança</CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="flex flex-col sm:flex-row gap-4">
-                  <DepositButton
-                    size="lg"
-                    onClick={() => toast.info('Modal de depósito em breve')}
-                  >
-                    Depositar
-                  </DepositButton>
-                  <WithdrawButton
-                    size="lg"
-                    onClick={() => toast.info('Modal de saque em breve')}
-                  >
-                    Sacar
-                  </WithdrawButton>
+                <p className="text-sm text-muted-foreground mb-4">Altere sua senha de forma segura</p>
+                <Button
+                  onClick={() => setShowPasswordDialog(true)}
+                  className="bg-primary hover:bg-primary/90"
+                >
+                  Alterar Senha
+                </Button>
+              </CardContent>
+            </Card>
+
+            {/* Sound Settings Section */}
+            <Card className="backdrop-blur-xl bg-slate-900/50 border-slate-700/50">
+              <CardHeader>
+                <CardTitle>Preferências de Som</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <Label className="text-base">Sons de Notificação</Label>
+                    <p className="text-sm text-muted-foreground mt-1">Desativar sons de notificações</p>
+                  </div>
+                  <Switch
+                    id="notification-sound"
+                    defaultChecked={true}
+                  />
+                </div>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <Label className="text-base">Sons de Alerta</Label>
+                    <p className="text-sm text-muted-foreground mt-1">Desativar sons de alerta de trades</p>
+                  </div>
+                  <Switch
+                    id="alert-sound"
+                    defaultChecked={true}
+                  />
                 </div>
               </CardContent>
             </Card>
-          </div>
-
-          <div className="rounded-lg bg-yellow-50 dark:bg-yellow-900/20 p-4">
-            <p className="text-sm text-yellow-800 dark:text-yellow-200">
-              <strong>Note:</strong> Operation Parameters and Risk Management settings have been moved to the Operations page for easier access during trading.
-            </p>
           </div>
         </div>
       </main>
