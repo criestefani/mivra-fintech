@@ -100,20 +100,13 @@ export const DashboardHeader = ({ user }: DashboardHeaderProps) => {
   return (
     <header className="fixed top-0 left-0 right-0 z-50 bg-gradient-to-r from-slate-900/95 via-slate-800/95 to-slate-900/95 border-b border-primary/30 shadow-2xl backdrop-blur-md" style={{ paddingTop: 'max(1rem, env(safe-area-inset-top))', paddingBottom: '1rem', minHeight: '4rem' }}>
       <div className="container mx-auto h-full px-4 flex items-center justify-between">
-        {/* Left: Beta Badge */}
-        <div className="flex items-center">
-          <Badge
-            variant="secondary"
-            className="border-2 border-primary/50 bg-gradient-to-r from-primary/30 to-primary/10 text-primary font-bold uppercase tracking-widest text-xs shadow-lg shadow-primary/20"
-          >
-            ✨ Beta
-          </Badge>
-        </div>
+        {/* Left: Empty space */}
+        <div />
 
         {/* Left-Center: Balance & Account Toggle */}
         <div className="flex items-center gap-4">
           {/* Balance Display - Clean */}
-          <div className="flex flex-col gap-1">
+          <div className="flex flex-col gap-0">
             {isLoading ? (
               <span className="text-sm text-muted-foreground">Carregando...</span>
             ) : error ? (
@@ -124,9 +117,9 @@ export const DashboardHeader = ({ user }: DashboardHeaderProps) => {
                   {formatBalance(balance.amount)}
                 </span>
                 {accountType === 'demo' && (
-                  <div className="flex items-center gap-1 text-xs text-yellow-400/80 bg-yellow-500/10 px-2 py-0.5 rounded border border-yellow-500/20">
+                  <div className="flex items-center gap-0.5 text-xs text-yellow-400/80 bg-yellow-500/10 px-1.5 py-0.5 rounded border border-yellow-500/20">
                     <AlertCircle className="w-3 h-3" />
-                    <span>Demo Account</span>
+                    <span>Demo</span>
                   </div>
                 )}
               </>
@@ -139,10 +132,10 @@ export const DashboardHeader = ({ user }: DashboardHeaderProps) => {
           {balance && (
             <button
               onClick={() => setAccountType(accountType === 'demo' ? 'real' : 'demo')}
-              className="p-2 rounded-lg hover:bg-primary/20 transition-all duration-300 group"
+              className="p-1.5 md:p-2 rounded-lg hover:bg-primary/20 transition-all duration-300 group"
               title={`Alternar: ${accountType === 'demo' ? 'Demo' : 'Real'}`}
             >
-              <Repeat2 className={`w-6 h-6 transition-all duration-300 ${accountType === 'real' ? 'text-primary rotate-180' : 'text-muted-foreground'} group-hover:scale-110`} />
+              <Repeat2 className={`w-5 h-5 md:w-6 md:h-6 transition-all duration-300 ${accountType === 'real' ? 'text-primary rotate-180' : 'text-muted-foreground'} group-hover:scale-110`} />
             </button>
           )}
         </div>
