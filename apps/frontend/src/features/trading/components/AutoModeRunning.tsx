@@ -84,7 +84,7 @@ export const AutoModeRunning: React.FC<AutoModeRunningProps> = ({
       <CardContent>
           <div className="relative w-full h-64 md:h-80">
             <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={pnlData}>
+              <LineChart data={pnlData} margin={{ left: -20, right: 10, top: 10, bottom: 10 }}>
                 <XAxis
                   dataKey="time"
                   stroke={CHART_COLORS.TEXT}

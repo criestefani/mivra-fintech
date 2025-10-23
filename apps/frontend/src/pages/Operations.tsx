@@ -610,25 +610,39 @@ const Operations = () => {
     });
   }, [user?.id, onPositionClosed]);
 
-  // ✅ Calculate metrics from trades (same as History.tsx)
+  // ✅ Calculate metrics from trades (respects session state)
+  // Only calculate metrics if there's an active session, otherwise keep at zero
   useEffect(() => {
-    if (trades.length === 0) {
-      setMetrics({
-        winRate: 0,
-        totalTrades: 0,
-        totalWins: 0,
-        totalLosses: 0,
-        pnl: 0
-      });
+    const zeroMetrics = {
+      winRate: 0,
+      totalTrades: 0,
+      totalWins: 0,
+      totalLosses: 0,
+      pnl: 0
+    };
+
+    // No active session - always zero
+    if (!sessionStartTime) {
+      console.log('📊 [Metrics] No active session - keeping metrics at zero');
+      setMetrics(zeroMetrics);
       return;
     }
 
+    // Session active but no trades yet
+    if (trades.length === 0) {
+      console.log('📊 [Metrics] Session active but no trades - metrics at zero');
+      setMetrics(zeroMetrics);
+      return;
+    }
+
+    // Session active with trades - calculate metrics
     const wins = trades.filter(t => t.result === "WIN").length;
     const losses = trades.filter(t => t.result === "LOSS").length;
     const totalTrades = wins + losses;
     const totalPnl = trades.reduce((sum, t) => sum + (t.pnl || 0), 0);
     const winRate = totalTrades > 0 ? (wins / totalTrades) * 100 : 0;
 
+    console.log('📊 [Metrics] Session active with trades - calculating metrics');
     setMetrics({
       winRate: Number(winRate.toFixed(1)),
       totalTrades,
@@ -636,21 +650,7 @@ const Operations = () => {
       totalLosses: losses,
       pnl: Number(totalPnl.toFixed(2))
     });
-  }, [trades]);
-
-  // ✅ RESET METRICS IF NO ACTIVE SESSION (manual mode PnL display)
-  useEffect(() => {
-    if (!sessionStartTime) {
-      console.log('📊 [Metrics Reset] No active session - resetting metrics to zero');
-      setMetrics({
-        winRate: 0,
-        totalTrades: 0,
-        totalWins: 0,
-        totalLosses: 0,
-        pnl: 0
-      });
-    }
-  }, [sessionStartTime]);
+  }, [trades, sessionStartTime]);
 
   // ✅ RESET PNL DATA BASED ON BOT STATE
   useEffect(() => {
@@ -670,15 +670,23 @@ const Operations = () => {
     if (isRunning && sessionStartTime && sessionTrades.length > 0) {
       console.log('📊 [SessionTrades Effect] Updating PnL with', sessionTrades.length, 'session trades');
       let cumulativePnl = 0;
-      const pnlDataPoints: PnlDataPoint[] = [...sessionTrades]
-        .reverse() // ✅ Oldest first
-        .map(trade => {
-          cumulativePnl += (trade.pnl || 0);
-          return {
-            time: new Date((trade as any).timestamp).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }),
-            value: cumulativePnl
-          };
-        });
+      const pnlDataPoints: PnlDataPoint[] = [
+        // ✅ Start point: always at 0 to show baseline
+        {
+          time: new Date((sessionTrades[sessionTrades.length - 1] as any).timestamp).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }),
+          value: 0
+        },
+        // ✅ Add all trades with cumulative PnL
+        ...([...sessionTrades]
+          .reverse() // ✅ Oldest first
+          .map(trade => {
+            cumulativePnl += (trade.pnl || 0);
+            return {
+              time: new Date((trade as any).timestamp).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }),
+              value: cumulativePnl
+            };
+          }))
+      ];
       setPnlData(pnlDataPoints);
     }
   }, [sessionTrades, sessionStartTime, isRunning]);
