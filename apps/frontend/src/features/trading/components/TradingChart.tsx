@@ -34,6 +34,8 @@ interface TradingChartProps {
   onTimeframeChange: (timeframe: string) => void
   tradeMarkers: TradeMarker[]
   currentStatus: string | null
+  currentAsset?: string
+  isRunning?: boolean
   trades?: Trade[]
 }
 
@@ -284,6 +286,24 @@ export const TradingChart: React.FC<TradingChartProps> = ({
 
   return (
     <GlassCard className="border-primary/30 shadow-[0_0_20px_rgba(255,140,26,0.15)]">
+      {/* ✅ Status Bar - Same as AutoModeRunning */}
+      <div className="px-4 py-3 border-b border-slate-700/50 flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <div className={`w-3 h-3 rounded-full animate-pulse ${
+            isRunning ? 'bg-positive shadow-[0_0_10px_rgba(16,185,129,0.6)]' : 'bg-slate-600'
+          }`} />
+          <p className="font-semibold text-sm text-white">
+            {isRunning ? (currentStatus || 'Running') : 'Stopped'}
+          </p>
+        </div>
+
+        {currentAsset && (
+          <div className="text-right">
+            <p className="font-semibold text-sm text-warning">{currentAsset}</p>
+          </div>
+        )}
+      </div>
+
       <CardHeader>
         <div className="flex items-center justify-between">
           {currentStatus && (

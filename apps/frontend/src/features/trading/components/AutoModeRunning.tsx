@@ -91,6 +91,7 @@ export const AutoModeRunning: React.FC<AutoModeRunningProps> = ({
                   fontSize={12}
                   tickLine={false}
                   axisLine={false}
+                  tick={false}
                 />
                 <YAxis
                   stroke={CHART_COLORS.TEXT}

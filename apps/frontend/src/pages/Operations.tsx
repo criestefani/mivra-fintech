@@ -1247,6 +1247,8 @@ const Operations = () => {
               onTimeframeChange={setTimeframe}
               tradeMarkers={tradeMarkers}
               currentStatus={currentStatus}
+              currentAsset={asset}
+              isRunning={isRunning}
               trades={trades.slice(0, 8) as any}
             />
 
@@ -1415,9 +1417,6 @@ const Operations = () => {
 
           </>
         )}
-
-        {/* ✅ METRICS CARDS - Always visible */}
-        <MetricsCards {...metrics} />
 
       </main>
 
