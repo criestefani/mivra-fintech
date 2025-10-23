@@ -306,17 +306,6 @@ export const TradingChart: React.FC<TradingChartProps> = ({
         )}
       </div>
 
-      <CardHeader>
-        <div className="flex items-center justify-between">
-          {currentStatus && (
-            <Badge variant="outline" className="gap-2 bg-warning/10 text-warning border-warning/40">
-              <div className="w-2 h-2 bg-warning rounded-full animate-pulse" />
-              {currentStatus}
-            </Badge>
-          )}
-        </div>
-      </CardHeader>
-
       <CardContent className="space-y-1">
         {/* Controls Title */}
         <Label className="text-sm font-medium text-white">Choose the asset and timeframe</Label>
