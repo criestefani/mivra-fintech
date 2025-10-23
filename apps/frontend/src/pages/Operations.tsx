@@ -245,19 +245,30 @@ const Operations = () => {
           console.log('✅ [Operations] Marked initial trade as processed:', lastProcessedTradeRef.current);
         }
 
-        // Calculate cumulative PNL data for chart (oldest to newest)
-        let cumulativePnl = 0;
-        const pnlDataPoints: PnlDataPoint[] = [...formattedTrades]
-          .reverse() // ✅ Reverse for cumulative calc (oldest first)
-          .map(trade => {
-            cumulativePnl += trade.pnl;
-            return {
-              time: new Date(trade.timestamp).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }),
-              value: cumulativePnl
-            };
-          });
+        // ✅ Only calculate historical PnL if bot is currently running (active session)
+        if (sessionStartTime) {
+          console.log('[Operations] Session active - calculating PnL from trades');
+          // Calculate cumulative PNL data for chart (oldest to newest)
+          let cumulativePnl = 0;
+          const pnlDataPoints: PnlDataPoint[] = [...formattedTrades]
+            .reverse() // ✅ Reverse for cumulative calc (oldest first)
+            .map(trade => {
+              cumulativePnl += trade.pnl;
+              return {
+                time: new Date(trade.timestamp).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }),
+                value: cumulativePnl
+              };
+            });
 
-        setPnlData(pnlDataPoints);
+          setPnlData(pnlDataPoints);
+        } else {
+          // ✅ Bot not running - keep PnL at zero
+          console.log('[Operations] Bot not running - keeping PnL at zero');
+          setPnlData([{
+            time: new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }),
+            value: 0
+          }]);
+        }
       } else {
         console.log('[Operations] No trades found for today');
         setTrades([]);
