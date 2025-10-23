@@ -6,7 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/sha
 import { Badge } from '@/shared/components/ui/badge'
 import { Button } from '@/shared/components/ui/button'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/shared/components/ui/table'
-import { TrendingUp, TrendingDown, Activity, DollarSign, X, Filter } from 'lucide-react'
+import { TrendingUp, TrendingDown, Activity, DollarSign, X, Filter, ChevronUp, ChevronDown, Trophy } from 'lucide-react'
 import { DiagonalSection } from '@/components/ui/gamification'
 import { TradeExplanation } from '@/components/trading'
 
@@ -136,6 +136,34 @@ export default function History() {
     return result
   }, [trades, dateFilter, accountFilter, directionFilter])
 
+  // Format all trades (for records calculation)
+  const allFormattedTrades = useMemo(() => {
+    const mapAccountType = (type: string | null | undefined) => {
+      if (!type) return 'Unknown'
+      const normalized = type.toString().toLowerCase()
+      if (['real', 'live', 'real_account', 'live_account'].includes(normalized)) return 'Real'
+      if (['demo', 'practice', 'virtual', 'demo_account'].includes(normalized)) return 'Demo'
+      return type
+    }
+
+    return trades.map((trade) => ({
+      ...trade,
+      directionVariant: (trade.direction === 'call' || trade.direction === 'CALL' ? 'success' : 'destructive') as 'success' | 'destructive',
+      directionLabel: trade.direction === 'call' || trade.direction === 'CALL' ? 'CALL' : 'PUT',
+      formattedAmount: '$' + (trade.valor || 0).toFixed(2),
+      formattedPnl: '$' + (trade.pnl || 0).toFixed(2),
+      formattedDuration: (trade.expiration_seconds || 0) + 's',
+      formattedDate: new Date(trade.data_abertura).toLocaleString('en-US', {
+        day: '2-digit',
+        month: '2-digit',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+      }),
+      accountLabel: mapAccountType(trade.account_type),
+    }))
+  }, [trades])
+
   // Format trades
   const formattedTrades = useMemo(() => {
     const mapAccountType = (type: string | null | undefined) => {
@@ -218,6 +246,50 @@ export default function History() {
     }
   }, [formattedTrades])
 
+  // Calculate records (from ALL trades, not filtered)
+  const records = useMemo(() => {
+    if (allFormattedTrades.length === 0) {
+      return {
+        bestTrade: null,
+        bestDay: null,
+        bestStreak: 0,
+      }
+    }
+
+    // Best trade
+    const bestTrade = allFormattedTrades.reduce((best, trade) => {
+      const bestPnL = best?.pnl || -Infinity
+      return (trade.pnl || 0) > bestPnL ? trade : best
+    }, null as any)
+
+    // Best day
+    const dayPnL: Record<string, number> = {}
+    allFormattedTrades.forEach((trade) => {
+      const date = new Date(trade.data_abertura).toDateString()
+      dayPnL[date] = (dayPnL[date] || 0) + (trade.pnl || 0)
+    })
+    const bestDayPnL = Math.max(...Object.values(dayPnL))
+    const bestDay = Object.entries(dayPnL).find(([, pnl]) => pnl === bestDayPnL)
+
+    // Best streak
+    let currentStreak = 0
+    let bestStreak = 0
+    allFormattedTrades.forEach((trade) => {
+      if (trade.resultado === 'WIN') {
+        currentStreak++
+        bestStreak = Math.max(bestStreak, currentStreak)
+      } else {
+        currentStreak = 0
+      }
+    })
+
+    return {
+      bestTrade,
+      bestDay: bestDay ? bestDayPnL : 0,
+      bestStreak,
+    }
+  }, [allFormattedTrades])
+
   const pnlClass = stats.totalPnL >= 0 ? 'text-green-400' : 'text-red-400'
 
   const handleTradeClick = (trade: Trade) => {
@@ -275,6 +347,58 @@ export default function History() {
             <p className="text-muted-foreground mt-1 text-sm lg:text-base">Complete trading performance and historical records</p>
           </div>
         </DiagonalSection>
+
+        {/* Records Section - Above Filters */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          {/* Best Streak */}
+          <Card className="backdrop-blur-xl bg-gradient-to-br from-yellow-900/30 to-yellow-800/20 border-yellow-600/30 relative overflow-hidden">
+            <div className="absolute inset-0 bg-gradient-to-r from-yellow-500/10 to-transparent opacity-50" />
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 relative z-10">
+              <CardTitle className="text-sm font-medium">Best Streak</CardTitle>
+              <Trophy className="h-5 w-5 text-yellow-400" />
+            </CardHeader>
+            <CardContent className="relative z-10">
+              <div className="text-3xl font-bold text-yellow-400">{records.bestStreak}</div>
+              <p className="text-xs text-yellow-200/70 mt-1">Consecutive wins</p>
+            </CardContent>
+          </Card>
+
+          {/* Best Trade */}
+          {records.bestTrade && (
+            <Card className="backdrop-blur-xl bg-gradient-to-br from-green-900/30 to-green-800/20 border-green-600/30 relative overflow-hidden cursor-pointer hover:border-green-500/50 transition-colors" onClick={() => handleTradeClick(records.bestTrade)}>
+              <div className="absolute inset-0 bg-gradient-to-r from-green-500/10 to-transparent opacity-50" />
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 relative z-10">
+                <CardTitle className="text-sm font-medium">Best Trade</CardTitle>
+                <Trophy className="h-5 w-5 text-green-400" />
+              </CardHeader>
+              <CardContent className="relative z-10">
+                <div className="text-2xl font-bold text-green-400">
+                  ${(records.bestTrade.pnl || 0).toFixed(2)}
+                </div>
+                <p className="text-xs text-green-200/70 mt-1">
+                  {records.bestTrade.ativo_nome}
+                </p>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Best Day */}
+          {records.bestDay !== null && records.bestDay !== 0 && (
+            <Card className="backdrop-blur-xl bg-gradient-to-br from-blue-900/30 to-blue-800/20 border-blue-600/30 relative overflow-hidden">
+              <div className="absolute inset-0 bg-gradient-to-r from-blue-500/10 to-transparent opacity-50" />
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 relative z-10">
+                <CardTitle className="text-sm font-medium">Best Day</CardTitle>
+                <Trophy className="h-5 w-5 text-blue-400" />
+              </CardHeader>
+              <CardContent className="relative z-10">
+                <div className="text-2xl font-bold text-blue-400">
+                  ${records.bestDay.toFixed(2)}
+                </div>
+                <p className="text-xs text-blue-200/70 mt-1">Highest daily profit</p>
+              </CardContent>
+            </Card>
+          )}
+        </div>
 
         {/* Filter Button (Mobile) */}
         <div className="lg:hidden">
@@ -437,43 +561,6 @@ export default function History() {
           </Card>
         </div>
 
-        {/* Best Trade & Best Day (Mobile optimized) */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {stats.bestTrade && (
-            <Card className="backdrop-blur-xl bg-slate-900/50 border-slate-700/50 cursor-pointer hover:border-primary/50 transition-colors" onClick={() => handleTradeClick(stats.bestTrade)}>
-              <CardHeader>
-                <CardTitle className="text-sm">Best Trade</CardTitle>
-                <CardDescription>Highest single profit</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-2">
-                <div className="text-2xl font-bold text-green-400">
-                  ${(stats.bestTrade.pnl || 0).toFixed(2)}
-                </div>
-                <div className="text-xs text-muted-foreground">
-                  <p>{stats.bestTrade.ativo_nome} • {stats.bestTrade.directionLabel}</p>
-                  <p>{stats.bestTrade.formattedDate}</p>
-                </div>
-              </CardContent>
-            </Card>
-          )}
-
-          {stats.bestDay !== null && stats.bestDay !== 0 && (
-            <Card className="backdrop-blur-xl bg-slate-900/50 border-slate-700/50">
-              <CardHeader>
-                <CardTitle className="text-sm">Best Day</CardTitle>
-                <CardDescription>Highest daily profit</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-2">
-                <div className="text-2xl font-bold text-green-400">
-                  ${stats.bestDay.toFixed(2)}
-                </div>
-                <div className="text-xs text-muted-foreground">
-                  Peak daily performance
-                </div>
-              </CardContent>
-            </Card>
-          )}
-        </div>
 
         {/* Trades List/Table */}
         <Card className="backdrop-blur-xl bg-slate-900/50 border-slate-700/50">
@@ -530,18 +617,12 @@ export default function History() {
                         <TableCell>
                           <Badge variant="outline">{trade.accountLabel}</Badge>
                         </TableCell>
-                        <TableCell>
-                          <Badge variant={trade.directionVariant}>
-                            {trade.directionVariant === 'success' ? (
-                              <>
-                                <TrendingUp className="w-3 h-3 mr-1" /> {trade.directionLabel}
-                              </>
-                            ) : (
-                              <>
-                                <TrendingDown className="w-3 h-3 mr-1" /> {trade.directionLabel}
-                              </>
-                            )}
-                          </Badge>
+                        <TableCell className="text-center">
+                          {trade.directionVariant === 'success' ? (
+                            <ChevronUp className="w-5 h-5 text-green-400 mx-auto" />
+                          ) : (
+                            <ChevronDown className="w-5 h-5 text-red-400 mx-auto" />
+                          )}
                         </TableCell>
                         <TableCell>{trade.formattedAmount}</TableCell>
                         <TableCell>
@@ -591,9 +672,11 @@ export default function History() {
                         </Badge>
                       </div>
                       <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                        <Badge variant={trade.directionVariant} className="text-xs h-5">
-                          {trade.directionLabel}
-                        </Badge>
+                        {trade.directionVariant === 'success' ? (
+                          <ChevronUp className="w-4 h-4 text-green-400 flex-shrink-0" />
+                        ) : (
+                          <ChevronDown className="w-4 h-4 text-red-400 flex-shrink-0" />
+                        )}
                         <span>•</span>
                         <span className="text-muted-foreground text-xs">{trade.accountLabel}</span>
                         <span>•</span>
