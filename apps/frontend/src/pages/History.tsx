@@ -414,40 +414,39 @@ export default function History() {
           </Card>
 
           {/* Best Trade */}
-          {records.bestTrade && (
-            <Card className="backdrop-blur-xl bg-gradient-to-br from-green-900/30 to-green-800/20 border-green-600/30 relative overflow-hidden cursor-pointer hover:border-green-500/50 transition-colors" onClick={() => handleTradeClick(records.bestTrade)}>
-              <div className="absolute inset-0 bg-gradient-to-r from-green-500/10 to-transparent opacity-50" />
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-1 p-2 md:p-4 md:pb-2 relative z-10">
-                <CardTitle className="text-xs md:text-sm font-medium">Best Trade</CardTitle>
-                <Trophy className="h-4 w-4 md:h-5 md:w-5 text-green-400 flex-shrink-0" />
-              </CardHeader>
-              <CardContent className="relative z-10 p-2 md:p-4 pt-0 md:pt-0">
-                <div className="text-lg md:text-2xl font-bold text-green-400">
-                  ${(records.bestTrade.pnl || 0).toFixed(2)}
-                </div>
-                <p className="text-xs text-green-200/70 mt-0.5 md:mt-1 truncate">
-                  {records.bestTrade.ativo_nome}
-                </p>
-              </CardContent>
-            </Card>
-          )}
+          <Card
+            className={`backdrop-blur-xl bg-gradient-to-br from-green-900/30 to-green-800/20 border-green-600/30 relative overflow-hidden ${records.bestTrade ? 'cursor-pointer hover:border-green-500/50' : ''} transition-colors`}
+            onClick={() => records.bestTrade && handleTradeClick(records.bestTrade)}
+          >
+            <div className="absolute inset-0 bg-gradient-to-r from-green-500/10 to-transparent opacity-50" />
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-1 p-2 md:p-4 md:pb-2 relative z-10">
+              <CardTitle className="text-xs md:text-sm font-medium">Best Trade</CardTitle>
+              <Trophy className="h-4 w-4 md:h-5 md:w-5 text-green-400 flex-shrink-0" />
+            </CardHeader>
+            <CardContent className="relative z-10 p-2 md:p-4 pt-0 md:pt-0">
+              <div className="text-lg md:text-2xl font-bold text-green-400">
+                {records.bestTrade ? `$${(records.bestTrade.pnl || 0).toFixed(2)}` : '—'}
+              </div>
+              <p className="text-xs text-green-200/70 mt-0.5 md:mt-1 truncate">
+                {records.bestTrade ? records.bestTrade.ativo_nome : 'No data'}
+              </p>
+            </CardContent>
+          </Card>
 
           {/* Best Day */}
-          {records.bestDay !== null && records.bestDay !== 0 && (
-            <Card className="backdrop-blur-xl bg-gradient-to-br from-blue-900/30 to-blue-800/20 border-blue-600/30 relative overflow-hidden">
-              <div className="absolute inset-0 bg-gradient-to-r from-blue-500/10 to-transparent opacity-50" />
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-1 p-2 md:p-4 md:pb-2 relative z-10">
-                <CardTitle className="text-xs md:text-sm font-medium">Best Day</CardTitle>
-                <Trophy className="h-4 w-4 md:h-5 md:w-5 text-blue-400 flex-shrink-0" />
-              </CardHeader>
-              <CardContent className="relative z-10 p-2 md:p-4 pt-0 md:pt-0">
-                <div className="text-lg md:text-2xl font-bold text-blue-400">
-                  ${records.bestDay.toFixed(2)}
-                </div>
-                <p className="text-xs text-blue-200/70 mt-0.5 md:mt-1 leading-tight">Highest daily profit</p>
-              </CardContent>
-            </Card>
-          )}
+          <Card className="backdrop-blur-xl bg-gradient-to-br from-blue-900/30 to-blue-800/20 border-blue-600/30 relative overflow-hidden">
+            <div className="absolute inset-0 bg-gradient-to-r from-blue-500/10 to-transparent opacity-50" />
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-1 p-2 md:p-4 md:pb-2 relative z-10">
+              <CardTitle className="text-xs md:text-sm font-medium">Best Day</CardTitle>
+              <Trophy className="h-4 w-4 md:h-5 md:w-5 text-blue-400 flex-shrink-0" />
+            </CardHeader>
+            <CardContent className="relative z-10 p-2 md:p-4 pt-0 md:pt-0">
+              <div className="text-lg md:text-2xl font-bold text-blue-400">
+                {records.bestDay && records.bestDay !== 0 ? `$${records.bestDay.toFixed(2)}` : '—'}
+              </div>
+              <p className="text-xs text-blue-200/70 mt-0.5 md:mt-1 leading-tight">Highest daily profit</p>
+            </CardContent>
+          </Card>
         </div>
 
         {/* Filter Button (Mobile) */}
