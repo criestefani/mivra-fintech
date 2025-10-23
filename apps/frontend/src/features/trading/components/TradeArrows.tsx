@@ -41,9 +41,15 @@ export const TradeArrows: React.FC<TradeArrowsProps> = ({
   console.log('[TradeArrows] 🎯 Component rendered - markers:', tradeMarkers?.length || 0)
 
   useEffect(() => {
-    console.log('[TradeArrows] Effect triggered - chart:', !!chart, 'candleSeries:', !!candleSeries, 'markers:', tradeMarkers.length)
+    console.log('[TradeArrows] Effect triggered - chart:', !!chart, 'candleSeries:', !!candleSeries, 'markers:', tradeMarkers.length, 'rect:', !!chartContainerRect)
 
     if (!chart || !candleSeries || !chartContainerRect || tradeMarkers.length === 0) {
+      console.log('[TradeArrows] ⚠️ EARLY RETURN - Missing dependencies:', {
+        hasChart: !!chart,
+        hasCandleSeries: !!candleSeries,
+        hasRect: !!chartContainerRect,
+        hasMarkers: tradeMarkers.length > 0
+      });
       return
     }
 
