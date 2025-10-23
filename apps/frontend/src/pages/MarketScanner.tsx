@@ -10,7 +10,8 @@ import { useScannerSubscription, HeatmapGrid } from '@/features/market-scanner';
 import type { ScannerAsset, ScannerConfig } from '@/features/market-scanner';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/shared/components/ui/card';
 import { Button } from '@/shared/components/ui/button';
-import { Loader2, RefreshCw, Activity, Zap } from 'lucide-react';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/shared/components/ui/dialog';
+import { Loader2, RefreshCw, Activity, Zap, HelpCircle } from 'lucide-react';
 import { DiagonalSection } from '@/components/ui/gamification';
 import axios from 'axios';
 import { getApiUrl } from '@/shared/utils/getApiUrl';
@@ -34,6 +35,7 @@ export const MarketScanner: React.FC = () => {
   const { assets, loading, error, lastUpdate, refresh } = useScannerSubscription();
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [assetLookup, setAssetLookup] = useState<AssetLookup>({ byId: {}, byName: {} });
+  const [showScannerHelp, setShowScannerHelp] = useState(false);
 
   // Auth check
   useEffect(() => {
@@ -249,7 +251,7 @@ export const MarketScanner: React.FC = () => {
               <Zap className="w-8 h-8 text-primary" />
               Market Scanner
             </h1>
-            <p className="text-muted-foreground mt-1 text-sm lg:text-base">Real-time performance heatmap with hybrid strategy analysis</p>
+            <p className="text-muted-foreground mt-1 text-sm lg:text-base">Real-time performance heatmap</p>
           </div>
         </DiagonalSection>
 
@@ -261,6 +263,18 @@ export const MarketScanner: React.FC = () => {
             </div>
           )}
           <div className="flex items-center gap-2">
+            {/* Help button */}
+            <Button
+              onClick={() => setShowScannerHelp(true)}
+              variant="outline"
+              size="sm"
+              className="gap-2"
+              title="Learn about the Market Scanner"
+            >
+              <HelpCircle className="w-4 h-4" />
+              <span className="hidden md:inline">Help</span>
+            </Button>
+
             {/* Refresh button */}
             <Button
               onClick={handleRefresh}
@@ -280,17 +294,6 @@ export const MarketScanner: React.FC = () => {
           </div>
         </div>
 
-        {/* Help text */}
-        <Card className="glass backdrop-blur-xl bg-slate-800/20 border-slate-700/30">
-          <CardContent className="pt-4">
-            <p className="text-sm text-muted-foreground">
-              <strong className="text-foreground">Tip:</strong> Click on any asset card to
-              navigate to Operations page with pre-configured settings for that asset and
-              timeframe.
-            </p>
-          </CardContent>
-        </Card>
-
         {/* Heatmap Grid */}
         {assets.length > 0 ? (
           <HeatmapGrid assets={assets} onAssetClick={handleAssetClick} />
@@ -307,6 +310,57 @@ export const MarketScanner: React.FC = () => {
             </CardContent>
           </Card>
         )}
+
+        {/* Scanner Help Dialog */}
+        <Dialog open={showScannerHelp} onOpenChange={setShowScannerHelp}>
+          <DialogContent className="w-full max-w-sm sm:max-w-md md:max-w-lg max-h-[90vh] overflow-y-auto mx-4 md:mx-0">
+            <DialogHeader>
+              <DialogTitle className="text-xl md:text-2xl flex items-center gap-2">
+                <Zap className="w-6 h-6 text-primary" />
+                About Market Scanner
+              </DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4 text-sm md:text-base text-muted-foreground">
+              <p>
+                <strong className="text-foreground">Market Scanner</strong> is your intelligent market analysis engine, running 24/7 to identify the best trading opportunities.
+              </p>
+
+              <div className="space-y-2">
+                <p className="font-semibold text-foreground">How it works:</p>
+                <ul className="list-disc list-inside space-y-1 ml-2">
+                  <li>Analyzes market conditions in <strong>real-time</strong> across multiple assets and timeframes</li>
+                  <li>Uses our proven <strong>aggressive strategy</strong> to identify high-probability setups</li>
+                  <li>Evaluates combinations based on historical win rate data</li>
+                  <li>Displays the <strong>top 30 combinations</strong> with the highest accuracy</li>
+                </ul>
+              </div>
+
+              <div className="space-y-2">
+                <p className="font-semibold text-foreground">What you see:</p>
+                <p>
+                  Each card represents an asset/timeframe combination with its win rate percentage. The colors indicate performance:
+                </p>
+                <ul className="list-disc list-inside space-y-1 ml-2">
+                  <li><span className="text-positive">Green:</span> Excellent win rate (80%+)</li>
+                  <li><span className="text-warning">Yellow:</span> Good win rate (50%+)</li>
+                  <li><span className="text-primary">Blue:</span> Average win rate (35%+)</li>
+                  <li><span className="text-negative">Red:</span> Lower win rate (&lt;35%)</li>
+                </ul>
+              </div>
+
+              <div className="space-y-2">
+                <p className="font-semibold text-foreground">How to use:</p>
+                <p>
+                  Simply <strong>click on any card</strong> to navigate to the Operations page with that exact asset and timeframe pre-configured. All you need to do is set your entry value and start trading!
+                </p>
+              </div>
+
+              <p className="text-xs text-muted-foreground italic">
+                Updated in real-time • Minimum 15 signals required • Based on aggressive strategy analysis
+              </p>
+            </div>
+          </DialogContent>
+        </Dialog>
       </div>
     </div>
   );
