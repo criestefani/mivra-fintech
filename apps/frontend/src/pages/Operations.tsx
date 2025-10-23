@@ -36,12 +36,13 @@ import {
   TradeExplanation,
   type Trade as TradeFeedTrade,
 } from "@/components/trading";
-import { StreakBadge, FloatingXP, DiagonalSection } from "@/components/ui/gamification";
+import { StreakBadge, FloatingXP, FloatingPnL, DiagonalSection } from "@/components/ui/gamification";
 import { BadgeUnlockModal, LevelUpModal } from "@/components/gamification";
 
 // ✅ Gamification Hooks
 import { useGamification, useStreaks, useQuests } from "@/hooks/useGamification";
 import { useFloatingXP } from "@/hooks/useFloatingXP";
+import { useFloatingPnL } from "@/components/ui/gamification";
 import { useSoundEffects } from "@/hooks/useSoundEffects";
 
 // ✅ New Hook
@@ -134,6 +135,7 @@ const Operations = () => {
   const { currentWinStreak, currentStreak } = useStreaks(user?.id || null);
   const { dailyQuests } = useQuests(user?.id || null);
   const { xpInstances, showXP } = useFloatingXP();
+  const { pnlInstances, showPnL } = useFloatingPnL();
   const sounds = useSoundEffects({ volume: 0.5, enabled: true });
 
   // ✅ Track last processed trade to avoid infinite loops
@@ -691,11 +693,23 @@ const Operations = () => {
     lastProcessedTradeRef.current = tradeId || null;
 
     if (latestTrade.result === "WIN") {
-      console.log('✅ [Trade Result Effect] WIN detected - playing sound and showing XP');
+      console.log('✅ [Trade Result Effect] WIN detected - playing sound and showing XP and PnL');
       sounds.playWin();
       console.log('✅ [Trade Result Effect] Called playWin()');
-      showXP(20, window.innerWidth / 2, window.innerHeight / 2); // Show +20 XP
+
+      // Show floating animations
+      const centerX = window.innerWidth / 2;
+      const centerY = window.innerHeight / 2;
+
+      // Show XP animation
+      showXP(20, centerX - 40, centerY); // Show +20 XP (slightly left)
       console.log('✅ [Trade Result Effect] Called showXP()');
+
+      // Show PnL animation (only on wins)
+      if (latestTrade.pnl && latestTrade.pnl > 0) {
+        showPnL(latestTrade.pnl, centerX + 40, centerY - 30); // Show profit (slightly right and above)
+        console.log('✅ [Trade Result Effect] Called showPnL() with amount:', latestTrade.pnl);
+      }
     } else if (latestTrade.result === "LOSS") {
       console.log('❌ [Trade Result Effect] LOSS detected');
       // No sound for losses (not configured)
@@ -1744,6 +1758,18 @@ const Operations = () => {
       {xpInstances.length > 0 && console.log('🎆 [Render] XP Instances:', xpInstances.length)}
       {xpInstances.map((instance) => (
         <FloatingXP
+          key={instance.id}
+          amount={instance.amount}
+          x={instance.x}
+          y={instance.y}
+          onComplete={() => {}}
+        />
+      ))}
+
+      {/* Floating PnL Instances - Animated profit amounts (wins only) */}
+      {pnlInstances.length > 0 && console.log('💰 [Render] PnL Instances:', pnlInstances.length)}
+      {pnlInstances.map((instance) => (
+        <FloatingPnL
           key={instance.id}
           amount={instance.amount}
           x={instance.x}

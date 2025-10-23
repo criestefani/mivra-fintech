@@ -41,3 +41,6 @@ export type { StreakBadgeProps } from './StreakBadge';
 
 export { FloatingXP, useFloatingXP } from './FloatingXP';
 export type { FloatingXPProps } from './FloatingXP';
+
+export { FloatingPnL, useFloatingPnL } from './FloatingPnL';
+export type { FloatingPnLProps } from './FloatingPnL';
