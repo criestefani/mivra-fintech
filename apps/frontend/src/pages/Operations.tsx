@@ -860,7 +860,7 @@ const Operations = () => {
       <Sidebar />
 
       {/* Mobile-First Layout */}
-      <main className="lg:ml-64 container mx-auto px-4 pt-4 pb-32 space-y-6 animate-fade-in relative z-20">
+      <main className="lg:ml-64 container mx-auto px-4 pt-2 pb-32 space-y-6 animate-fade-in relative z-20">
 
         {/* ✅ DIAGONAL SECTION HEADER */}
         <DiagonalSection
