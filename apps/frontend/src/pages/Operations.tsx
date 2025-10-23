@@ -625,6 +625,20 @@ const Operations = () => {
     });
   }, [trades]);
 
+  // ✅ RESET METRICS IF NO ACTIVE SESSION (manual mode PnL display)
+  useEffect(() => {
+    if (!sessionStartTime) {
+      console.log('📊 [Metrics Reset] No active session - resetting metrics to zero');
+      setMetrics({
+        winRate: 0,
+        totalTrades: 0,
+        totalWins: 0,
+        totalLosses: 0,
+        pnl: 0
+      });
+    }
+  }, [sessionStartTime]);
+
   // ✅ RESET PNL DATA BASED ON BOT STATE
   useEffect(() => {
     if (isRunning && sessionStartTime) {
