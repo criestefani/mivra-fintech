@@ -611,21 +611,39 @@ const Operations = () => {
       if (botMode === "manual" && position.resultado) {
         console.log('[Operations] 📍 Creating marker directly from Socket.io callback - resultado:', position.resultado);
 
-        // Use current timestamp as the entry time (when position was opened)
-        const entryTime = Math.floor(new Date(position.timestamp).getTime() / 1000);
+        // Refresh trades to get the latest trade with data_abertura
+        loadTodayTrades().then(() => {
+          console.log('[Operations] 🔍 Trades refreshed, finding latest trade for marker...');
 
-        const newMarker = {
-          time: entryTime,
-          direction: position.direction?.toUpperCase() as "CALL" | "PUT" || "CALL",
-          result: position.resultado as "WIN" | "LOSS",
-          pnl: position.pnl || 0
-        };
+          // Get the most recent trade from the state (will be updated by loadTodayTrades)
+          // We'll use a short timeout to ensure state is updated
+          setTimeout(() => {
+            setTrades(currentTrades => {
+              if (currentTrades.length > 0) {
+                const latestTrade = currentTrades[0]; // Most recent first
 
-        console.log('[Operations] ✅ Marker created via Socket.io:', newMarker);
-        setTradeMarkers(prev => {
-          const updated = [...prev, newMarker];
-          console.log('[Operations] ✅ Trade markers updated - total:', updated.length);
-          return updated;
+                if (latestTrade.resultado) {
+                  // Use data_abertura (when position opened) not timestamp (when position closed)
+                  const entryTime = Math.floor(new Date(latestTrade.timestamp).getTime() / 1000);
+
+                  const newMarker = {
+                    time: entryTime,
+                    direction: latestTrade.direction.toUpperCase() as "CALL" | "PUT",
+                    result: latestTrade.resultado as "WIN" | "LOSS",
+                    pnl: latestTrade.pnl || 0
+                  };
+
+                  console.log('[Operations] ✅ Marker created with entry time:', { entryTime, trade: latestTrade });
+                  setTradeMarkers(prev => {
+                    const updated = [...prev, newMarker];
+                    console.log('[Operations] ✅ Trade markers updated - total:', updated.length);
+                    return updated;
+                  });
+                }
+              }
+              return currentTrades;
+            });
+          }, 100); // Small delay for state update
         });
       } else if (botMode !== "manual") {
         console.log('[Operations] ℹ️ Not in manual mode, skipping marker creation');
