@@ -860,7 +860,7 @@ const Operations = () => {
       <Sidebar />
 
       {/* Mobile-First Layout */}
-      <main className="lg:ml-64 container mx-auto px-4 py-6 pb-20 space-y-6 animate-fade-in relative z-20" style={{ marginTop: 'max(1.5rem, calc(env(safe-area-inset-top) + 1.5rem))' }}>
+      <main className="lg:ml-64 container mx-auto px-4 py-6 pb-32 space-y-6 animate-fade-in relative z-20" style={{ marginTop: 'max(0.75rem, calc(env(safe-area-inset-top) + 0.75rem))' }}>
 
         {/* ✅ DIAGONAL SECTION HEADER */}
         <DiagonalSection
