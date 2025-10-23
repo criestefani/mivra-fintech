@@ -36,7 +36,7 @@ export const HeatmapGrid: React.FC<HeatmapGridProps> = ({
   }
 
   return (
-    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3 md:gap-4 animate-fade-in">
+    <div className="flex flex-col gap-2 animate-fade-in">
       {sortedAssets.map((asset) => (
         <AssetCard
           key={`${asset.active_id}_${asset.timeframe}`}

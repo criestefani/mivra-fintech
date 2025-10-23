@@ -47,57 +47,55 @@ export const AssetCard = React.memo<AssetCardProps>(({ asset, onClick }) => {
 
   return (
     <Card
-      className={`p-3 md:p-4 cursor-pointer hover:scale-105 transition-all duration-200 ${getHeatmapColor(winRate)} border-2 shadow-md active:scale-95`}
+      className={`px-4 py-3 cursor-pointer hover:bg-slate-800/50 transition-all duration-200 ${getHeatmapColor(winRate)} border-l-4 border-r border-y shadow-sm active:opacity-80 flex items-center justify-between gap-4`}
       onClick={onClick}
     >
-      <div className="space-y-2">
-        {/* Asset name */}
-        <div className="font-bold text-base md:text-lg truncate" title={asset.ativo_nome}>
+      {/* Left: Asset name and timeframe */}
+      <div className="flex flex-col min-w-0 flex-1">
+        <div className="font-bold text-sm md:text-base truncate" title={asset.ativo_nome}>
           {asset.ativo_nome}
         </div>
-
-        {/* Timeframe */}
-        <div className="text-xs text-muted-foreground">
-          <span className="font-semibold">{formatTimeframe(asset.timeframe)}</span>
+        <div className="text-xs text-muted-foreground font-semibold">
+          {formatTimeframe(asset.timeframe)}
         </div>
-
-        {/* Win rate with icon */}
-        <div className="flex items-center gap-2">
-          {isProfitable ? (
-            <TrendingUp className="w-4 h-4 text-positive" />
-          ) : (
-            <TrendingDown className="w-4 h-4 text-negative" />
-          )}
-          <span className={`text-lg md:text-xl font-bold font-mono ${
-            isProfitable ? 'text-positive' : 'text-negative'
-          }`}>
-            {winRate.toFixed(1)}%
-          </span>
-        </div>
-
-        {/* Win/Loss record */}
-        <div className="flex items-center gap-2 text-xs">
-          <Activity className="w-3 h-3 text-muted-foreground" />
-          <span className="text-muted-foreground font-mono">
-            {totalWins}W / {totalLosses}L
-          </span>
-        </div>
-
-        {/* Total signals */}
-        <div className="text-xs text-muted-foreground">
-          {totalSignals} {totalSignals === 1 ? 'signal' : 'signals'}
-        </div>
-
-        {/* Last update indicator (optional, subtle) */}
-        {asset.last_updated && (
-          <div className="text-[10px] text-muted-foreground/60">
-            {new Date(asset.last_updated).toLocaleTimeString('en-US', {
-              hour: '2-digit',
-              minute: '2-digit'
-            })}
-          </div>
-        )}
       </div>
+
+      {/* Middle: Win rate with icon */}
+      <div className="flex items-center gap-2 flex-shrink-0">
+        {isProfitable ? (
+          <TrendingUp className="w-4 h-4 text-positive" />
+        ) : (
+          <TrendingDown className="w-4 h-4 text-negative" />
+        )}
+        <span className={`text-base md:text-lg font-bold font-mono min-w-fit ${
+          isProfitable ? 'text-positive' : 'text-negative'
+        }`}>
+          {winRate.toFixed(1)}%
+        </span>
+      </div>
+
+      {/* Center-Right: Win/Loss record */}
+      <div className="flex items-center gap-2 text-xs flex-shrink-0">
+        <Activity className="w-3 h-3 text-muted-foreground" />
+        <span className="text-muted-foreground font-mono whitespace-nowrap">
+          {totalWins}W / {totalLosses}L
+        </span>
+      </div>
+
+      {/* Right: Total signals */}
+      <div className="text-xs text-muted-foreground flex-shrink-0 whitespace-nowrap hidden sm:block">
+        {totalSignals} {totalSignals === 1 ? 'signal' : 'signals'}
+      </div>
+
+      {/* Far right: Last update indicator (optional, subtle) */}
+      {asset.last_updated && (
+        <div className="text-[10px] text-muted-foreground/60 flex-shrink-0 whitespace-nowrap hidden lg:block">
+          {new Date(asset.last_updated).toLocaleTimeString('en-US', {
+            hour: '2-digit',
+            minute: '2-digit'
+          })}
+        </div>
+      )}
     </Card>
   );
 });
