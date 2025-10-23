@@ -383,6 +383,8 @@ const Operations = () => {
   useEffect(() => {
     const presetConfig = presetConfigRef.current;
 
+    // Only reapply if we have a preset config AND bot mode is manual AND category is set
+    // AND we haven't already cleared this config
     if (presetConfig && botMode === 'manual' && category) {
       console.log('[Operations] 🔄 Reapplying preset config after chart load:', presetConfig);
 
@@ -390,26 +392,27 @@ const Operations = () => {
       const assetLabel = presetConfig.assetName ?? presetConfig.assetKey ?? presetConfig.assetId;
       const determinedCategory = determineCategoryFromAsset(assetLabel || assetKey);
 
-      // Ensure category, asset, and timeframe are set correctly
+      // Only set if values don't match (avoid unnecessary state updates)
       if (determinedCategory && determinedCategory !== category) {
+        console.log('[Operations] 📌 Category correction needed:', determinedCategory, 'current:', category);
         setCategory(determinedCategory);
-        console.log('[Operations] 📌 Category corrected:', determinedCategory);
       }
 
       if (assetKey && asset !== assetKey) {
+        console.log('[Operations] 📌 Asset correction needed:', assetKey, 'current:', asset);
         setAsset(assetKey);
-        console.log('[Operations] 📌 Asset corrected:', assetKey);
       }
 
       if (presetConfig.timeframe && timeframe !== presetConfig.timeframe.toString()) {
+        console.log('[Operations] 📌 Timeframe correction needed:', presetConfig.timeframe, 'current:', timeframe);
         setTimeframe(presetConfig.timeframe.toString());
-        console.log('[Operations] 📌 Timeframe corrected:', presetConfig.timeframe);
       }
 
-      // Clear ref to prevent infinite reapply
+      // Clear ref IMMEDIATELY after checking to prevent re-triggering
+      // This is the key fix - clear it right away, not after state updates
       presetConfigRef.current = null;
     }
-  }, [botMode, category, asset, timeframe, determineCategoryFromAsset]);
+  }, [botMode, category]);
 
   // Auth state management
   useEffect(() => {
