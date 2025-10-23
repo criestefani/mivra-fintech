@@ -471,7 +471,7 @@ const Operations = () => {
           filter: `user_id=eq.${user.id}`
         },
         (payload) => {
-          console.log('[Operations] ✅ NEW TRADE via real-time:', payload);
+          console.log('[Operations] ✅ NEW TRADE via real-time (INSERT):', payload);
           const newTrade = payload.new as any;
 
           // Check if trade is from today
@@ -570,12 +570,12 @@ const Operations = () => {
         }
       )
       .subscribe((status) => {
-        console.log('[Operations] Subscription status:', status);
+        console.log('[Operations] 📡 Subscription status:', status, 'botMode:', botMode);
 
         // ✅ Update status state based on subscription result
         if (status === 'SUBSCRIBED') {
           setRealtimeStatus('connected');
-          console.log('✅ [Operations] Real-time subscription ACTIVE');
+          console.log('✅ [Operations] Real-time subscription ACTIVE - botMode:', botMode, 'userId:', user?.id);
         } else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT' || status === 'CLOSED') {
           setRealtimeStatus('error');
           console.error('❌ [Operations] Real-time subscription FAILED:', status);
