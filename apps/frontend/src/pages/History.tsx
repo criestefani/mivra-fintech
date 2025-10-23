@@ -30,7 +30,7 @@ interface Trade {
   exit_price?: number
 }
 
-type DateFilter = 'all' | 'today' | 'yesterday' | 'last7' | 'last30'
+type DateFilter = 'all' | 'today' | 'yesterday' | 'last7' | 'last30' | 'custom'
 type AccountFilter = 'all' | 'demo' | 'real'
 type DirectionFilter = 'all' | 'call' | 'put'
 
@@ -41,11 +41,15 @@ export default function History() {
   const [selectedTrade, setSelectedTrade] = useState<Trade | null>(null)
   const [showTradeExplanation, setShowTradeExplanation] = useState(false)
 
-  // Filters
-  const [dateFilter, setDateFilter] = useState<DateFilter>('all')
-  const [accountFilter, setAccountFilter] = useState<AccountFilter>('all')
+  // Filters (defaults: last 7 days + real account only)
+  const [dateFilter, setDateFilter] = useState<DateFilter>('last7')
+  const [accountFilter, setAccountFilter] = useState<AccountFilter>('real')
   const [directionFilter, setDirectionFilter] = useState<DirectionFilter>('all')
   const [showFilters, setShowFilters] = useState(false)
+
+  // Custom date range
+  const [customDateFrom, setCustomDateFrom] = useState<string>('')
+  const [customDateTo, setCustomDateTo] = useState<string>('')
 
   // Pagination
   const [currentPage, setCurrentPage] = useState(1)
@@ -107,6 +111,12 @@ export default function History() {
             const thirtyDaysAgo = new Date(today)
             thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30)
             return tradeDateOnly >= thirtyDaysAgo && tradeDateOnly <= today
+          case 'custom':
+            if (!customDateFrom || !customDateTo) return true
+            const fromDate = new Date(customDateFrom)
+            const toDate = new Date(customDateTo)
+            toDate.setDate(toDate.getDate() + 1) // Include entire end date
+            return tradeDateOnly >= fromDate && tradeDateOnly < toDate
           default:
             return true
         }
@@ -134,7 +144,7 @@ export default function History() {
     }
 
     return result
-  }, [trades, dateFilter, accountFilter, directionFilter])
+  }, [trades, dateFilter, accountFilter, directionFilter, customDateFrom, customDateTo])
 
   // Format all trades (for records calculation)
   const allFormattedTrades = useMemo(() => {
@@ -246,9 +256,15 @@ export default function History() {
     }
   }, [formattedTrades])
 
-  // Calculate records (from ALL trades, not filtered)
+  // Calculate records (from ALL REAL trades only, not filtered)
   const records = useMemo(() => {
-    if (allFormattedTrades.length === 0) {
+    // Filter to only REAL account trades
+    const realTrades = allFormattedTrades.filter((trade) => {
+      const normalized = (trade.account_type || '').toString().toLowerCase()
+      return ['real', 'live', 'real_account', 'live_account'].includes(normalized)
+    })
+
+    if (realTrades.length === 0) {
       return {
         bestTrade: null,
         bestDay: null,
@@ -257,24 +273,24 @@ export default function History() {
     }
 
     // Best trade
-    const bestTrade = allFormattedTrades.reduce((best, trade) => {
+    const bestTrade = realTrades.reduce((best, trade) => {
       const bestPnL = best?.pnl || -Infinity
       return (trade.pnl || 0) > bestPnL ? trade : best
     }, null as any)
 
     // Best day
     const dayPnL: Record<string, number> = {}
-    allFormattedTrades.forEach((trade) => {
+    realTrades.forEach((trade) => {
       const date = new Date(trade.data_abertura).toDateString()
       dayPnL[date] = (dayPnL[date] || 0) + (trade.pnl || 0)
     })
-    const bestDayPnL = Math.max(...Object.values(dayPnL))
-    const bestDay = Object.entries(dayPnL).find(([, pnl]) => pnl === bestDayPnL)
+    const bestDayPnL = dayPnL && Object.values(dayPnL).length > 0 ? Math.max(...Object.values(dayPnL)) : 0
+    const bestDay = bestDayPnL > 0 ? Object.entries(dayPnL).find(([, pnl]) => pnl === bestDayPnL) : null
 
     // Best streak
     let currentStreak = 0
     let bestStreak = 0
-    allFormattedTrades.forEach((trade) => {
+    realTrades.forEach((trade) => {
       if (trade.resultado === 'WIN') {
         currentStreak++
         bestStreak = Math.max(bestStreak, currentStreak)
@@ -298,13 +314,47 @@ export default function History() {
   }
 
   const resetFilters = () => {
-    setDateFilter('all')
-    setAccountFilter('all')
+    setDateFilter('last7')
+    setAccountFilter('real')
     setDirectionFilter('all')
+    setCustomDateFrom('')
+    setCustomDateTo('')
     setCurrentPage(1)
   }
 
-  const hasActiveFilters = dateFilter !== 'all' || accountFilter !== 'all' || directionFilter !== 'all'
+  const hasActiveFilters = dateFilter !== 'last7' || accountFilter !== 'real' || directionFilter !== 'all' || customDateFrom || customDateTo
+
+  const getActiveFiltersLabel = () => {
+    const filters: string[] = []
+    if (dateFilter === 'custom' && customDateFrom && customDateTo) {
+      filters.push(`${customDateFrom} to ${customDateTo}`)
+    } else if (dateFilter !== 'last7') {
+      const dateLabels: Record<string, string> = {
+        all: 'All Time',
+        today: 'Today',
+        yesterday: 'Yesterday',
+        last7: 'Last 7 Days',
+        last30: 'Last 30 Days',
+      }
+      filters.push(dateLabels[dateFilter] || dateFilter)
+    }
+    if (accountFilter !== 'real') {
+      filters.push(accountFilter === 'demo' ? 'Demo Account' : 'All Accounts')
+    }
+    if (directionFilter !== 'all') {
+      filters.push(directionFilter.toUpperCase())
+    }
+    return filters.join(' • ')
+  }
+
+  const activeFiltersCount = () => {
+    let count = 0
+    if (dateFilter !== 'last7') count++
+    if (accountFilter !== 'real') count++
+    if (directionFilter !== 'all') count++
+    if (customDateFrom && customDateTo) count++
+    return count
+  }
 
   // Pagination
   useEffect(() => {
@@ -408,7 +458,7 @@ export default function History() {
             className="w-full gap-2"
           >
             <Filter className="w-4 h-4" />
-            Filters {hasActiveFilters && `(${dateFilter !== 'all' ? 1 : 0}${accountFilter !== 'all' ? 1 : 0}${directionFilter !== 'all' ? 1 : 0})`}
+            Filters {hasActiveFilters && `(${activeFiltersCount()})`}
           </Button>
         </div>
 
@@ -432,13 +482,14 @@ export default function History() {
               {/* Date Filter */}
               <div className="space-y-2">
                 <p className="text-sm font-medium">Date Range</p>
-                <div className="grid grid-cols-2 md:grid-cols-5 gap-2">
+                <div className="grid grid-cols-2 md:grid-cols-6 gap-2">
                   {[
                     { value: 'all', label: 'All Time' },
                     { value: 'today', label: 'Today' },
                     { value: 'yesterday', label: 'Yesterday' },
                     { value: 'last7', label: 'Last 7 Days' },
                     { value: 'last30', label: 'Last 30 Days' },
+                    { value: 'custom', label: 'Custom' },
                   ].map((option) => (
                     <Button
                       key={option.value}
@@ -451,6 +502,30 @@ export default function History() {
                     </Button>
                   ))}
                 </div>
+
+                {/* Custom Date Range Inputs */}
+                {dateFilter === 'custom' && (
+                  <div className="flex flex-col sm:flex-row gap-2 mt-3 p-3 bg-slate-800/30 rounded-md">
+                    <div className="flex-1">
+                      <label className="text-xs text-muted-foreground block mb-1">From</label>
+                      <input
+                        type="date"
+                        value={customDateFrom}
+                        onChange={(e) => setCustomDateFrom(e.target.value)}
+                        className="w-full px-2 py-1 text-xs bg-slate-900 border border-slate-700 rounded text-white"
+                      />
+                    </div>
+                    <div className="flex-1">
+                      <label className="text-xs text-muted-foreground block mb-1">To</label>
+                      <input
+                        type="date"
+                        value={customDateTo}
+                        onChange={(e) => setCustomDateTo(e.target.value)}
+                        className="w-full px-2 py-1 text-xs bg-slate-900 border border-slate-700 rounded text-white"
+                      />
+                    </div>
+                  </div>
+                )}
               </div>
 
               {/* Account Type Filter */}
@@ -548,17 +623,6 @@ export default function History() {
             </CardContent>
           </Card>
 
-          {/* Best Streak */}
-          <Card className="backdrop-blur-xl bg-slate-900/50 border-slate-700/50">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-1 md:pb-2 p-2 md:p-4">
-              <CardTitle className="text-xs md:text-sm font-medium">Best Streak</CardTitle>
-              <TrendingUp className="h-3 w-3 md:h-4 md:w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent className="p-2 md:p-4 pt-0 md:pt-0">
-              <div className="text-lg md:text-2xl font-bold text-yellow-400">{stats.bestStreak}</div>
-              <p className="text-xs text-muted-foreground mt-0.5 md:mt-1 hidden sm:block">Consecutive wins</p>
-            </CardContent>
-          </Card>
         </div>
 
 
@@ -569,6 +633,11 @@ export default function History() {
             <CardDescription>
               {paginatedTrades.length} of {formattedTrades.length} trades {hasActiveFilters ? '(filtered)' : ''} • Page {currentPage} of {totalPages || 1}
             </CardDescription>
+            {hasActiveFilters && (
+              <div className="text-xs text-muted-foreground mt-2 p-2 bg-slate-800/30 rounded inline-block">
+                🔍 {getActiveFiltersLabel()}
+              </div>
+            )}
           </CardHeader>
           <CardContent>
             {/* Desktop Table */}
