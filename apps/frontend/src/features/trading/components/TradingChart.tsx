@@ -64,6 +64,8 @@ export const TradingChart: React.FC<TradingChartProps> = ({
   onTimeframeChange,
   tradeMarkers,
   currentStatus,
+  currentAsset,
+  isRunning,
   trades
 }) => {
   const chartContainerRef = useRef<HTMLDivElement>(null)
