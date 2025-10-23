@@ -31,7 +31,7 @@ const fetchAssets = useCallback(async () => {
       )
       .gte('total_signals', 15)              // ✅ FILTRAR PRIMEIRO (>=15 sinais)
       .order('win_rate', { ascending: false }) // ✅ ORDENAR POR WIN_RATE
-      .limit(20)                              // ✅ PEGAR OS TOP 20
+      .limit(30)                              // ✅ PEGAR OS TOP 30
 
     if (error) {
       throw error
