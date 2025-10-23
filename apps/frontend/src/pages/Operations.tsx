@@ -158,8 +158,10 @@ const Operations = () => {
 
   // 🧪 TEST: Hard-code markers to validate TradeArrows rendering
   useEffect(() => {
+    console.log('[TEST] 🧪 Test effect triggered - botMode:', botMode, 'isRunning:', isRunning);
+
     if (botMode === "manual" && isRunning) {
-      console.log('[TEST] 🧪 Adding hard-coded test markers for TradeArrows validation');
+      console.log('[TEST] ✅ CONDITIONS MET - Creating test markers');
       const testMarkers: TradeMarker[] = [
         {
           time: Math.floor(Date.now() / 1000) - 120, // 2 min atrás
@@ -174,11 +176,15 @@ const Operations = () => {
           result: undefined
         }
       ];
-      console.log('[TEST] 🧪 Test markers to add:', testMarkers);
+      console.log('[TEST] 🧪 Test markers:', testMarkers);
       setTradeMarkers(testMarkers);
-    } else if (!isRunning) {
-      console.log('[TEST] 🧪 Bot not running, clearing test markers');
-      setTradeMarkers([]);
+      console.log('[TEST] ✅ setTradeMarkers called');
+    } else {
+      console.log('[TEST] ❌ Conditions not met - botMode:', botMode, 'isRunning:', isRunning);
+      if (!isRunning) {
+        console.log('[TEST] 🧪 Bot not running, clearing test markers');
+        setTradeMarkers([]);
+      }
     }
   }, [botMode, isRunning]);
 

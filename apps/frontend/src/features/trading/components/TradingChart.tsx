@@ -72,6 +72,9 @@ export const TradingChart: React.FC<TradingChartProps> = ({
   currentPnL,
   trades
 }) => {
+  // ✅ Log when component receives markers
+  console.log('[TradingChart] 📊 Component rendered with tradeMarkers:', tradeMarkers?.length || 0, 'markers');
+
   const chartContainerRef = useRef<HTMLDivElement>(null)
   const chartRef = useRef<IChartApi | null>(null)
   const candleSeriesRef = useRef<ISeriesApi<'Candlestick'> | null>(null)
