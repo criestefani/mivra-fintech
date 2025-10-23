@@ -306,7 +306,7 @@ export const TradingChart: React.FC<TradingChartProps> = ({
         )}
       </div>
 
-      <CardContent className="space-y-1">
+      <CardContent className="space-y-3">
         {/* Controls Title */}
         <Label className="text-sm font-medium text-white">Choose the asset and timeframe</Label>
 
