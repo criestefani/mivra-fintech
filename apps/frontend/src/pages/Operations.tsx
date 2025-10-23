@@ -154,6 +154,9 @@ const Operations = () => {
     ? trades.filter(t => new Date((t as any).data_abertura).getTime() >= sessionStartTime)
     : [];
 
+  // ✅ Calculate session P&L (only from session trades)
+  const sessionPnL = sessionTrades.reduce((sum, trade) => sum + (trade.pnl || 0), 0);
+
   useEffect(() => {
     if (isRunning) {
       const interval = setInterval(() => {
@@ -1684,7 +1687,7 @@ const Operations = () => {
       <SessionSummary
         isOpen={showSessionSummary}
         sessionTrades={sessionTrades as any}
-        totalPnL={metrics.pnl}
+        totalPnL={sessionPnL}
         config={sessionConfig}
         onClose={handleResetSession}
         onTradeClick={(trade) => setSelectedTrade(trade as any)}
