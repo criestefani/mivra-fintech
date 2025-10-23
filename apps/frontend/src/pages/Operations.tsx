@@ -498,6 +498,19 @@ const Operations = () => {
           console.log('[Operations] Adding new PENDING trade:', formattedTrade);
           setTrades(prev => [formattedTrade, ...prev]);
 
+          // ✅ CREATE MARKER FOR MANUAL MODE WHEN POSITION OPENS (INSERT)
+          if (botMode === "manual") {
+            const entryTimeInSeconds = Math.floor(new Date(newTrade.data_abertura).getTime() / 1000);
+            const newMarker = {
+              time: entryTimeInSeconds,
+              direction: newTrade.direction.toUpperCase() as "CALL" | "PUT",
+              result: undefined, // No result yet - position just opened
+              pnl: 0
+            };
+            console.log('[Operations] 🎯 MARKER CREATED ON POSITION OPEN:', newMarker);
+            setTradeMarkers(prev => [...prev, newMarker]);
+          }
+
           // ✅ Initialize PNL data if empty (works for auto mode - that's where it's displayed)
           if (pnlData.length === 1 && pnlData[0].value === 0) {
             setPnlData([{
@@ -544,21 +557,15 @@ const Operations = () => {
             });
           }
 
-          // Add trade marker for manual mode chart
+          // ✅ REMOVE MARKER WHEN POSITION CLOSES (marker disappears when position ends)
           if (botMode === "manual" && updatedTrade.resultado) {
-            console.log('[Operations] 📍 Creating marker for manual mode - botMode:', botMode, 'resultado:', updatedTrade.resultado);
+            console.log('[Operations] 🎯 MARKER REMOVED - POSITION CLOSED:', { resultado: updatedTrade.resultado, pnl: updatedTrade.pnl });
             setTradeMarkers(prev => {
-              const newMarker = {
-                time: Math.floor(new Date(updatedTrade.data_abertura).getTime() / 1000),
-                direction: updatedTrade.direction.toUpperCase() as "CALL" | "PUT",
-                result: updatedTrade.resultado as "WIN" | "LOSS",
-                pnl: updatedTrade.pnl || 0
-              };
-              console.log('[Operations] ✅ Marker added:', newMarker, 'Total markers:', prev.length + 1);
-              return [...prev, newMarker];
+              const entryTimeInSeconds = Math.floor(new Date(updatedTrade.data_abertura).getTime() / 1000);
+
+              // Remove marker when position closes - filter out the marker with matching entry time
+              return prev.filter(m => m.time !== entryTimeInSeconds);
             });
-          } else {
-            console.log('[Operations] ⚠️ Not creating marker - botMode:', botMode, 'resultado:', updatedTrade.resultado);
           }
         }
       )
@@ -603,56 +610,10 @@ const Operations = () => {
     if (!user?.id) return;
 
     onPositionClosed((position) => {
-      console.log('[Operations] 🔔 Position closed detected via Socket.io, auto-refreshing data...');
-      console.log('[Operations] Position:', position);
+      console.log('[Operations] 🔔 Position closed detected via Socket.io');
       console.log('[Operations] Current botMode:', botMode);
 
-      // ✅ CREATE MARKER IMMEDIATELY FOR MANUAL MODE (don't wait for DB)
-      if (botMode === "manual" && position.resultado) {
-        console.log('[Operations] 📍 Creating marker directly from Socket.io callback - resultado:', position.resultado);
-
-        // Refresh trades to get the latest trade with data_abertura
-        loadTodayTrades().then(() => {
-          console.log('[Operations] 🔍 Trades refreshed, finding latest trade for marker...');
-
-          // Get the most recent trade from the state (will be updated by loadTodayTrades)
-          // We'll use a short timeout to ensure state is updated
-          setTimeout(() => {
-            setTrades(currentTrades => {
-              if (currentTrades.length > 0) {
-                const latestTrade = currentTrades[0]; // Most recent first
-
-                if (latestTrade.resultado) {
-                  // Use CURRENT TIME (when position closes = now) so arrow appears on current candle
-                  // Not on historical timestamp of when position opened
-                  const currentTime = Math.floor(Date.now() / 1000);
-
-                  const newMarker = {
-                    time: currentTime,
-                    direction: latestTrade.direction.toUpperCase() as "CALL" | "PUT",
-                    result: latestTrade.resultado as "WIN" | "LOSS",
-                    pnl: latestTrade.pnl || 0
-                  };
-
-                  console.log('[Operations] ✅ Marker created with CURRENT time:', { currentTime, latestTradeTime: Math.floor(new Date(latestTrade.timestamp).getTime() / 1000) });
-                  setTradeMarkers(prev => {
-                    const updated = [...prev, newMarker];
-                    console.log('[Operations] ✅ Trade markers updated - total:', updated.length);
-                    return updated;
-                  });
-                }
-              }
-              return currentTrades;
-            });
-          }, 100); // Small delay for state update
-        });
-      } else if (botMode !== "manual") {
-        console.log('[Operations] ℹ️ Not in manual mode, skipping marker creation');
-      } else {
-        console.log('[Operations] ⚠️ Position has no resultado, skipping marker');
-      }
-
-      // Refresh trades data
+      // Only refresh trades - markers are handled by Supabase Real-time
       loadTodayTrades();
     });
   }, [user?.id, onPositionClosed, botMode]);
