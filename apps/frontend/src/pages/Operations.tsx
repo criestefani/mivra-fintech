@@ -585,16 +585,16 @@ const Operations = () => {
     });
   }, [trades]);
 
-  // ✅ RESET PNL DATA WHEN BOT STARTS (new session)
+  // ✅ RESET PNL DATA BASED ON BOT STATE
   useEffect(() => {
     if (isRunning && sessionStartTime) {
       console.log('🚀 [isRunning Effect] Bot started - resetting PnL data for new session');
       // Initialize to zero for the new session
       setPnlData([{ time: new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }), value: 0 }]);
     } else if (!isRunning && !sessionStartTime) {
-      console.log('🛑 [isRunning Effect] Bot stopped - reloading full day history');
-      // Reload full day history when bot stops
-      loadTodayTrades();
+      console.log('🛑 [isRunning Effect] Bot stopped - clearing PnL graph');
+      // When bot is stopped and no session active, show empty graph (zero)
+      setPnlData([{ time: new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }), value: 0 }]);
     }
   }, [isRunning, sessionStartTime]);
 
