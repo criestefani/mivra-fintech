@@ -239,6 +239,12 @@ const Operations = () => {
         console.log('✅ [Operations] Formatted trades:', formattedTrades.slice(0, 2));
         setTrades(formattedTrades);
 
+        // ✅ Mark the most recent trade as already processed to prevent animation on page load
+        if (formattedTrades.length > 0) {
+          lastProcessedTradeRef.current = formattedTrades[0].id?.toString() || null;
+          console.log('✅ [Operations] Marked initial trade as processed:', lastProcessedTradeRef.current);
+        }
+
         // Calculate cumulative PNL data for chart (oldest to newest)
         let cumulativePnl = 0;
         const pnlDataPoints: PnlDataPoint[] = [...formattedTrades]
