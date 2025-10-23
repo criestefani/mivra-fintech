@@ -150,7 +150,6 @@ const Operations = () => {
 
   // ✅ Store preset config from Market Scanner to reapply after assets load
   const presetConfigRef = useRef<ScannerConfig | null>(null);
-  const [presetConfigApplied, setPresetConfigApplied] = useState(false);
 
   // ✅ Session Timer
   const [sessionTime, setSessionTime] = useState(0);
@@ -377,9 +376,6 @@ const Operations = () => {
 
       // Clear location state
       window.history.replaceState({}, document.title);
-
-      // Mark that preset will be applied (Phase 2 will complete it)
-      setPresetConfigApplied(false);
     }
   }, [location.state, toast]);
 
@@ -387,38 +383,36 @@ const Operations = () => {
   useEffect(() => {
     const presetConfig = presetConfigRef.current;
 
-    // Only apply if we have a preset config AND haven't already applied it
-    if (presetConfig && !presetConfigApplied && botMode === 'manual' && category) {
-      console.log('[Operations] 🔄 Applying preset config after chart load:', presetConfig);
+    // Only reapply if we have a preset config AND bot mode is manual AND category is set
+    // AND we haven't already cleared this config
+    if (presetConfig && botMode === 'manual' && category) {
+      console.log('[Operations] 🔄 Reapplying preset config after chart load:', presetConfig);
 
       const assetKey = presetConfig.assetKey ?? presetConfig.assetName ?? presetConfig.assetId;
       const assetLabel = presetConfig.assetName ?? presetConfig.assetKey ?? presetConfig.assetId;
       const determinedCategory = determineCategoryFromAsset(assetLabel || assetKey);
 
-      // Set values to ensure preset is applied
+      // Only set if values don't match (avoid unnecessary state updates)
       if (determinedCategory && determinedCategory !== category) {
-        console.log('[Operations] 📌 Setting category:', determinedCategory);
+        console.log('[Operations] 📌 Category correction needed:', determinedCategory, 'current:', category);
         setCategory(determinedCategory);
       }
 
       if (assetKey && asset !== assetKey) {
-        console.log('[Operations] 📌 Setting asset:', assetKey);
+        console.log('[Operations] 📌 Asset correction needed:', assetKey, 'current:', asset);
         setAsset(assetKey);
       }
 
       if (presetConfig.timeframe && timeframe !== presetConfig.timeframe.toString()) {
-        console.log('[Operations] 📌 Setting timeframe:', presetConfig.timeframe);
+        console.log('[Operations] 📌 Timeframe correction needed:', presetConfig.timeframe, 'current:', timeframe);
         setTimeframe(presetConfig.timeframe.toString());
       }
 
-      // Mark as applied - prevents re-triggering
-      console.log('[Operations] ✅ Preset config fully applied - marking as complete');
-      setPresetConfigApplied(true);
-
-      // Clear ref now that we've marked it as applied
+      // Clear ref IMMEDIATELY after checking to prevent re-triggering
+      // This is the key fix - clear it right away, not after state updates
       presetConfigRef.current = null;
     }
-  }, [presetConfigApplied, botMode, category]);
+  }, [botMode, category]);
 
   // Auth state management
   useEffect(() => {
