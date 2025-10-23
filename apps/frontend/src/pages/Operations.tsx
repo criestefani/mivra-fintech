@@ -156,6 +156,31 @@ const Operations = () => {
     botModeRef.current = botMode;
   }, [botMode]);
 
+  // 🧪 TEST: Hard-code markers to validate TradeArrows rendering
+  useEffect(() => {
+    if (botMode === "manual" && isRunning) {
+      console.log('[TEST] 🧪 Adding hard-coded test markers for TradeArrows validation');
+      const testMarkers: TradeMarker[] = [
+        {
+          time: Math.floor(Date.now() / 1000) - 120, // 2 min atrás
+          direction: 'CALL',
+          pnl: 25.50,
+          result: undefined
+        },
+        {
+          time: Math.floor(Date.now() / 1000) - 60, // 1 min atrás
+          direction: 'PUT',
+          pnl: -15.00,
+          result: undefined
+        }
+      ];
+      console.log('[TEST] 🧪 Test markers to add:', testMarkers);
+      setTradeMarkers(testMarkers);
+    } else if (!isRunning) {
+      console.log('[TEST] 🧪 Bot not running, clearing test markers');
+      setTradeMarkers([]);
+    }
+  }, [botMode, isRunning]);
 
   // ✅ Session Timer
   const [sessionTime, setSessionTime] = useState(0);
