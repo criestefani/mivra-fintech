@@ -245,10 +245,13 @@ const Operations = () => {
         console.log('✅ [Operations] Formatted trades:', formattedTrades.slice(0, 2));
         setTrades(formattedTrades);
 
-        // ✅ Mark the most recent trade as already processed to prevent animation on page load
-        if (formattedTrades.length > 0) {
+        // ✅ Mark the most recent trade as already processed ONLY on initial page load (no session)
+        // During active sessions, let the trade result effect process new trades normally
+        if (formattedTrades.length > 0 && !sessionStartTime) {
           lastProcessedTradeRef.current = formattedTrades[0].id?.toString() || null;
-          console.log('✅ [Operations] Marked initial trade as processed:', lastProcessedTradeRef.current);
+          console.log('✅ [Operations] Marked initial trade as processed (no session):', lastProcessedTradeRef.current);
+        } else if (sessionStartTime) {
+          console.log('[Operations] Active session - NOT marking trades as processed, letting trade result effect handle them');
         }
 
         // ✅ Only calculate historical PnL if bot is currently running (active session)
