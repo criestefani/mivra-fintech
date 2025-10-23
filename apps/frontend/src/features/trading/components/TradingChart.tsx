@@ -15,6 +15,7 @@ import { CHART_COLORS } from '@/utils/chartColors'
 import { cn } from '@/shared/utils/cn'
 import { getApiUrl } from '@/shared/utils/getApiUrl'
 import { LiveTradeFeed, Trade } from '@/components/trading'
+import { TradeArrows } from './TradeArrows'
 
 const API_URL = getApiUrl()
 
@@ -85,8 +86,10 @@ export const TradingChart: React.FC<TradingChartProps> = ({
   const [assetMenuOpen, setAssetMenuOpen] = useState(false)
   const [selectedCategoryInMenu, setSelectedCategoryInMenu] = useState<string | null>(null)
   const [timeframeMenuOpen, setTimeframeMenuOpen] = useState(false)
+  const [chartContainerRect, setChartContainerRect] = useState<DOMRect | null>(null)
   const assetMenuRef = useRef<HTMLDivElement>(null)
   const timeframeMenuRef = useRef<HTMLDivElement>(null)
+  const chartWrapperRef = useRef<HTMLDivElement>(null)
 
   // Use WebSocket hook for real-time candles
   const {
@@ -194,16 +197,13 @@ export const TradingChart: React.FC<TradingChartProps> = ({
     candleSeriesRef.current.setData(formattedCandles)
   }, [candles])
 
-  // Update trade markers on chart (based on lightweight-charts official docs)
+  // Update trade markers on chart (only real-time markers)
   useEffect(() => {
     if (!candleSeriesRef.current) return
     if (!tradeMarkers || tradeMarkers.length === 0) {
-      console.log('[TradingChart] No markers, clearing chart markers')
       candleSeriesRef.current.setMarkers([])
       return
     }
-
-    console.log(`[TradingChart] 📍 Adding ${tradeMarkers.length} markers to chart`)
 
     try {
       const markers: SeriesMarker<Time>[] = []
@@ -213,21 +213,17 @@ export const TradingChart: React.FC<TradingChartProps> = ({
 
       sortedMarkers.forEach((trade) => {
         // ✅ Ensure time is in seconds (lightweight-charts requirement)
-        // If time is still in milliseconds (> 1000000), divide by 1000
-        const timeInSeconds = trade.time > 1000000
-          ? Math.floor(trade.time / 1000)
-          : trade.time
+        let timeInSeconds: number = typeof trade.time === 'string'
+          ? parseInt(trade.time)
+          : trade.time;
 
-        console.log('[TradingChart] Trade marker:', {
-          time: trade.time,
-          timeInSeconds,
-          direction: trade.direction,
-          result: trade.result,
-        })
+        if (timeInSeconds > 1000000) {
+          timeInSeconds = Math.floor(timeInSeconds / 1000);
+        }
 
         // Entry marker - direction indicator (CALL/PUT)
         markers.push({
-          time: timeInSeconds as Time,
+          time: timeInSeconds as unknown as Time,
           position: trade.direction === 'CALL' ? 'belowBar' : 'aboveBar',
           color: trade.direction === 'CALL' ? CHART_COLORS.POSITIVE : CHART_COLORS.NEGATIVE,
           shape: trade.direction === 'CALL' ? 'arrowUp' : 'arrowDown',
@@ -240,7 +236,7 @@ export const TradingChart: React.FC<TradingChartProps> = ({
         // Result marker - WIN/LOSS indicator (only if result exists)
         if (trade.result) {
           markers.push({
-            time: timeInSeconds as Time,
+            time: timeInSeconds as unknown as Time,
             position: trade.result === 'WIN' ? 'aboveBar' : 'belowBar',
             color: trade.result === 'WIN' ? CHART_COLORS.POSITIVE : CHART_COLORS.NEGATIVE,
             shape: 'circle',
@@ -250,12 +246,29 @@ export const TradingChart: React.FC<TradingChartProps> = ({
         }
       })
 
-      console.log(`[TradingChart] ✅ Setting ${markers.length} total markers (sorted ascending by time)`)
       candleSeriesRef.current.setMarkers(markers)
     } catch (error) {
-      console.error('[TradingChart] ❌ Error setting markers:', error)
+      console.error('[TradingChart] Error setting markers:', error)
     }
   }, [tradeMarkers, candles.length])
+
+  // Track chart container rect for arrow positioning
+  useEffect(() => {
+    if (!chartWrapperRef.current) return
+
+    const updateRect = () => {
+      const rect = chartWrapperRef.current?.getBoundingClientRect()
+      if (rect) {
+        setChartContainerRect(rect)
+      }
+    }
+
+    updateRect()
+    const resizeObserver = new ResizeObserver(updateRect)
+    resizeObserver.observe(chartWrapperRef.current)
+
+    return () => resizeObserver.disconnect()
+  }, [])
 
   // Handle window resize
   useEffect(() => {
@@ -264,6 +277,12 @@ export const TradingChart: React.FC<TradingChartProps> = ({
         chartRef.current.applyOptions({
           width: chartContainerRef.current.clientWidth
         })
+      }
+
+      // Update chart container rect on resize
+      if (chartWrapperRef.current) {
+        const rect = chartWrapperRef.current.getBoundingClientRect()
+        setChartContainerRect(rect)
       }
     }
 
@@ -503,8 +522,16 @@ export const TradingChart: React.FC<TradingChartProps> = ({
             </div>
           )}
 
-          <div className="relative w-full h-[400px] rounded-lg overflow-hidden">
+          <div ref={chartWrapperRef} className="relative w-full h-[400px] rounded-lg overflow-hidden">
             <div ref={chartContainerRef} className="w-full h-full" />
+
+            {/* ✅ Trade Arrows Overlay - Real-time position markers */}
+            <TradeArrows
+              tradeMarkers={tradeMarkers}
+              chart={chartRef.current}
+              candleSeries={candleSeriesRef.current}
+              chartContainerRect={chartContainerRect}
+            />
 
             {/* ✅ PnL Overlay - Top Left */}
             {currentPnL !== undefined && (

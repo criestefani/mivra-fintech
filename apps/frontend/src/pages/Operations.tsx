@@ -150,24 +150,6 @@ const Operations = () => {
   // ✅ Track if initial trade marking has been done (only mark once per asset/manual session)
   const initialLoadDoneRef = useRef(false);
 
-  // ✅ In manual mode, ALWAYS reset initialLoadDoneRef and force marker reload
-  useEffect(() => {
-    if (botMode === 'manual') {
-      // Always reset in manual mode so markers get recreated
-      initialLoadDoneRef.current = false;
-      console.log('[Operations] 🔄 Manual mode active - reset initialLoadDoneRef to allow marker creation');
-    }
-  }, [botMode]);
-
-  // ✅ When asset changes in manual mode, reload trades to show new markers
-  useEffect(() => {
-    if (botMode === 'manual' && asset) {
-      console.log('[Operations] 📍 Asset changed in manual mode:', asset, '- forcing trade reload');
-      initialLoadDoneRef.current = false;
-      setTradeMarkers([]);
-      loadTodayTrades();
-    }
-  }, [asset, botMode]);
 
   // ✅ Session Timer
   const [sessionTime, setSessionTime] = useState(0);
@@ -226,11 +208,8 @@ const Operations = () => {
   // ✅ Load today's trades from Supabase
   const loadTodayTrades = async () => {
     if (!user?.id) {
-      console.warn("Cannot load trades: user not authenticated");
       return;
     }
-
-    console.log('[Operations] 📥 loadTodayTrades() called - botMode:', botMode, 'initialLoadDone:', initialLoadDoneRef.current);
 
     try {
       // Get today's start (midnight)
@@ -238,16 +217,12 @@ const Operations = () => {
       today.setHours(0, 0, 0, 0);
       const todayISO = today.toISOString();
 
-      console.log('[Operations] 🔍 Querying trades from today:', todayISO, 'for user:', user.id);
-
       const { data, error } = await supabase
         .from("trade_history")
         .select("*")
         .eq("user_id", user.id)
         .gte("data_abertura", todayISO) // Only trades from today
         .order("data_abertura", { ascending: false }); // ✅ Most recent first
-
-      console.log('[Operations] 📊 Query result - data length:', data?.length, 'error:', error);
 
       if (error) {
         console.error("Error loading today's trades:", error);
@@ -270,43 +245,12 @@ const Operations = () => {
           ...rawTrade
         }));
 
-        console.log('✅ [Operations] Formatted trades:', formattedTrades.slice(0, 2));
         setTrades(formattedTrades);
 
         // ✅ Mark the most recent trade as already processed ONLY ONCE on initial page load
-        // Never mark again on subsequent calls (polling, real-time updates) to avoid interfering with active sessions
-        console.log('[Operations] 🔍 Checking if should populate markers - initialLoadDone:', initialLoadDoneRef.current, 'trades:', formattedTrades.length);
         if (formattedTrades.length > 0 && !initialLoadDoneRef.current) {
-          console.log('[Operations] ✅ ENTERING marker creation block');
           lastProcessedTradeRef.current = formattedTrades[0].id?.toString() || null;
           initialLoadDoneRef.current = true;
-          console.log('✅ [Operations] Initial trade marked as processed (one-time only):', lastProcessedTradeRef.current);
-
-          // ✅ Also populate tradeMarkers for manual mode chart (for all trades with results)
-          const tradesWithResults = formattedTrades.filter(t => t.result && t.result !== "PENDING");
-          console.log('[Operations] 📍 Trades with results (WIN/LOSS):', tradesWithResults.length, 'out of', formattedTrades.length);
-
-          const markers: TradeMarker[] = tradesWithResults
-            .map(t => {
-              const timeInSeconds = Math.floor(new Date(t.timestamp).getTime() / 1000);
-              console.log('[Operations] 📍 Trade marker created:', { result: t.result, time: timeInSeconds, direction: t.direction });
-              return {
-                time: timeInSeconds,
-                direction: t.direction as "CALL" | "PUT",
-                result: t.result as "WIN" | "LOSS",
-                pnl: t.pnl || 0
-              };
-            });
-
-          if (markers.length > 0) {
-            console.log('✅ [Operations] Setting', markers.length, 'trade markers:', markers);
-            setTradeMarkers(markers);
-            console.log('✅ [Operations] Populated', markers.length, 'trade markers for manual mode chart');
-          } else {
-            console.log('⚠️ [Operations] No trades with results to create markers');
-          }
-        } else if (initialLoadDoneRef.current) {
-          console.log('[Operations] Trades loaded (not marking as processed - already did initial load)');
         }
 
         // ✅ Only calculate historical PnL if bot is currently running (active session)
@@ -461,18 +405,8 @@ const Operations = () => {
   // ✅ Load trades from Supabase (same as History.tsx)
   useEffect(() => {
     if (!user?.id) return;
-
-    console.log('[Operations] 📥 useEffect: Loading trades on component mount or user change');
     loadTodayTrades();
   }, [user?.id]);
-
-  // ✅ In manual mode, force load trades if they're empty
-  useEffect(() => {
-    if (botMode === 'manual' && trades.length === 0 && user?.id) {
-      console.log('[Operations] 📥 Manual mode with no trades - forcing load');
-      loadTodayTrades();
-    }
-  }, [botMode, user?.id]);
 
   // ✅ Sync pending positions on component mount (runs once when page loads)
   useEffect(() => {
