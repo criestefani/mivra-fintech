@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { User } from "@supabase/supabase-js";
@@ -24,13 +24,12 @@ import { Input } from "@/shared/components/ui/input";
 import { Label } from "@/shared/components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/shared/components/ui/dialog";
 import { cn } from "@/shared/utils/cn";
-import { ChevronDown, TrendingUp, Play, Square, Loader2, Settings, HelpCircle } from "lucide-react";
+import { ChevronDown, TrendingUp, Play, Square, Loader2, Settings, HelpCircle, X } from "lucide-react";
 
 // ✅ Gamification Components
 import {
   LiveTradeFeed,
   StreakOverlay,
-  NextTradePreview,
   MetricsGrid,
   QuestTracker,
   SessionSummary,
@@ -104,6 +103,8 @@ const Operations = () => {
   });
   const [showManualAdvanced, setShowManualAdvanced] = useState(false);
   const [showStrategyHelp, setShowStrategyHelp] = useState(false);
+  const [showStrategyMenu, setShowStrategyMenu] = useState(false);
+  const strategyMenuRef = useRef<HTMLDivElement>(null);
   const [editingEntryValue, setEditingEntryValue] = useState(false);
   // ✅ manualStrategy removed - manual mode always uses hybrid strategy
 
@@ -143,6 +144,10 @@ const Operations = () => {
   const [sessionConfig, setSessionConfig] = useState<any>(null);
   const [showSessionSummary, setShowSessionSummary] = useState(false);
   const [selectedTrade, setSelectedTrade] = useState<Trade | null>(null);
+
+  // ✅ Advanced Settings Help Popups
+  const [showHelp, setShowHelp] = useState<'leverage' | 'safetystop' | 'dailygoal' | null>(null);
+  const [showAutoAdvanced, setShowAutoAdvanced] = useState(false);
 
   // ✅ Calculate session trades (trades after START BOT was clicked)
   const sessionTrades = sessionStartTime
@@ -861,11 +866,11 @@ const Operations = () => {
         <DiagonalSection
           direction="top-right"
           gradientFrom="from-primary/40"
-          className="h-32 lg:h-40 relative z-20 -mx-4 lg:-ml-4"
+          className="h-28 md:h-32 lg:h-40 relative z-20 -mx-4 md:-mx-4 lg:-ml-4"
         >
           <div className="relative z-30">
-            <h1 className="text-3xl lg:text-4xl font-bold text-white">Trading Operations</h1>
-            <p className="text-muted-foreground mt-1 text-sm lg:text-base">Auto & Manual Trading Control</p>
+            <h1 className="text-2xl md:text-3xl lg:text-4xl font-bold text-white">Trading Operations</h1>
+            <p className="text-muted-foreground mt-1 text-xs md:text-sm lg:text-base">Auto & Manual Trading Control</p>
           </div>
         </DiagonalSection>
 
@@ -881,20 +886,43 @@ const Operations = () => {
           // AUTO MODE
           <>
             {/* ✅ Strategy Selection Dropdown + Help Icon */}
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2 md:gap-3">
               {/* Strategy Selection Dropdown */}
-              <div className="flex-1">
-                <label className="text-sm font-medium text-white mb-2 block">Strategy</label>
-                <select
-                  value={selectedStrategy}
-                  onChange={(e) => setSelectedStrategy(e.target.value)}
+              <div className="flex-1 relative" ref={strategyMenuRef}>
+                <label className="text-xs md:text-sm font-medium text-white mb-2 block">Strategy</label>
+                <button
+                  onClick={() => setShowStrategyMenu(!showStrategyMenu)}
                   disabled={isRunning}
-                  className="w-full px-4 py-2.5 rounded-lg bg-slate-900/50 border border-slate-700/50 text-white hover:border-slate-600/50 disabled:opacity-50 disabled:cursor-not-allowed transition-all focus:outline-none focus:ring-2 focus:ring-primary/50"
+                  className="w-full px-4 py-2.5 rounded-lg bg-slate-900/50 border border-slate-700/50 text-white hover:border-slate-600/50 disabled:opacity-50 disabled:cursor-not-allowed transition-all focus:outline-none focus:ring-2 focus:ring-primary/50 text-left flex items-center justify-between"
                 >
-                  <option value="aggressive">Aggressive</option>
-                  <option value="balanced">Balanced</option>
-                  <option value="conservative">Conservative</option>
-                </select>
+                  <span className="capitalize">{selectedStrategy}</span>
+                  <ChevronDown className={`w-4 h-4 transition-transform ${showStrategyMenu ? 'rotate-180' : ''}`} />
+                </button>
+
+                {/* Dropdown Menu */}
+                {showStrategyMenu && (
+                  <>
+                    <div className="fixed inset-0 z-40" onClick={() => setShowStrategyMenu(false)} />
+                    <div className="absolute top-full left-0 right-0 mt-1 bg-slate-950/95 border border-slate-700/50 rounded-lg shadow-xl z-50 max-h-96 backdrop-blur-sm overflow-y-auto">
+                      {['aggressive', 'balanced', 'conservative'].map((strategy) => (
+                        <button
+                          key={strategy}
+                          onClick={() => {
+                            setSelectedStrategy(strategy);
+                            setShowStrategyMenu(false);
+                          }}
+                          className={`w-full text-left px-4 py-2.5 transition-all ${
+                            selectedStrategy === strategy
+                              ? 'bg-primary/20 text-primary border-l-2 border-primary'
+                              : 'hover:bg-slate-800/50 text-slate-200'
+                          }`}
+                        >
+                          <span className="capitalize font-medium">{strategy}</span>
+                        </button>
+                      ))}
+                    </div>
+                  </>
+                )}
               </div>
 
               {/* Help Icon Button */}
@@ -902,7 +930,7 @@ const Operations = () => {
                 variant="outline"
                 size="sm"
                 onClick={() => setShowStrategyHelp(true)}
-                className="gap-2 border-slate-700/50 hover:bg-slate-800/50 mt-6"
+                className="gap-2 border-slate-700/50 hover:bg-slate-800/50 mt-6 md:mt-6"
                 title="Strategy Information"
               >
                 <HelpCircle className="w-4 h-4" />
@@ -911,33 +939,45 @@ const Operations = () => {
 
             {/* ✅ Strategy Help Dialog */}
             <Dialog open={showStrategyHelp} onOpenChange={setShowStrategyHelp}>
-              <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+              <DialogContent className="w-full max-w-sm sm:max-w-md md:max-w-xl lg:max-w-2xl max-h-[90vh] overflow-y-auto mx-4 md:mx-0">
                 <DialogHeader>
-                  <DialogTitle>Trading Strategies</DialogTitle>
-                  <DialogDescription>Learn about each trading strategy</DialogDescription>
+                  <DialogTitle className="text-xl md:text-2xl">Trading Strategies</DialogTitle>
+                  <DialogDescription className="text-xs md:text-sm">Learn about each trading strategy</DialogDescription>
                 </DialogHeader>
 
                 <div className="space-y-6 py-4">
                   {/* Aggressive Strategy */}
-                  <div className="space-y-2 p-4 rounded-lg bg-slate-900/50 border border-slate-700/50">
+                  <div className="space-y-2">
                     <h3 className="font-semibold text-white flex items-center gap-2">
                       <span className="text-xl">🚀</span>
                       Aggressive Strategy
                     </h3>
                     <p className="text-sm text-slate-300">
-                      This strategy prioritizes high-frequency trading with shorter timeframes and higher risk. The bot enters positions more frequently, seeking maximum profit opportunities. Best for experienced traders comfortable with rapid market movements and higher volatility.
+                      <strong>Always operates</strong> - never waits for perfect signals. Combines 4 specialized advisors with weighted voting:
                     </p>
+                    <ul className="text-sm text-slate-400 space-y-1 ml-4">
+                      <li>• <strong>Pattern Counter (40%)</strong> - Detects reversals from last 3 candles</li>
+                      <li>• <strong>Moving Average (30%)</strong> - Mean reversion strategy using SMA20</li>
+                      <li>• <strong>Gap Hunter (20%)</strong> - Identifies and trades gap fills</li>
+                      <li>• <strong>Level Analyst (10%)</strong> - Analyzes support/resistance levels</li>
+                    </ul>
+                    <p className="text-sm text-slate-300 mt-2">Best for traders who want high-frequency trading with consistent entries.</p>
                   </div>
 
                   {/* Balanced Strategy */}
-                  <div className="space-y-2 p-4 rounded-lg bg-slate-900/50 border border-slate-700/50">
+                  <div className="space-y-2">
                     <h3 className="font-semibold text-white flex items-center gap-2">
                       <span className="text-xl">⚖️</span>
                       Balanced Strategy
                     </h3>
                     <p className="text-sm text-slate-300">
-                      This strategy provides a middle ground between risk and reward. The bot trades at moderate frequency with medium timeframes, seeking consistent profits while managing risk. Recommended for most traders looking for steady returns without extreme volatility.
+                      Uses <strong>RSI (Relative Strength Index)</strong> with a 50% confirmation threshold. Enters when:
                     </p>
+                    <ul className="text-sm text-slate-400 space-y-1 ml-4">
+                      <li>• <strong>CALL</strong> when RSI &lt; 35 (oversold condition)</li>
+                      <li>• <strong>PUT</strong> when RSI &gt; 65 (overbought condition)</li>
+                    </ul>
+                    <p className="text-sm text-slate-300 mt-2">More selective than Aggressive. Waits for moderate confirmation signals, providing balanced risk/reward.</p>
                   </div>
 
                   {/* Conservative Strategy */}
@@ -947,15 +987,20 @@ const Operations = () => {
                       Conservative Strategy
                     </h3>
                     <p className="text-sm text-slate-300">
-                      This strategy emphasizes capital preservation with low-frequency trading and longer timeframes. The bot waits for high-confidence trading signals, resulting in fewer but potentially more reliable trades. Ideal for risk-averse traders.
+                      Uses <strong>3 indicators combined</strong> with 60% confirmation threshold. Requires strong confirmation from ALL:
                     </p>
+                    <ul className="text-sm text-slate-400 space-y-1 ml-4">
+                      <li>• <strong>RSI</strong> - RSI &lt; 40 (CALL) or RSI &gt; 60 (PUT)</li>
+                      <li>• <strong>MACD</strong> - Must align with direction (positive for CALL, negative for PUT)</li>
+                      <li>• <strong>Bollinger Bands</strong> - Price near upper/lower bands for confirmation</li>
+                    </ul>
 
                     {/* Warning Box */}
                     <div className="mt-3 p-3 rounded-lg bg-amber-900/20 border border-amber-700/50 flex gap-3">
                       <span className="text-xl flex-shrink-0">⚠️</span>
                       <div className="text-sm text-amber-300/90">
-                        <p className="font-semibold mb-1">Important Notice:</p>
-                        <p>The bot may remain idle for several minutes while searching for optimal trading signals. This is normal behavior and ensures high-quality trades.</p>
+                        <p className="font-semibold mb-1">Note:</p>
+                        <p>The bot may be idle for extended periods. This is normal - it's waiting for strong multi-indicator confirmation to ensure high-probability trades only.</p>
                       </div>
                     </div>
                   </div>
@@ -971,9 +1016,9 @@ const Operations = () => {
             </Dialog>
 
             {/* ✅ Entry Value with Slider - Compact Design */}
-            <div className="space-y-2 p-4 rounded-lg bg-slate-900/50 border border-slate-700/50">
+            <div className="space-y-2 px-3 md:px-4 py-2 rounded-lg bg-slate-900/20">
               <div className="flex items-center justify-between">
-                <label className="text-sm font-medium text-white">Entry Value</label>
+                <label className="text-xs md:text-sm font-medium text-white">Entry Value</label>
                 {editingEntryValue ? (
                   <input
                     autoFocus
@@ -1031,16 +1076,16 @@ const Operations = () => {
             />
 
             {/* ✅ Start/Stop Bot Button + Advanced Settings Icon */}
-            <div className="flex items-center justify-center gap-2">
+            <div className="flex items-center justify-center gap-1 md:gap-2">
               {/* Advanced Settings Icon Button */}
               <Button
                 variant="outline"
-                size="lg"
-                onClick={() => setShowManualAdvanced(true)}
-                className="gap-2 border-slate-700/50 hover:bg-slate-800/50 px-3 flex-shrink-0"
+                size="sm"
+                onClick={() => setShowAutoAdvanced(true)}
+                className="gap-2 bg-slate-800/60 border-slate-600 hover:bg-slate-700 hover:border-slate-500 text-slate-200 hover:text-slate-100 px-2 md:px-3 flex-shrink-0 transition-all shadow-md"
                 title="Advanced Settings"
               >
-                <Settings className="w-5 h-5" />
+                <Settings className="w-4 md:w-5 h-4 md:h-5" />
               </Button>
 
               {/* Start/Stop Bot Button */}
@@ -1048,150 +1093,232 @@ const Operations = () => {
                 <Button
                   onClick={handleStopBot}
                   disabled={botLoading}
-                  size="lg"
-                  className="gap-2 bg-negative hover:bg-negative/90 text-white shadow-lg shadow-negative/30 flex-1"
+                  size="sm"
+                  className="gap-1 md:gap-2 bg-negative hover:bg-negative/90 text-white shadow-lg shadow-negative/30 flex-1 text-xs md:text-sm px-2 md:px-4"
                 >
                   {botLoading ? (
-                    <Loader2 className="w-5 h-5 animate-spin" />
+                    <Loader2 className="w-4 md:w-5 h-4 md:h-5 animate-spin flex-shrink-0" />
                   ) : (
-                    <Square className="w-5 h-5" />
+                    <Square className="w-4 md:w-5 h-4 md:h-5 flex-shrink-0" />
                   )}
-                  Stop Bot
+                  <span className="hidden md:inline">Stop Bot</span>
+                  <span className="md:hidden">Stop</span>
                 </Button>
               ) : (
                 <Button
                   onClick={handleStartBot}
                   disabled={!isConnected || botLoading}
-                  size="lg"
-                  className="gap-2 bg-positive text-white hover:bg-positive/90 shadow-lg shadow-positive/30 flex-1"
+                  size="sm"
+                  className="gap-1 md:gap-2 bg-positive text-white hover:bg-positive/90 shadow-lg shadow-positive/30 flex-1 text-xs md:text-sm px-2 md:px-4"
                 >
                   {botLoading ? (
-                    <Loader2 className="w-5 h-5 animate-spin" />
+                    <Loader2 className="w-4 md:w-5 h-4 md:h-5 animate-spin flex-shrink-0" />
                   ) : (
-                    <Play className="w-5 h-5" />
+                    <Play className="w-4 md:w-5 h-4 md:h-5 flex-shrink-0" />
                   )}
-                  Start Bot
+                  <span className="hidden md:inline">Start Bot</span>
+                  <span className="md:hidden">Start</span>
                 </Button>
               )}
             </div>
 
-            {/* ✅ Advanced Settings Dialog */}
-            <Dialog open={showManualAdvanced} onOpenChange={setShowManualAdvanced}>
-              <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-                <DialogHeader>
-                  <DialogTitle>Advanced Options</DialogTitle>
-                  <DialogDescription>Optional risk management settings for auto trading</DialogDescription>
-                </DialogHeader>
-
-                <div className="space-y-6 py-4">
-                  {/* Leverage (Martingale) */}
-                  <div className="space-y-3">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <Label className="text-base font-semibold">Leverage (Martingale)</Label>
-                        <p className="text-xs text-muted-foreground mt-1">
-                          Multiply entry after loss
-                        </p>
+            {/* ✅ Auto Mode Advanced Settings Modal */}
+            {showAutoAdvanced && (
+              <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-3 md:p-4">
+                <div className="w-full max-w-sm sm:max-w-md md:max-w-lg lg:max-w-2xl max-h-[90vh] overflow-hidden flex flex-col border border-slate-700/50 rounded-lg bg-slate-900">
+                  {/* Header */}
+                  <div className="px-4 md:px-6 py-3 md:py-4 border-b border-slate-700/30">
+                    <div className="flex items-center justify-between gap-2">
+                      <div className="min-w-0">
+                        <h2 className="text-lg md:text-2xl font-bold text-slate-100 truncate">Advanced Settings</h2>
+                        <p className="text-xs md:text-sm text-slate-400 mt-1">Optional risk management options</p>
                       </div>
-                      <Button
-                        variant={leverageEnabled ? "default" : "outline"}
-                        size="sm"
-                        onClick={() => setLeverageEnabled((prev) => !prev)}
+                      <button
+                        onClick={() => setShowAutoAdvanced(false)}
+                        className="p-2 hover:bg-slate-700/30 rounded-lg transition-colors flex-shrink-0"
                       >
-                        {leverageEnabled ? "ON" : "OFF"}
-                      </Button>
+                        <X className="w-4 md:w-5 h-4 md:h-5 text-slate-400" />
+                      </button>
                     </div>
-                    {leverageEnabled && (
-                      <Input
-                        type="number"
-                        min="1.5"
-                        max="5"
-                        step="0.5"
-                        value={leverage}
-                        onChange={(e) => setLeverage(Number(e.target.value))}
-                        className="bg-card"
-                      />
-                    )}
                   </div>
 
-                  {/* Safety Stop */}
-                  <div className="space-y-3">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <Label className="text-base font-semibold">Safety Stop</Label>
-                        <p className="text-xs text-muted-foreground mt-1">
-                          Stop after consecutive losses
-                        </p>
+                  {/* Content */}
+                  <div className="flex-1 overflow-y-auto px-3 md:px-6 py-4 md:py-6 space-y-4 md:space-y-6">
+                    {/* Leverage */}
+                    <div className="space-y-3 p-3 md:p-4 bg-slate-900/30 rounded-lg border border-slate-700/30">
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2">
+                            <Label className="text-sm md:text-base font-semibold text-slate-100">Leverage</Label>
+                            <button
+                              onClick={() => setShowHelp(showHelp === 'leverage' ? null : 'leverage')}
+                              className="text-slate-400 hover:text-primary transition-colors"
+                            >
+                              <HelpCircle className="w-4 h-4" />
+                            </button>
+                          </div>
+                          <p className="text-xs md:text-sm text-slate-400 mt-2">
+                            Multiply your entry value after each loss to recover losses faster
+                          </p>
+                        </div>
+                        <Button
+                          variant={leverageEnabled ? "default" : "outline"}
+                          size="sm"
+                          onClick={() => setLeverageEnabled((prev) => !prev)}
+                          className="flex-shrink-0"
+                        >
+                          {leverageEnabled ? "ON" : "OFF"}
+                        </Button>
                       </div>
-                      <Button
-                        variant={safetyStopEnabled ? "default" : "outline"}
-                        size="sm"
-                        onClick={() => setSafetyStopEnabled((prev) => !prev)}
-                      >
-                        {safetyStopEnabled ? "ON" : "OFF"}
-                      </Button>
+                      {showHelp === 'leverage' && (
+                        <div className="mt-3 p-3 bg-slate-950/50 rounded border border-slate-700/50 text-xs text-slate-300">
+                          <p className="font-semibold text-primary mb-2">How Leverage Works:</p>
+                          <ul className="space-y-1 list-disc list-inside">
+                            <li>Each loss multiplies your next entry by the leverage factor</li>
+                            <li>Win resets the counter and multiplier back to 1x</li>
+                            <li>Example: 2x leverage on $20 = $40 after first loss</li>
+                            <li>Increases risk - use cautiously</li>
+                          </ul>
+                        </div>
+                      )}
+                      {leverageEnabled && (
+                        <Input
+                          type="number"
+                          min="1.5"
+                          max="5"
+                          step="0.5"
+                          value={leverage}
+                          onChange={(e) => setLeverage(Number(e.target.value))}
+                          className="bg-slate-950/50 border-slate-700/50"
+                          placeholder="Multiplier (1.5 - 5)"
+                        />
+                      )}
                     </div>
-                    {safetyStopEnabled && (
-                      <Input
-                        type="number"
-                        min="1"
-                        max="10"
-                        step="1"
-                        value={safetyStop}
-                        onChange={(e) => setSafetyStop(Number(e.target.value))}
-                        className="bg-card"
-                      />
-                    )}
+
+                    {/* Safety Stop */}
+                    <div className="space-y-3 p-3 md:p-4 bg-slate-900/30 rounded-lg border border-slate-700/30">
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2">
+                            <Label className="text-sm md:text-base font-semibold text-slate-100">Safety Stop</Label>
+                            <button
+                              onClick={() => setShowHelp(showHelp === 'safetystop' ? null : 'safetystop')}
+                              className="text-slate-400 hover:text-primary transition-colors"
+                            >
+                              <HelpCircle className="w-4 h-4" />
+                            </button>
+                          </div>
+                          <p className="text-xs md:text-sm text-slate-400 mt-2">
+                            Automatically stop the bot after reaching consecutive losses
+                          </p>
+                        </div>
+                        <Button
+                          variant={safetyStopEnabled ? "default" : "outline"}
+                          size="sm"
+                          onClick={() => setSafetyStopEnabled((prev) => !prev)}
+                          className="flex-shrink-0"
+                        >
+                          {safetyStopEnabled ? "ON" : "OFF"}
+                        </Button>
+                      </div>
+                      {showHelp === 'safetystop' && (
+                        <div className="mt-3 p-3 bg-slate-950/50 rounded border border-slate-700/50 text-xs text-slate-300">
+                          <p className="font-semibold text-primary mb-2">How Safety Stop Works:</p>
+                          <ul className="space-y-1 list-disc list-inside">
+                            <li>Counts consecutive losses in a row</li>
+                            <li>A win resets the counter to 0</li>
+                            <li>Stops trading when limit is reached</li>
+                            <li>Example: Set to 5 = stops after 5 consecutive losses</li>
+                          </ul>
+                        </div>
+                      )}
+                      {safetyStopEnabled && (
+                        <Input
+                          type="number"
+                          min="1"
+                          max="10"
+                          step="1"
+                          value={safetyStop}
+                          onChange={(e) => setSafetyStop(Number(e.target.value))}
+                          className="bg-slate-950/50 border-slate-700/50"
+                          placeholder="Number of consecutive losses"
+                        />
+                      )}
+                    </div>
+
+                    {/* Daily Goal */}
+                    <div className="space-y-3 p-3 md:p-4 bg-slate-900/30 rounded-lg border border-slate-700/30">
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2">
+                            <Label className="text-sm md:text-base font-semibold text-slate-100">Daily Goal</Label>
+                            <button
+                              onClick={() => setShowHelp(showHelp === 'dailygoal' ? null : 'dailygoal')}
+                              className="text-slate-400 hover:text-primary transition-colors"
+                            >
+                              <HelpCircle className="w-4 h-4" />
+                            </button>
+                          </div>
+                          <p className="text-xs md:text-sm text-slate-400 mt-2">
+                            Stop trading once you reach your target profit for the day
+                          </p>
+                        </div>
+                        <Button
+                          variant={dailyGoalEnabled ? "default" : "outline"}
+                          size="sm"
+                          onClick={() => setDailyGoalEnabled((prev) => !prev)}
+                          className="flex-shrink-0"
+                        >
+                          {dailyGoalEnabled ? "ON" : "OFF"}
+                        </Button>
+                      </div>
+                      {showHelp === 'dailygoal' && (
+                        <div className="mt-3 p-3 bg-slate-950/50 rounded border border-slate-700/50 text-xs text-slate-300">
+                          <p className="font-semibold text-primary mb-2">How Daily Goal Works:</p>
+                          <ul className="space-y-1 list-disc list-inside">
+                            <li>Tracks cumulative P&L during the session</li>
+                            <li>Bot stops when your profit reaches the goal</li>
+                            <li>Example: Set to R$ 100 = stops after earning R$ 100</li>
+                            <li>Helps you lock in profits and manage risk</li>
+                          </ul>
+                        </div>
+                      )}
+                      {dailyGoalEnabled && (
+                        <Input
+                          type="number"
+                          min="1"
+                          max="10000"
+                          step="10"
+                          value={dailyGoal}
+                          onChange={(e) => setDailyGoal(Number(e.target.value))}
+                          className="bg-slate-950/50 border-slate-700/50"
+                          placeholder="Target profit amount"
+                        />
+                      )}
+                    </div>
                   </div>
 
-                  {/* Daily Goal */}
-                  <div className="space-y-3">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <Label className="text-base font-semibold">Daily Goal</Label>
-                        <p className="text-xs text-muted-foreground mt-1">
-                          Target profit for the day
-                        </p>
-                      </div>
-                      <Button
-                        variant={dailyGoalEnabled ? "default" : "outline"}
-                        size="sm"
-                        onClick={() => setDailyGoalEnabled((prev) => !prev)}
-                      >
-                        {dailyGoalEnabled ? "ON" : "OFF"}
-                      </Button>
-                    </div>
-                    {dailyGoalEnabled && (
-                      <Input
-                        type="number"
-                        min="1"
-                        max="10000"
-                        step="10"
-                        value={dailyGoal}
-                        onChange={(e) => setDailyGoal(Number(e.target.value))}
-                        className="bg-card"
-                      />
-                    )}
+                  {/* Footer */}
+                  <div className="px-4 md:px-6 py-3 md:py-4 border-t border-slate-700/30 bg-slate-900/20">
+                    <Button
+                      onClick={() => setShowAutoAdvanced(false)}
+                      className="w-full bg-primary hover:bg-primary/90 text-white font-semibold text-sm md:text-base"
+                    >
+                      Apply Settings
+                    </Button>
                   </div>
                 </div>
-
-                <Button
-                  onClick={() => setShowManualAdvanced(false)}
-                  className="w-full mt-4 bg-primary hover:bg-primary/90"
-                >
-                  Close
-                </Button>
-              </DialogContent>
-            </Dialog>
+              </div>
+            )}
 
           </>
         ) : (
           // MANUAL MODE
           <>
             {/* ✅ Entry Value with Slider - Compact Design */}
-            <div className="space-y-2 p-4 rounded-lg bg-slate-900/50 border border-slate-700/50">
+            <div className="space-y-2 px-3 md:px-4 py-2 rounded-lg bg-slate-900/20">
               <div className="flex items-center justify-between">
-                <label className="text-sm font-medium text-white">Entry Value</label>
+                <label className="text-xs md:text-sm font-medium text-white">Entry Value</label>
                 {editingEntryValue ? (
                   <input
                     autoFocus
@@ -1249,20 +1376,21 @@ const Operations = () => {
               currentStatus={currentStatus}
               currentAsset={asset}
               isRunning={isRunning}
+              currentPnL={metrics.pnl}
               trades={trades.slice(0, 8) as any}
             />
 
             {/* ✅ Start/Stop Bot Button + Advanced Settings Icon */}
-            <div className="flex items-center justify-center gap-2">
+            <div className="flex items-center justify-center gap-1 md:gap-2">
               {/* Advanced Settings Icon Button */}
               <Button
                 variant="outline"
-                size="lg"
+                size="sm"
                 onClick={() => setShowManualAdvanced(true)}
-                className="gap-2 border-slate-700/50 hover:bg-slate-800/50 px-3 flex-shrink-0"
+                className="gap-2 bg-slate-800/60 border-slate-600 hover:bg-slate-700 hover:border-slate-500 text-slate-200 hover:text-slate-100 px-2 md:px-3 flex-shrink-0 transition-all shadow-md"
                 title="Advanced Settings"
               >
-                <Settings className="w-5 h-5" />
+                <Settings className="w-4 md:w-5 h-4 md:h-5" />
               </Button>
 
               {/* Start/Stop Bot Button */}
@@ -1270,149 +1398,222 @@ const Operations = () => {
                 <Button
                   onClick={handleStopBot}
                   disabled={botLoading}
-                  size="lg"
-                  className="gap-2 bg-negative hover:bg-negative/90 text-white shadow-lg shadow-negative/30 flex-1"
+                  size="sm"
+                  className="gap-1 md:gap-2 bg-negative hover:bg-negative/90 text-white shadow-lg shadow-negative/30 flex-1 text-xs md:text-sm px-2 md:px-4"
                 >
                   {botLoading ? (
-                    <Loader2 className="w-5 h-5 animate-spin" />
+                    <Loader2 className="w-4 md:w-5 h-4 md:h-5 animate-spin flex-shrink-0" />
                   ) : (
-                    <Square className="w-5 h-5" />
+                    <Square className="w-4 md:w-5 h-4 md:h-5 flex-shrink-0" />
                   )}
-                  Stop Bot
+                  <span className="hidden md:inline">Stop Bot</span>
+                  <span className="md:hidden">Stop</span>
                 </Button>
               ) : (
                 <Button
                   onClick={handleStartBot}
                   disabled={!isConnected || botLoading}
-                  size="lg"
-                  className="gap-2 bg-positive text-white hover:bg-positive/90 shadow-lg shadow-positive/30 flex-1"
+                  size="sm"
+                  className="gap-1 md:gap-2 bg-positive text-white hover:bg-positive/90 shadow-lg shadow-positive/30 flex-1 text-xs md:text-sm px-2 md:px-4"
                 >
                   {botLoading ? (
-                    <Loader2 className="w-5 h-5 animate-spin" />
+                    <Loader2 className="w-4 md:w-5 h-4 md:h-5 animate-spin flex-shrink-0" />
                   ) : (
-                    <Play className="w-5 h-5" />
+                    <Play className="w-4 md:w-5 h-4 md:h-5 flex-shrink-0" />
                   )}
-                  Start Bot
+                  <span className="hidden md:inline">Start Bot</span>
+                  <span className="md:hidden">Start</span>
                 </Button>
               )}
             </div>
 
-            {/* ✅ Advanced Settings Dialog */}
-            <Dialog open={showManualAdvanced} onOpenChange={setShowManualAdvanced}>
-              <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-                <DialogHeader>
-                  <DialogTitle>Advanced Options</DialogTitle>
-                  <DialogDescription>Optional risk management settings for manual trading</DialogDescription>
-                </DialogHeader>
-
-                <div className="space-y-6 py-4">
-                  {/* Leverage (Martingale) */}
-                  <div className="space-y-3">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <Label className="text-base font-semibold">Leverage (Martingale)</Label>
-                        <p className="text-xs text-muted-foreground mt-1">
-                          Multiply entry after loss
-                        </p>
+            {/* ✅ Manual Mode Advanced Settings Modal */}
+            {showManualAdvanced && (
+              <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-3 md:p-4">
+                <div className="w-full max-w-sm sm:max-w-md md:max-w-lg lg:max-w-2xl max-h-[90vh] overflow-hidden flex flex-col border border-slate-700/50 rounded-lg bg-slate-900">
+                  {/* Header */}
+                  <div className="px-4 md:px-6 py-3 md:py-4 border-b border-slate-700/30">
+                    <div className="flex items-center justify-between gap-2">
+                      <div className="min-w-0">
+                        <h2 className="text-lg md:text-2xl font-bold text-slate-100 truncate">Advanced Settings</h2>
+                        <p className="text-xs md:text-sm text-slate-400 mt-1">Optional risk management options</p>
                       </div>
-                      <Button
-                        variant={leverageEnabled ? "default" : "outline"}
-                        size="sm"
-                        onClick={() => setLeverageEnabled((prev) => !prev)}
+                      <button
+                        onClick={() => setShowManualAdvanced(false)}
+                        className="p-2 hover:bg-slate-700/30 rounded-lg transition-colors flex-shrink-0"
                       >
-                        {leverageEnabled ? "ON" : "OFF"}
-                      </Button>
+                        <X className="w-4 md:w-5 h-4 md:h-5 text-slate-400" />
+                      </button>
                     </div>
-                    {leverageEnabled && (
-                      <Input
-                        type="number"
-                        min="1.5"
-                        max="5"
-                        step="0.5"
-                        value={leverage}
-                        onChange={(e) => setLeverage(Number(e.target.value))}
-                        className="bg-card"
-                      />
-                    )}
                   </div>
 
-                  {/* Safety Stop */}
-                  <div className="space-y-3">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <Label className="text-base font-semibold">Safety Stop</Label>
-                        <p className="text-xs text-muted-foreground mt-1">
-                          Stop after consecutive losses
-                        </p>
+                  {/* Content */}
+                  <div className="flex-1 overflow-y-auto px-3 md:px-6 py-4 md:py-6 space-y-4 md:space-y-6">
+                    {/* Leverage */}
+                    <div className="space-y-3 p-3 md:p-4 bg-slate-900/30 rounded-lg border border-slate-700/30">
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2">
+                            <Label className="text-sm md:text-base font-semibold text-slate-100">Leverage</Label>
+                            <button
+                              onClick={() => setShowHelp(showHelp === 'leverage' ? null : 'leverage')}
+                              className="text-slate-400 hover:text-primary transition-colors"
+                            >
+                              <HelpCircle className="w-4 h-4" />
+                            </button>
+                          </div>
+                          <p className="text-xs md:text-sm text-slate-400 mt-2">
+                            Multiply your entry value after each loss to recover losses faster
+                          </p>
+                        </div>
+                        <Button
+                          variant={leverageEnabled ? "default" : "outline"}
+                          size="sm"
+                          onClick={() => setLeverageEnabled((prev) => !prev)}
+                          className="flex-shrink-0"
+                        >
+                          {leverageEnabled ? "ON" : "OFF"}
+                        </Button>
                       </div>
-                      <Button
-                        variant={safetyStopEnabled ? "default" : "outline"}
-                        size="sm"
-                        onClick={() => setSafetyStopEnabled((prev) => !prev)}
-                      >
-                        {safetyStopEnabled ? "ON" : "OFF"}
-                      </Button>
+                      {showHelp === 'leverage' && (
+                        <div className="mt-3 p-3 bg-slate-950/50 rounded border border-slate-700/50 text-xs text-slate-300">
+                          <p className="font-semibold text-primary mb-2">How Leverage Works:</p>
+                          <ul className="space-y-1 list-disc list-inside">
+                            <li>Each loss multiplies your next entry by the leverage factor</li>
+                            <li>Win resets the counter and multiplier back to 1x</li>
+                            <li>Example: 2x leverage on $20 = $40 after first loss</li>
+                            <li>Increases risk - use cautiously</li>
+                          </ul>
+                        </div>
+                      )}
+                      {leverageEnabled && (
+                        <Input
+                          type="number"
+                          min="1.5"
+                          max="5"
+                          step="0.5"
+                          value={leverage}
+                          onChange={(e) => setLeverage(Number(e.target.value))}
+                          className="bg-slate-950/50 border-slate-700/50"
+                          placeholder="Multiplier (1.5 - 5)"
+                        />
+                      )}
                     </div>
-                    {safetyStopEnabled && (
-                      <Input
-                        type="number"
-                        min="1"
-                        max="10"
-                        step="1"
-                        value={safetyStop}
-                        onChange={(e) => setSafetyStop(Number(e.target.value))}
-                        className="bg-card"
-                      />
-                    )}
+
+                    {/* Safety Stop */}
+                    <div className="space-y-3 p-3 md:p-4 bg-slate-900/30 rounded-lg border border-slate-700/30">
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2">
+                            <Label className="text-sm md:text-base font-semibold text-slate-100">Safety Stop</Label>
+                            <button
+                              onClick={() => setShowHelp(showHelp === 'safetystop' ? null : 'safetystop')}
+                              className="text-slate-400 hover:text-primary transition-colors"
+                            >
+                              <HelpCircle className="w-4 h-4" />
+                            </button>
+                          </div>
+                          <p className="text-xs md:text-sm text-slate-400 mt-2">
+                            Automatically stop the bot after reaching consecutive losses
+                          </p>
+                        </div>
+                        <Button
+                          variant={safetyStopEnabled ? "default" : "outline"}
+                          size="sm"
+                          onClick={() => setSafetyStopEnabled((prev) => !prev)}
+                          className="flex-shrink-0"
+                        >
+                          {safetyStopEnabled ? "ON" : "OFF"}
+                        </Button>
+                      </div>
+                      {showHelp === 'safetystop' && (
+                        <div className="mt-3 p-3 bg-slate-950/50 rounded border border-slate-700/50 text-xs text-slate-300">
+                          <p className="font-semibold text-primary mb-2">How Safety Stop Works:</p>
+                          <ul className="space-y-1 list-disc list-inside">
+                            <li>Counts consecutive losses in a row</li>
+                            <li>A win resets the counter to 0</li>
+                            <li>Stops trading when limit is reached</li>
+                            <li>Example: Set to 5 = stops after 5 consecutive losses</li>
+                          </ul>
+                        </div>
+                      )}
+                      {safetyStopEnabled && (
+                        <Input
+                          type="number"
+                          min="1"
+                          max="10"
+                          step="1"
+                          value={safetyStop}
+                          onChange={(e) => setSafetyStop(Number(e.target.value))}
+                          className="bg-slate-950/50 border-slate-700/50"
+                          placeholder="Number of consecutive losses"
+                        />
+                      )}
+                    </div>
+
+                    {/* Daily Goal */}
+                    <div className="space-y-3 p-3 md:p-4 bg-slate-900/30 rounded-lg border border-slate-700/30">
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2">
+                            <Label className="text-sm md:text-base font-semibold text-slate-100">Daily Goal</Label>
+                            <button
+                              onClick={() => setShowHelp(showHelp === 'dailygoal' ? null : 'dailygoal')}
+                              className="text-slate-400 hover:text-primary transition-colors"
+                            >
+                              <HelpCircle className="w-4 h-4" />
+                            </button>
+                          </div>
+                          <p className="text-xs md:text-sm text-slate-400 mt-2">
+                            Stop trading once you reach your target profit for the day
+                          </p>
+                        </div>
+                        <Button
+                          variant={dailyGoalEnabled ? "default" : "outline"}
+                          size="sm"
+                          onClick={() => setDailyGoalEnabled((prev) => !prev)}
+                          className="flex-shrink-0"
+                        >
+                          {dailyGoalEnabled ? "ON" : "OFF"}
+                        </Button>
+                      </div>
+                      {showHelp === 'dailygoal' && (
+                        <div className="mt-3 p-3 bg-slate-950/50 rounded border border-slate-700/50 text-xs text-slate-300">
+                          <p className="font-semibold text-primary mb-2">How Daily Goal Works:</p>
+                          <ul className="space-y-1 list-disc list-inside">
+                            <li>Tracks cumulative P&L during the session</li>
+                            <li>Bot stops when your profit reaches the goal</li>
+                            <li>Example: Set to R$ 100 = stops after earning R$ 100</li>
+                            <li>Helps you lock in profits and manage risk</li>
+                          </ul>
+                        </div>
+                      )}
+                      {dailyGoalEnabled && (
+                        <Input
+                          type="number"
+                          min="1"
+                          max="10000"
+                          step="10"
+                          value={dailyGoal}
+                          onChange={(e) => setDailyGoal(Number(e.target.value))}
+                          className="bg-slate-950/50 border-slate-700/50"
+                          placeholder="Target profit amount"
+                        />
+                      )}
+                    </div>
                   </div>
 
-                  {/* Daily Goal */}
-                  <div className="space-y-3">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <Label className="text-base font-semibold">Daily Goal</Label>
-                        <p className="text-xs text-muted-foreground mt-1">
-                          Target profit for the day
-                        </p>
-                      </div>
-                      <Button
-                        variant={dailyGoalEnabled ? "default" : "outline"}
-                        size="sm"
-                        onClick={() => setDailyGoalEnabled((prev) => !prev)}
-                      >
-                        {dailyGoalEnabled ? "ON" : "OFF"}
-                      </Button>
-                    </div>
-                    {dailyGoalEnabled && (
-                      <Input
-                        type="number"
-                        min="1"
-                        max="10000"
-                        step="10"
-                        value={dailyGoal}
-                        onChange={(e) => setDailyGoal(Number(e.target.value))}
-                        className="bg-card"
-                      />
-                    )}
+                  {/* Footer */}
+                  <div className="px-4 md:px-6 py-3 md:py-4 border-t border-slate-700/30 bg-slate-900/20">
+                    <Button
+                      onClick={() => setShowManualAdvanced(false)}
+                      className="w-full bg-primary hover:bg-primary/90 text-white font-semibold text-sm md:text-base"
+                    >
+                      Apply Settings
+                    </Button>
                   </div>
                 </div>
-
-                <Button
-                  onClick={() => setShowManualAdvanced(false)}
-                  className="w-full mt-4 bg-primary hover:bg-primary/90"
-                >
-                  Close
-                </Button>
-              </DialogContent>
-            </Dialog>
-
-            {/* ✅ Gamification: Next Trade Preview (Manual Mode) */}
-            {isRunning && (
-              <NextTradePreview
-                secondsUntilNext={15}
-                nextAsset={asset}
-                isAnalyzing={currentStatus === 'analyzing'}
-              />
+              </div>
             )}
 
           </>
