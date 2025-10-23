@@ -2,7 +2,7 @@ import { User } from '@supabase/supabase-js'
 import { Button } from '@/shared/components/ui/button'
 import { Badge } from '@/shared/components/ui/badge'
 import { Switch } from '@/shared/components/ui/switch'
-import { LogOut, Settings, RotateCw, ArrowUpRight, Menu, Repeat2 } from 'lucide-react'
+import { LogOut, Settings, RotateCw, ArrowUpRight, Menu, Repeat2, AlertCircle } from 'lucide-react'
 import { supabase } from '@/integrations/supabase/client'
 import { useNavigate } from 'react-router-dom'
 import { useBalance } from '@/shared/hooks/useBalance'
@@ -113,15 +113,23 @@ export const DashboardHeader = ({ user }: DashboardHeaderProps) => {
         {/* Left-Center: Balance & Account Toggle */}
         <div className="flex items-center gap-4">
           {/* Balance Display - Clean */}
-          <div className="flex flex-col gap-0.5">
+          <div className="flex flex-col gap-1">
             {isLoading ? (
               <span className="text-sm text-muted-foreground">Carregando...</span>
             ) : error ? (
               <span className="text-sm text-destructive font-semibold">Desconectado</span>
             ) : balance ? (
-              <span className="text-lg font-bold text-primary">
-                {formatBalance(balance.amount)}
-              </span>
+              <>
+                <span className={`text-lg font-bold ${accountType === 'demo' ? 'text-yellow-400' : 'text-green-400'}`}>
+                  {formatBalance(balance.amount)}
+                </span>
+                {accountType === 'demo' && (
+                  <div className="flex items-center gap-1 text-xs text-yellow-400/80 bg-yellow-500/10 px-2 py-0.5 rounded border border-yellow-500/20">
+                    <AlertCircle className="w-3 h-3" />
+                    <span>Demo Account</span>
+                  </div>
+                )}
+              </>
             ) : (
               <span className="text-sm text-muted-foreground">Sem saldo</span>
             )}
@@ -145,9 +153,9 @@ export const DashboardHeader = ({ user }: DashboardHeaderProps) => {
           <Button
             onClick={handleDeposit}
             size="sm"
-            className="bg-gradient-to-r from-positive to-positive/80 hover:from-positive/90 hover:to-positive/70 text-positive-foreground shadow-lg shadow-positive/30 font-semibold transition-all duration-300 hover:shadow-xl hover:shadow-positive/40"
+            className="bg-gradient-to-r from-positive via-positive to-positive/80 hover:from-positive/95 hover:via-positive/90 hover:to-positive/75 text-positive-foreground shadow-lg shadow-positive/50 font-bold transition-all duration-300 hover:shadow-2xl hover:shadow-positive/60 hover:scale-105 active:scale-95 px-4"
           >
-            Deposit
+            💰 Deposit
           </Button>
 
           {/* User Menu Button */}
