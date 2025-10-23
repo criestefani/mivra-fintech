@@ -62,7 +62,6 @@ export function TradeExplanation({ isOpen, trade, onClose }: TradeExplanationPro
   const technicalSummary = trade.technical_summary || '';
   const confidenceScore = trade.confidence_score || 0;
   const indicators = trade.indicators_snapshot as Record<string, any> | null;
-  const marketConditions = trade.market_conditions as Record<string, any> | null;
   const accountType = (trade as any).account_type || 'Unknown';
 
   return (
@@ -218,27 +217,6 @@ export function TradeExplanation({ isOpen, trade, onClose }: TradeExplanationPro
                           <span className="text-slate-400">BB Signal:</span>
                           <span className="text-slate-200">{indicators.bollinger_bands.signal || 'N/A'}</span>
                         </div>
-                      )}
-                    </div>
-                  </div>
-                )}
-
-                {/* Market Conditions */}
-                {marketConditions && (
-                  <div className="bg-slate-800/20 rounded-lg p-3 border border-slate-700/30">
-                    <p className="text-xs text-slate-400 mb-2 uppercase tracking-wider">Market Conditions</p>
-                    <div className="space-y-1 text-xs">
-                      {marketConditions.price && (
-                        <p className="text-slate-300">Price: <span className="text-slate-100">R$ {marketConditions.price.toFixed(2)}</span></p>
-                      )}
-                      {marketConditions.volatility && (
-                        <p className="text-slate-300">Volatility: <span className="text-slate-100">{marketConditions.volatility}</span></p>
-                      )}
-                      {marketConditions.volume_trend && (
-                        <p className="text-slate-300">Volume: <span className="text-slate-100">{marketConditions.volume_trend}</span></p>
-                      )}
-                      {marketConditions.market_session && (
-                        <p className="text-slate-300">Session: <span className="text-slate-100">{marketConditions.market_session}</span></p>
                       )}
                     </div>
                   </div>
