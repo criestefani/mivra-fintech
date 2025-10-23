@@ -117,10 +117,7 @@ export const DashboardHeader = ({ user }: DashboardHeaderProps) => {
                   {formatBalance(balance.amount)}
                 </span>
                 {accountType === 'demo' && (
-                  <div className="flex items-center gap-0.5 text-xs text-yellow-400/80 bg-yellow-500/10 px-1.5 py-0.5 rounded border border-yellow-500/20">
-                    <AlertCircle className="w-3 h-3" />
-                    <span>Demo</span>
-                  </div>
+                  <span className="text-xs text-yellow-400/70">Demo</span>
                 )}
               </>
             ) : (
