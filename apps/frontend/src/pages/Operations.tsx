@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState, useRef, useMemo } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { User } from "@supabase/supabase-js";
@@ -160,13 +160,19 @@ const Operations = () => {
   const [showHelp, setShowHelp] = useState<'leverage' | 'safetystop' | 'dailygoal' | null>(null);
   const [showAutoAdvanced, setShowAutoAdvanced] = useState(false);
 
-  // ✅ Calculate session trades (trades after START BOT was clicked)
-  const sessionTrades = sessionStartTime
-    ? trades.filter(t => new Date((t as any).data_abertura).getTime() >= sessionStartTime)
-    : [];
+  // ✅ Calculate session trades (trades after START BOT was clicked) - memoized to prevent infinite loops
+  const sessionTrades = useMemo(() =>
+    sessionStartTime
+      ? trades.filter(t => new Date((t as any).data_abertura).getTime() >= sessionStartTime)
+      : [],
+    [trades, sessionStartTime]
+  );
 
   // ✅ Calculate session P&L (only from session trades)
-  const sessionPnL = sessionTrades.reduce((sum, trade) => sum + (trade.pnl || 0), 0);
+  const sessionPnL = useMemo(() =>
+    sessionTrades.reduce((sum, trade) => sum + (trade.pnl || 0), 0),
+    [sessionTrades]
+  );
 
   useEffect(() => {
     if (isRunning) {
