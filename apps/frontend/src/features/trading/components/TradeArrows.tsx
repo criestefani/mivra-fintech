@@ -56,31 +56,35 @@ export const TradeArrows: React.FC<TradeArrowsProps> = ({
       return
     }
 
-    // Get the LAST CANDLE's time and price (current moment on chart)
-    const lastCandle = seriesData[seriesData.length - 1]
-    const lastCandleTime = typeof lastCandle.time === 'number' ? lastCandle.time : (lastCandle.time as any)
-    const lastCandleClose = lastCandle.close
-
-    console.log('[TradeArrows] Last candle:', { time: lastCandleTime, close: lastCandleClose })
-
     tradeMarkers.forEach((marker, index) => {
       try {
         const markerId = generateMarkerId(marker, index)
 
-        // ✅ IMPORTANT: Use LAST CANDLE TIME for positioning (not marker.time!)
-        // This ensures arrow appears at the current/latest position on the chart
+        // ✅ IMPORTANT: Use MARKER.TIME for positioning (not lastCandleTime!)
+        // Each marker appears at its OWN entry time, not all at the latest candle
         const timeScale = chart.timeScale()
-        const xCoord = timeScale.timeToCoordinate(lastCandleTime as any)
 
-        console.log(`[TradeArrows] Arrow ${index} - using last candle time (${lastCandleTime}), X:`, xCoord)
+        // Convert marker.time to correct format (Unix seconds)
+        let markerTimeInSeconds: number = typeof marker.time === 'string'
+          ? parseInt(marker.time)
+          : marker.time;
+
+        if (markerTimeInSeconds > 1000000) {
+          markerTimeInSeconds = Math.floor(markerTimeInSeconds / 1000);
+        }
+
+        const xCoord = timeScale.timeToCoordinate(markerTimeInSeconds as any)
+
+        console.log(`[TradeArrows] Arrow ${index} - marker time: ${markerTimeInSeconds}, X:`, xCoord)
 
         if (xCoord === null || xCoord === undefined) {
-          console.log(`[TradeArrows] ⚠️ Could not get X coordinate for last candle time`)
+          console.log(`[TradeArrows] ⚠️ Could not get X coordinate for marker time ${markerTimeInSeconds}`)
           return
         }
 
-        // Use the last candle's close price for Y positioning
-        const yCoord = candleSeries.priceToCoordinate(lastCandleClose)
+        // Use the last candle's close price for Y positioning (all arrows at same level)
+        const lastCandle = seriesData[seriesData.length - 1]
+        const yCoord = candleSeries.priceToCoordinate(lastCandle.close)
 
         console.log(`[TradeArrows] Arrow ${index} - Y coordinate:`, yCoord)
 
@@ -97,7 +101,7 @@ export const TradeArrows: React.FC<TradeArrowsProps> = ({
           pnl: marker.pnl,
           result: marker.result
         }
-        console.log(`[TradeArrows] ✅ Arrow ${index} positioned at:`, { x: finalPosition.x, y: finalPosition.y })
+        console.log(`[TradeArrows] ✅ Arrow ${index} positioned at:`, { x: finalPosition.x, y: finalPosition.y, markerTime: markerTimeInSeconds })
         newPositions.set(markerId, finalPosition)
       } catch (error) {
         console.error(`[TradeArrows] Error calculating position:`, error)

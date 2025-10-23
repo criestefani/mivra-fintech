@@ -6,7 +6,7 @@ import { Card, CardHeader, CardTitle, CardContent } from '@/shared/components/ui
 import { Label } from '@/shared/components/ui/label'
 import { Badge } from '@/shared/components/ui/badge'
 import { Button } from '@/shared/components/ui/button'
-import { createChart, IChartApi, ISeriesApi, CandlestickData, Time, SeriesMarker } from 'lightweight-charts'
+import { createChart, IChartApi, ISeriesApi, CandlestickData, Time } from 'lightweight-charts'
 import { useRealtimeCandles } from '@/shared/hooks/useRealtimeCandles'
 import { Loader2, TrendingUp, Wifi, WifiOff, ChevronDown } from 'lucide-react'
 import axios from 'axios'
@@ -197,61 +197,6 @@ export const TradingChart: React.FC<TradingChartProps> = ({
 
     candleSeriesRef.current.setData(formattedCandles)
   }, [candles])
-
-  // Update trade markers on chart (only real-time markers)
-  useEffect(() => {
-    if (!candleSeriesRef.current) return
-    if (!tradeMarkers || tradeMarkers.length === 0) {
-      candleSeriesRef.current.setMarkers([])
-      return
-    }
-
-    try {
-      const markers: SeriesMarker<Time>[] = []
-
-      // ✅ IMPORTANT: lightweight-charts requires markers to be sorted in ASCENDING order by time
-      const sortedMarkers = [...tradeMarkers].sort((a, b) => a.time - b.time)
-
-      sortedMarkers.forEach((trade) => {
-        // ✅ Ensure time is in seconds (lightweight-charts requirement)
-        let timeInSeconds: number = typeof trade.time === 'string'
-          ? parseInt(trade.time)
-          : trade.time;
-
-        if (timeInSeconds > 1000000) {
-          timeInSeconds = Math.floor(timeInSeconds / 1000);
-        }
-
-        // Entry marker - direction indicator (CALL/PUT)
-        markers.push({
-          time: timeInSeconds as unknown as Time,
-          position: trade.direction === 'CALL' ? 'belowBar' : 'aboveBar',
-          color: trade.direction === 'CALL' ? CHART_COLORS.POSITIVE : CHART_COLORS.NEGATIVE,
-          shape: trade.direction === 'CALL' ? 'arrowUp' : 'arrowDown',
-          text: trade.direction === 'CALL'
-            ? `▲ CALL${trade.pnl !== undefined ? ` (R$ ${trade.pnl >= 0 ? '+' : ''}${trade.pnl.toFixed(2)})` : ''}`
-            : `▼ PUT${trade.pnl !== undefined ? ` (R$ ${trade.pnl >= 0 ? '+' : ''}${trade.pnl.toFixed(2)})` : ''}`,
-          size: 2,
-        })
-
-        // Result marker - WIN/LOSS indicator (only if result exists)
-        if (trade.result) {
-          markers.push({
-            time: timeInSeconds as unknown as Time,
-            position: trade.result === 'WIN' ? 'aboveBar' : 'belowBar',
-            color: trade.result === 'WIN' ? CHART_COLORS.POSITIVE : CHART_COLORS.NEGATIVE,
-            shape: 'circle',
-            text: trade.result === 'WIN' ? '✓ WIN' : '✗ LOSS',
-            size: 1,
-          })
-        }
-      })
-
-      candleSeriesRef.current.setMarkers(markers)
-    } catch (error) {
-      console.error('[TradingChart] Error setting markers:', error)
-    }
-  }, [tradeMarkers, candles.length])
 
   // Track chart container rect for arrow positioning
   useEffect(() => {
