@@ -84,7 +84,11 @@ export const TradeArrows: React.FC<TradeArrowsProps> = ({
 
         // Use the last candle's close price for Y positioning (all arrows at same level)
         const lastCandle = seriesData[seriesData.length - 1]
-        const yCoord = candleSeries.priceToCoordinate(lastCandle.close)
+        if (!lastCandle || !('close' in lastCandle)) {
+          console.log(`[TradeArrows] ⚠️ Last candle has no close price`)
+          return
+        }
+        const yCoord = candleSeries.priceToCoordinate(lastCandle.close as number)
 
         console.log(`[TradeArrows] Arrow ${index} - Y coordinate:`, yCoord)
 
