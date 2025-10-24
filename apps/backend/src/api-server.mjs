@@ -127,6 +127,12 @@ let botStatus = {
 // ✅ SDK connection instance (cached for reuse)
 let sdkInstance = null;
 
+// ✅ Per-user SDK instances (for multi-user isolation)
+const userSdkInstances = new Map(); // userId -> sdkInstance
+
+// ✅ Per-user bot status (for multi-user isolation)
+const userBotStatus = new Map(); // userId -> botStatus
+
 // ✅ Bot runtime process management
 let botProcess = null;
 let botProcessPID = null;
@@ -519,27 +525,32 @@ app.post('/api/bot/connect', async (req, res) => {
     const userSSID = await ssidManager.getSSID(avalonUserId.toString());
     console.log(`✅ SSID gerado: ${userSSID.substring(0, 15)}...`);
 
-    // Reuse existing SDK instance if available, otherwise create new one
-    if (!sdkInstance) {
-      console.log('⏳ Inicializando SDK...');
+    // ✅ Per-user SDK instance (isolated connection for each user)
+    let userSdk = userSdkInstances.get(userId);
+
+    if (!userSdk) {
+      console.log(`⏳ Inicializando SDK para usuário ${userId}...`);
       const startTime = Date.now();
 
-      sdkInstance = await ClientSdk.create(
+      userSdk = await ClientSdk.create(
         AVALON_WS_URL,
         avalonUserId,  // ✅ ID dinâmico do usuário
         new SsidAuthMethod(userSSID),  // ✅ SSID dinâmico do usuário
         { host: AVALON_API_HOST }
       );
 
+      // ✅ Store user-specific SDK instance
+      userSdkInstances.set(userId, userSdk);
+
       const elapsed = ((Date.now() - startTime) / 1000).toFixed(2);
-      console.log(`✅ SDK inicializado em ${elapsed}s`);
+      console.log(`✅ SDK inicializado para usuário ${userId} em ${elapsed}s`);
     } else {
-      console.log('♻️ Reutilizando conexão SDK existente');
+      console.log(`♻️ Reutilizando conexão SDK existente para usuário ${userId}`);
     }
 
     // Verify connection by retrieving balances
     console.log('🔍 Verificando saldo...');
-    const balancesData = await sdkInstance.balances();
+    const balancesData = await userSdk.balances();
     console.log('✅ Saldo verificado com sucesso');
     let demoBalance = null;
     let realBalance = null;
@@ -569,12 +580,20 @@ app.post('/api/bot/connect', async (req, res) => {
       console.log(`💰 Selected Balance: ${balance.amount} ${balance.currency} (ID: ${balance.id})`);
     }
 
-    // Update bot status
-    botStatus = {
+    // ✅ Update per-user bot status
+    const userStatus = {
       running: false, // ✅ Bot runtime is NOT running - only broker is connected
       isConnected: true,
       lastUpdate: new Date().toISOString(),
       ssid: userSSID.substring(0, 15) + '...'  // ✅ SSID individual do usuário
+    };
+    userBotStatus.set(userId, userStatus);
+
+    // Also keep global botStatus for backward compatibility
+    botStatus = {
+      ...botStatus,
+      isConnected: true,
+      lastUpdate: new Date().toISOString()
     };
 
     console.log('✅ Conectado ao Avalon via WebSocket\n');
@@ -628,7 +647,16 @@ app.post('/api/bot/connect', async (req, res) => {
   } catch (error) {
     console.error('❌ Erro ao conectar:', error.message);
     botStatus.isConnected = false;
-    sdkInstance = null; // Reset SDK instance on error
+
+    // ✅ Clean up user-specific SDK instance on error
+    userSdkInstances.delete(userId);
+    const errorStatus = {
+      running: false,
+      isConnected: false,
+      lastUpdate: new Date().toISOString(),
+      error: error.message
+    };
+    userBotStatus.set(userId, errorStatus);
 
     res.status(500).json({
       success: false,
@@ -993,18 +1021,30 @@ app.post('/api/avalon/create-user', async (req, res) => {
 
 
 // ✅ Endpoint: Get current balance from Avalon
-// Accepts optional query param: ?accountType=demo|real
+// Accepts optional query params: ?accountType=demo|real&userId=<userId>
+// Falls back to system SDK if userId not provided (for backward compatibility)
 app.get('/api/bot/balance', async (req, res) => {
   try {
-    if (!sdkInstance) {
+    const { userId, accountType = 'demo' } = req.query;
+
+    // ✅ Use user-specific SDK if userId provided, otherwise fall back to system SDK
+    let userSdk = sdkInstance;
+    if (userId) {
+      userSdk = userSdkInstances.get(userId);
+      if (!userSdk) {
+        return res.status(400).json({
+          success: false,
+          error: `User ${userId} not connected to Avalon. Call /api/bot/connect first.`
+        });
+      }
+    } else if (!sdkInstance) {
       return res.status(400).json({
         success: false,
         error: 'Not connected to Avalon. Call /api/bot/connect first.'
       });
     }
 
-    const accountType = req.query.accountType || 'demo'; // default to demo
-    const balancesData = await sdkInstance.balances();
+    const balancesData = await userSdk.balances();
     let demoBalance = null;
     let realBalance = null;
 
@@ -1074,18 +1114,28 @@ app.post('/api/bot/disconnect', async (req, res) => {
     const { userId } = req.body;
     console.log('🔌 Disconnect request for user:', userId);
 
-    // Destroy SDK instance
-    if (sdkInstance) {
+    // ✅ Destroy user-specific SDK instance
+    const userSdk = userSdkInstances.get(userId);
+    if (userSdk) {
       try {
-        await sdkInstance.shutdown();
-        console.log('✅ SDK shutdown complete');
+        await userSdk.shutdown();
+        console.log(`✅ SDK shutdown complete for user ${userId}`);
       } catch (err) {
-        console.warn('⚠️ SDK shutdown warning:', err.message);
+        console.warn(`⚠️ SDK shutdown warning for user ${userId}:`, err.message);
       }
-      sdkInstance = null;
+      userSdkInstances.delete(userId);
     }
 
-    // Update global botStatus
+    // ✅ Update per-user bot status
+    const disconnectStatus = {
+      running: false,
+      isConnected: false,
+      ssid: null,
+      lastUpdate: new Date().toISOString()
+    };
+    userBotStatus.set(userId, disconnectStatus);
+
+    // Also update global botStatus for backward compatibility
     botStatus.isConnected = false;
     botStatus.ssid = null;
     botStatus.lastUpdate = new Date().toISOString();
@@ -1535,22 +1585,25 @@ app.post('/api/bot/reconnect', async (req, res) => {
     const userSSID = await ssidManager.getSSID(avalonUserId.toString());
     console.log(`✅ SSID gerado: ${userSSID.substring(0, 15)}...`);
 
-    // Force recreate SDK instance
-    sdkInstance = null;
+    // ✅ Force recreate user-specific SDK instance
+    userSdkInstances.delete(userId);
 
     const startTime = Date.now();
-    sdkInstance = await ClientSdk.create(
+    const newUserSdk = await ClientSdk.create(
       AVALON_WS_URL,
       avalonUserId,
       new SsidAuthMethod(userSSID),
       { host: AVALON_API_HOST }
     );
 
+    // ✅ Store user-specific SDK instance
+    userSdkInstances.set(userId, newUserSdk);
+
     const elapsed = ((Date.now() - startTime) / 1000).toFixed(2);
-    console.log(`✅ SDK reconectado em ${elapsed}s`);
+    console.log(`✅ SDK reconectado para usuário ${userId} em ${elapsed}s`);
 
     // Verify connection
-    const balancesData = await sdkInstance.balances();
+    const balancesData = await newUserSdk.balances();
     let balance = null;
 
     const allBalances = balancesData.getBalances();
