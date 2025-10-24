@@ -956,15 +956,11 @@ app.post('/api/avalon/create-user', async (req, res) => {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        // ✅ FORMATO CORRETO segundo API Avalon v1/b2b-gateway/users
+        // ✅ FORMATO CORRETO para API QuadCode simplificada
+        name: `${req.body.first_name} ${req.body.last_name}`,
         email: req.body.email,
         password: req.body.password,
-        country_code: req.body.country_code || 'BR',
-        ip: req.body.ip || '127.0.0.1',
-        balance_currency_code: req.body.balance_currency_code || 'USD',
-        first_name: req.body.first_name,
-        last_name: req.body.last_name,
-        locale: req.body.locale || 'pt_BR'
+        affId: parseInt(process.env.AVALON_AFF_ID || '430322')
       })
     });
 
