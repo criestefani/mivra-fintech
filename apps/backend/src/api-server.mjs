@@ -482,9 +482,23 @@ app.get('/health', (req, res) => {
   });
 });
 
-// ✅ Endpoint: Status do bot
+// ✅ Endpoint: Status do bot (per-user)
 app.get('/api/bot/status', (req, res) => {
-  res.json(botStatus);
+  const { userId } = req.query;
+
+  console.log(`🔍 [BOT-STATUS] Checking status for user: ${userId}`);
+
+  // ✅ Get per-user bot status from userBotStatus Map
+  let userStatus = userBotStatus.get(userId) || botStatus;
+
+  // Also include connection info from Supabase bot_status if available
+  console.log(`📊 [BOT-STATUS] User ${userId} - Status:`, userStatus);
+
+  res.json({
+    ...userStatus,
+    userId: userId,
+    isConnected: userBotStatus.has(userId) || botStatus.isConnected
+  });
 });
 
 // ✅ Endpoint: Conectar ao Avalon usando WebSocket SDK
@@ -1235,7 +1249,10 @@ app.post('/api/bot/account-type', async (req, res) => {
 app.post('/api/bot/start-runtime', async (req, res) => {
   const { userId, config } = req.body;
 
+  console.log(`📨 [START-RUNTIME] Received request for user ${userId}`);
+
   if (!userId) {
+    console.error('❌ [START-RUNTIME] userId is missing');
     return res.status(400).json({
       success: false,
       error: 'userId is required'
@@ -1246,6 +1263,7 @@ app.post('/api/bot/start-runtime', async (req, res) => {
     // ✅ Check if THIS user's bot is already running
     const existingProcess = userBotProcesses.get(userId);
     if (existingProcess && !existingProcess.process.killed) {
+      console.warn(`⚠️ [START-RUNTIME] Bot already running for user ${userId}, PID: ${existingProcess.pid}`);
       return res.status(400).json({
         success: false,
         error: `Bot is already running for this user`,
@@ -1255,10 +1273,18 @@ app.post('/api/bot/start-runtime', async (req, res) => {
 
     // ✅ Check if user's SDK is connected
     const userSdk = userSdkInstances.get(userId);
+    console.log(`🔍 [START-RUNTIME] User SDK exists: ${!!userSdk}, System SDK exists: ${!!sdkInstance}`);
+
     if (!userSdk && !sdkInstance) {
+      console.error(`❌ [START-RUNTIME] No SDK connected for user ${userId}`);
       return res.status(400).json({
         success: false,
-        error: 'Not connected to Avalon. Connect broker first.'
+        error: 'Not connected to Avalon. Connect broker first.',
+        debug: {
+          userSdkConnected: !!userSdk,
+          systemSdkConnected: !!sdkInstance,
+          userId: userId
+        }
       });
     }
 
@@ -1593,12 +1619,28 @@ app.post('/api/bot/stop-runtime', async (req, res) => {
   }
 });
 
-// ✅ Endpoint: Get bot runtime status
+// ✅ Endpoint: Get bot runtime status (per-user)
 app.get('/api/bot/runtime-status', (req, res) => {
+  const { userId } = req.query;
+
+  console.log(`🔍 [RUNTIME-STATUS] Checking status for user: ${userId}`);
+
+  // ✅ Get per-user bot process status
+  const userProcess = userBotProcesses.get(userId);
+  const isRunning = userProcess && !userProcess.process.killed;
+  const pid = userProcess?.pid;
+
+  console.log(`📊 [RUNTIME-STATUS] User ${userId} - Running: ${isRunning}, PID: ${pid}`);
+
   res.json({
     success: true,
-    isRunning: botProcess && !botProcess.killed,
-    pid: botProcessPID
+    isRunning: isRunning || false,
+    pid: pid || null,
+    userId: userId,
+    debug: {
+      processExists: !!userProcess,
+      processKilled: userProcess?.process?.killed
+    }
   });
 });
 
