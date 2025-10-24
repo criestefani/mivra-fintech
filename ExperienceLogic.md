@@ -18,40 +18,51 @@ The Experience (XP) system is a **volume-based progression framework** designed 
 **30 levels** from "Novato" (Beginner) to "Lenda" (Legend)
 
 ### XP Progression Curve
-**Exponential formula**: `XP = 100 × (1.5 ^ (level - 1))`
+**Polynomial formula (smooth progression)**: `XP_per_level(L) = 100 + 50(L-1) + 1.8(L-1)²`
 
 **Key Points**:
 - Level 1 (Novato): Starts at 0 XP
-- Each level requires progressively MORE XP to reach
-- Higher levels create "long-tail" progression (keeps users engaged longer)
-- Max level (30) is achievable but requires significant play
+- Each level requires progressively MORE XP but at a **sustainable** rate
+- Moderate "long-tail" progression (accessible late-game without feeling impossible)
+- Max level (30) requires **37,085 total XP** (vs 498,788 with old exponential formula)
+- Early levels (1-10): **~3 days** of active play
+- Mid levels (15-20): **~5-7 days** per level
+- Late levels (25-30): **~9-12 days** per level
 
 ### Complete Level Progression Table
 
 | Level | Title | Total XP | XP from Prev | Real Trades* | Time to Level** |
 |-------|-------|----------|--------------|--------------|-----------------|
 | 1 | Novato | 0 | - | 0 | - |
-| 2 | Aprendiz | 100 | 100 | 4 | ~13h (10 trades/day) |
-| 3 | Trader Júnior | 250 | 150 | 6 | ~15h |
-| 4 | Trader Júnior | 475 | 225 | 9 | ~22h |
-| 5 | Trader Pleno | 700 | 225 | 9 | ~1 day |
-| 6 | Trader Pleno | 1,100 | 400 | 16 | ~1.6 days |
-| 7 | Trader Pleno | 1,600 | 500 | 20 | ~2 days |
-| 8 | Trader Pleno | 2,200 | 600 | 24 | ~2.4 days |
-| 9 | Trader Pleno | 2,900 | 700 | 28 | ~2.8 days |
-| 10 | Trader Senior | 3,700 | 800 | 32 | **~3.2 days** |
-| 11 | Trader Senior | 4,600 | 900 | 36 | ~3.6 days |
-| 12 | Trader Senior | 5,600 | 1,000 | 40 | ~4 days |
-| 13 | Trader Senior | 6,700 | 1,100 | 44 | ~4.4 days |
-| 14 | Trader Senior | 7,900 | 1,200 | 48 | ~4.8 days |
-| 15 | Trader Expert | 9,200 | 1,300 | 52 | **~5.2 days** |
-| 16 | Trader Expert | 10,600 | 1,400 | 56 | ~5.6 days |
-| 17 | Trader Expert | 12,100 | 1,500 | 60 | ~6 days |
-| 18 | Trader Expert | 13,700 | 1,600 | 64 | ~6.4 days |
-| 19 | Trader Expert | 15,400 | 1,700 | 68 | ~6.8 days |
-| 20 | Trader Elite | 17,200 | 1,800 | 72 | **~7.2 days** |
-| 25 | Trader Elite | 27,700 | 2,300+ | 92+ | ~9.2 days |
-| 30 | Lenda | 40,700 | 3,000+ | 120+ | **~12+ days** |
+| 2 | Aprendiz | 100 | 100 | 4 | ~0.4 days |
+| 3 | Trader Júnior | 252 | 152 | 7 | ~0.7 days |
+| 4 | Trader Júnior | 459 | 207 | 9 | ~0.9 days |
+| 5 | Trader Júnior | 725 | 266 | 11 | **~1.1 days** |
+| 6 | Trader Pleno | 1,054 | 329 | 14 | ~1.4 days |
+| 7 | Trader Pleno | 1,449 | 395 | 16 | ~1.6 days |
+| 8 | Trader Pleno | 1,914 | 465 | 19 | ~1.9 days |
+| 9 | Trader Pleno | 2,452 | 538 | 22 | ~2.2 days |
+| 10 | Trader Senior | 3,067 | 615 | 25 | **~2.5 days** |
+| 11 | Trader Senior | 3,763 | 696 | 28 | ~2.8 days |
+| 12 | Trader Senior | 4,543 | 780 | 32 | ~3.2 days |
+| 13 | Trader Senior | 5,411 | 868 | 35 | ~3.5 days |
+| 14 | Trader Senior | 6,370 | 959 | 39 | ~3.9 days |
+| 15 | Trader Expert | 7,424 | 1,054 | 43 | **~4.3 days** |
+| 16 | Trader Expert | 8,577 | 1,153 | 47 | ~4.7 days |
+| 17 | Trader Expert | 9,832 | 1,255 | 51 | ~5.1 days |
+| 18 | Trader Expert | 11,193 | 1,361 | 55 | ~5.5 days |
+| 19 | Trader Expert | 12,663 | 1,470 | 59 | ~5.9 days |
+| 20 | Trader Elite | 14,246 | 1,583 | 64 | **~6.4 days** |
+| 21 | Trader Elite | 15,946 | 1,700 | 68 | ~6.8 days |
+| 22 | Trader Elite | 17,766 | 1,820 | 73 | ~7.3 days |
+| 23 | Trader Elite | 19,710 | 1,944 | 78 | ~7.8 days |
+| 24 | Trader Elite | 21,781 | 2,071 | 83 | ~8.3 days |
+| 25 | Trader Elite | 23,983 | 2,202 | 89 | **~8.9 days** |
+| 26 | Trader Elite | 26,320 | 2,337 | 94 | ~9.4 days |
+| 27 | Trader Elite | 28,795 | 2,475 | 99 | ~9.9 days |
+| 28 | Trader Elite | 31,412 | 2,617 | 105 | ~10.5 days |
+| 29 | Trader Elite | 34,174 | 2,762 | 111 | ~11.1 days |
+| 30 | Lenda | 37,085 | 2,911 | 117 | **~11.7 days** |
 
 **\* Real Trades**: Assuming average 25 XP per trade (20 base + 10 win bonus with ~50% win rate)
 **\*\* Time to Level**: Assuming 10 trades/day, does NOT include streak bonuses

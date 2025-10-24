@@ -8,6 +8,7 @@
 
 import { createClient } from '@supabase/supabase-js';
 import { notifyFirstDeposit, notifyLevelUp } from '../notifications/notification-service.mjs';
+import { getLevelInfo, getXPForNextLevel } from './constants.mjs';
 
 const supabaseUrl = process.env.SUPABASE_URL;
 const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -192,22 +193,12 @@ async function awardXPWithLevelUp(userId, xpAmount, source) {
       leveledUp = true;
     }
 
-    // Get level info for title
-    const levelTitles = {
-      1: 'Novato',
-      2: 'Aprendiz',
-      3: 'Trader Júnior',
-      5: 'Trader Pleno',
-      10: 'Trader Senior',
-      15: 'Trader Expert',
-      20: 'Trader Elite',
-      30: 'Lenda',
-    };
+    // Get level info from constants (title and unlocks)
+    const levelInfo = getLevelInfo(newLevel);
+    const levelTitle = levelInfo.title;
 
-    const levelTitle = levelTitles[newLevel] || `Level ${newLevel}`;
-
-    // Calculate XP for next level
-    const nextLevelXP = Math.floor(100 * Math.pow(1.5, newLevel - 1));
+    // Calculate XP required for next level (using new polynomial formula)
+    const nextLevelXP = getXPForNextLevel(newLevel);
 
     // Update user
     const { error: updateError } = await supabase

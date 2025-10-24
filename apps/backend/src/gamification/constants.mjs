@@ -42,48 +42,53 @@ export const XP_REWARDS = {
 
 /**
  * Level Progression System (30 levels)
- * Exponential XP curve: XP = 100 * (1.5 ^ (level - 1))
+ * Polynomial XP curve (smooth progression): XP_per_level(L) = 100 + 50(L-1) + 1.8(L-1)²
+ * Total XP at Level 30: 37,085 (sustainable, not 498,788 like exponential)
  */
 export const LEVEL_SYSTEM = {
   1: { xp: 0, title: 'Novato', unlocks: 'Scanner Tier 1 (sees last 20 assets)' },
   2: { xp: 100, title: 'Aprendiz', unlocks: null },
-  3: { xp: 250, title: 'Trader Júnior', unlocks: null },
-  4: { xp: 475, title: 'Trader Júnior', unlocks: null },
-  5: { xp: 700, title: 'Trader Pleno', unlocks: 'Scanner Tier 2 (sees last 26 assets)' },
-  6: { xp: 1100, title: 'Trader Pleno', unlocks: null },
-  7: { xp: 1600, title: 'Trader Pleno', unlocks: null },
-  8: { xp: 2200, title: 'Trader Pleno', unlocks: null },
-  9: { xp: 2900, title: 'Trader Pleno', unlocks: null },
-  10: { xp: 3700, title: 'Trader Senior', unlocks: 'Scanner Tier 3 (sees last 28 assets)' },
-  11: { xp: 4600, title: 'Trader Senior', unlocks: null },
-  12: { xp: 5600, title: 'Trader Senior', unlocks: null },
-  13: { xp: 6700, title: 'Trader Senior', unlocks: null },
-  14: { xp: 7900, title: 'Trader Senior', unlocks: null },
-  15: { xp: 9200, title: 'Trader Expert', unlocks: 'Advanced Analytics Dashboard' },
-  16: { xp: 10600, title: 'Trader Expert', unlocks: null },
-  17: { xp: 12100, title: 'Trader Expert', unlocks: null },
-  18: { xp: 13700, title: 'Trader Expert', unlocks: null },
-  19: { xp: 15400, title: 'Trader Expert', unlocks: null },
-  20: { xp: 17200, title: 'Trader Elite', unlocks: 'Scanner Tier 4 Elite (sees all 30)' },
-  21: { xp: 19100, title: 'Trader Elite', unlocks: null },
-  22: { xp: 21100, title: 'Trader Elite', unlocks: null },
-  23: { xp: 23200, title: 'Trader Elite', unlocks: null },
-  24: { xp: 25400, title: 'Trader Elite', unlocks: null },
-  25: { xp: 27700, title: 'Trader Elite', unlocks: null },
-  26: { xp: 30100, title: 'Lenda', unlocks: null },
-  27: { xp: 32600, title: 'Lenda', unlocks: null },
-  28: { xp: 35200, title: 'Lenda', unlocks: null },
-  29: { xp: 37900, title: 'Lenda', unlocks: null },
-  30: { xp: 40700, title: 'Lenda', unlocks: 'Master Status + Priority Scanner' },
+  3: { xp: 252, title: 'Trader Júnior', unlocks: null },
+  4: { xp: 459, title: 'Trader Júnior', unlocks: null },
+  5: { xp: 725, title: 'Trader Júnior', unlocks: 'Scanner Tier 2 (sees last 26 assets)' },
+  6: { xp: 1054, title: 'Trader Pleno', unlocks: null },
+  7: { xp: 1449, title: 'Trader Pleno', unlocks: null },
+  8: { xp: 1914, title: 'Trader Pleno', unlocks: null },
+  9: { xp: 2452, title: 'Trader Pleno', unlocks: null },
+  10: { xp: 3067, title: 'Trader Senior', unlocks: 'Scanner Tier 3 (sees last 28 assets)' },
+  11: { xp: 3763, title: 'Trader Senior', unlocks: null },
+  12: { xp: 4543, title: 'Trader Senior', unlocks: null },
+  13: { xp: 5411, title: 'Trader Senior', unlocks: null },
+  14: { xp: 6370, title: 'Trader Senior', unlocks: null },
+  15: { xp: 7424, title: 'Trader Expert', unlocks: 'Advanced Analytics Dashboard' },
+  16: { xp: 8577, title: 'Trader Expert', unlocks: null },
+  17: { xp: 9832, title: 'Trader Expert', unlocks: null },
+  18: { xp: 11193, title: 'Trader Expert', unlocks: null },
+  19: { xp: 12663, title: 'Trader Expert', unlocks: null },
+  20: { xp: 14246, title: 'Trader Elite', unlocks: 'Scanner Tier 4 Elite (sees all 30)' },
+  21: { xp: 15946, title: 'Trader Elite', unlocks: null },
+  22: { xp: 17766, title: 'Trader Elite', unlocks: null },
+  23: { xp: 19710, title: 'Trader Elite', unlocks: null },
+  24: { xp: 21781, title: 'Trader Elite', unlocks: null },
+  25: { xp: 23983, title: 'Trader Elite', unlocks: null },
+  26: { xp: 26320, title: 'Trader Elite', unlocks: null },
+  27: { xp: 28795, title: 'Trader Elite', unlocks: null },
+  28: { xp: 31412, title: 'Trader Elite', unlocks: null },
+  29: { xp: 34174, title: 'Trader Elite', unlocks: null },
+  30: { xp: 37085, title: 'Lenda', unlocks: 'Master Status + Priority Scanner' },
 };
 
 /**
- * Calculate XP required for next level
- * Formula: 100 * (1.5 ^ (currentLevel - 1))
+ * Calculate XP required to advance to next level
+ * Formula: XP_per_level(L) = 100 + 50(L-1) + 1.8(L-1)²
+ * Where L is the NEXT level (not current level)
  */
 export function getXPForNextLevel(currentLevel) {
-  if (currentLevel >= 30) return 0; // Max level
-  return Math.floor(100 * Math.pow(1.5, currentLevel - 1));
+  if (currentLevel >= 30) return 0; // Max level reached
+
+  const nextLevel = currentLevel + 1;
+  const xpForNextLevel = Math.round(100 + 50 * (nextLevel - 1) + 1.8 * Math.pow(nextLevel - 1, 2));
+  return xpForNextLevel;
 }
 
 /**
