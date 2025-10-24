@@ -80,6 +80,47 @@ The Experience (XP) system is a **volume-based progression framework** designed 
 
 ---
 
+## 🔄 Formula Migration & Legacy Data Fix
+
+### Background: Why We Changed
+
+**Old Formula** (Exponential): `XP = 100 × (1.5 ^ (level - 1))`
+- ❌ Level 22 required **498,788 XP**
+- ❌ Level 30 required **40,700+ XP**
+- ❌ Made late-game progression **impossible**
+
+**New Formula** (Polynomial): `XP = 100 + 50(L-1) + 1.8(L-1)²`
+- ✅ Level 22 requires **1,820 XP**
+- ✅ Level 30 requires **37,085 XP** (92% reduction!)
+- ✅ Late-game progression is **achievable and motivating**
+
+### Automatic Legacy Data Correction
+
+When existing users load their profile, the system **automatically recalculates** `xp_next_level`:
+
+1. **Backend detects mismatch**: Stored value (old formula) vs calculated value (new formula)
+2. **Recalculates immediately**: Using new polynomial formula
+3. **Updates database silently**: In background without blocking user response
+4. **Returns correct data**: Frontend receives corrected `xp_next_level`
+
+**How it works:**
+- **`GET /api/gamification/profile/:userId`** - Recalculates on profile page load ⭐
+- **`POST /api/gamification/award-xp`** - Recalculates when user earns XP
+- **`POST /api/gamification/trade-completed`** - Recalculates after each trade
+
+**Result**: No manual migration needed. Users see corrected values immediately on next page refresh.
+
+### Database Updates
+
+| Field | Old Value | New Value | Updated When |
+|-------|-----------|-----------|--------------|
+| `xp_next_level` | 498,788 (level 22 example) | 1,820 (level 22) | Next profile load / trade completion |
+| `LEVEL_SYSTEM` table | Exponential values | Polynomial values | Application startup (constants.mjs) |
+
+**No data loss**: Total XP, current level, and all other fields remain unchanged. Only `xp_next_level` is recalculated.
+
+---
+
 ## 💰 XP Rewards Sources
 
 ### A. Trade Execution (PRIMARY - Volume Based)
@@ -412,6 +453,67 @@ Day 30: 30-Day Streak
 - Level gates can be bypassed by R$$
 - Doesn't feel "pay-to-win" but "pay-to-skip-grind"
 - Lets whales show they're committed
+
+---
+
+## 🛠️ Technical Implementation
+
+### Backend Architecture
+
+**Files Modified:**
+- `apps/backend/src/gamification/constants.mjs` - Core formulas and level tables
+- `apps/backend/src/gamification/gamification-service.mjs` - XP calculation logic
+- `apps/backend/src/gamification/gamification-routes.mjs` - API endpoints
+- `apps/backend/src/gamification/deposit-integration.mjs` - Deposit webhook handling
+
+**Key Functions:**
+
+```javascript
+// Polynomial formula (new)
+function getXPForNextLevel(currentLevel) {
+  if (currentLevel >= 30) return 0;
+  const nextLevel = currentLevel + 1;
+  return Math.round(100 + 50 * (nextLevel - 1) + 1.8 * Math.pow(nextLevel - 1, 2));
+}
+
+// Legacy data correction (automatic)
+function getUserProgress(supabase, userId) {
+  // Fetches user data and recalculates xp_next_level if mismatch detected
+  // Updates database silently without blocking response
+}
+```
+
+### Frontend Integration
+
+- `apps/frontend/src/features/gamification/hooks/useUserProfile.ts` - Fetches profile via `/api/gamification/profile/:userId`
+- Profile page displays corrected `xp_next_level` from backend
+- No frontend logic needed - backend handles all corrections
+
+### Database
+
+**Table**: `user_gamification`
+- **Primary key**: `user_id`
+- **Modified fields**: `xp_next_level` (recalculated automatically)
+- **Immutable fields**: `total_xp`, `current_level`, `level_title` (preserved during migration)
+
+---
+
+## 📝 Changelog
+
+### v2.0: Polynomial Formula Migration (Current)
+**Date**: October 24, 2025
+- Replaced exponential formula with polynomial for balanced progression
+- Implemented automatic legacy data correction
+- All existing users automatically receive correct values on next profile load
+- **Commits**:
+  - `4d59e4f`: Formula update and documentation
+  - `a1b7df6`: Auto-recalc in getUserProgress()
+  - `c7d8b0e`: Auto-recalc in /profile endpoint
+  - Plus ExperienceLogic.md update
+
+### v1.0: Initial Release
+**Formula**: Exponential `XP = 100 × (1.5 ^ (level - 1))`
+- ❌ Deprecated due to impossible late-game progression
 
 ---
 
