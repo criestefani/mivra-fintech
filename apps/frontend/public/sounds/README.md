@@ -55,14 +55,14 @@ const { playWin, playClick, playStartStopBot } = useSound();
 - **Trigger**: Profitable session ends
 - **Location**: Session summary modal
 - **Frequency**: Occasional (positive sessions)
-- **Volume**: 0.55 (55%)
+- **Volume**: 0.44 (44%)
 - **When**: User closes session with P&L > 0
 
 #### 4. **switch-pages.mp3** 🔄
 - **Trigger**: Navigation or mode switching
 - **Location**: Sidebar navigation, Mode toggle
 - **Frequency**: Frequent (every page change)
-- **Volume**: 0.4 (40%)
+- **Volume**: 0.32 (32%)
 - **When**:
   - User clicks Sidebar link (Operations, History, Settings, Profile)
   - User switches between Auto/Manual mode
@@ -93,7 +93,7 @@ const { playWin, playClick, playStartStopBot } = useSound();
 - **Trigger**: Losing session ends
 - **Location**: Session summary modal
 - **Frequency**: Occasional (negative sessions)
-- **Volume**: 0.5 (50%)
+- **Volume**: 0.25 (25%)
 - **When**: User closes session with P&L < 0
 
 ---
@@ -113,7 +113,7 @@ const { playWin, playClick, playStartStopBot } = useSound();
 - **Trigger**: Individual trade loss
 - **Location**: Trade result effect in Operations.tsx
 - **Frequency**: Very frequent (multiple losses per session)
-- **Volume**: 0.5 (50%)
+- **Volume**: 0.25 (25%)
 - **When**: Trade closes with LOSS result
 
 ---
@@ -134,13 +134,13 @@ const { playWin, playClick, playStartStopBot } = useSound();
 |---|------|---------|----------|-----------|--------|
 | 1 | win.mp3 | Trade WIN | Operations trade effect | Very Frequent | 50% |
 | 2 | level-up.mp3 | Level advancement | Gamification store | Rare | 60% |
-| 3 | winner-session.mp3 | Session profit | Session summary | Occasional | 55% |
-| 4 | switch-pages.mp3 | Navigation | Sidebar, Mode toggle | Frequent | 40% |
+| 3 | winner-session.mp3 | Session profit | Session summary | Occasional | 44% |
+| 4 | switch-pages.mp3 | Navigation | Sidebar, Mode toggle | Frequent | 32% |
 | 5 | streak.mp3 | 3+ win streak | Streak detection | Common | 45% |
 | 6 | click.mp3 | UI button click | Menu, dropdowns, buttons | Very Frequent | 30% |
-| 7 | loser-session.mp3 | Session loss | Session summary | Occasional | 50% |
-| 8 | startstopBot.mp3 | Bot control | Start/Stop buttons | Occasional | 50% |
-| 9 | loss.mp3 | Trade LOSS | Operations trade effect | Very Frequent | 50% |
+| 7 | loser-session.mp3 | Session loss | Session summary | Occasional | 25% |
+| 8 | startstopBot.mp3 | Bot control | Start/Stop buttons | Occasional | 35% |
+| 9 | loss.mp3 | Trade LOSS | Operations trade effect | Very Frequent | 25% |
 
 ## Component Integration Points
 

@@ -39,7 +39,7 @@ export const SoundProvider = ({ children }: { children: ReactNode }) => {
       // UI Navigation Sounds
       switchpages: new Howl({
         src: ['/sounds/switch-pages.mp3'],
-        volume: 0.4,
+        volume: 0.32,
         preload: 'metadata',
         html5: true,
         onload: () => console.log('✅ switch-pages.mp3 loaded'),
@@ -57,7 +57,7 @@ export const SoundProvider = ({ children }: { children: ReactNode }) => {
       // Bot Control Sounds
       startstopbot: new Howl({
         src: ['/sounds/startstopBot.mp3'],
-        volume: 0.5,
+        volume: 0.35,
         preload: 'metadata',
         html5: true,
         onload: () => console.log('✅ startstopBot.mp3 loaded'),
@@ -67,7 +67,7 @@ export const SoundProvider = ({ children }: { children: ReactNode }) => {
       // Trade Result Sounds
       loss: new Howl({
         src: ['/sounds/loss.mp3'],
-        volume: 0.5,
+        volume: 0.25,
         preload: 'metadata',
         html5: true,
         onload: () => console.log('✅ loss.mp3 loaded'),
@@ -75,7 +75,7 @@ export const SoundProvider = ({ children }: { children: ReactNode }) => {
       }),
       losersession: new Howl({
         src: ['/sounds/loser-session.mp3'],
-        volume: 0.5,
+        volume: 0.25,
         preload: 'metadata',
         html5: true,
         onload: () => console.log('✅ loser-session.mp3 loaded'),
@@ -101,7 +101,7 @@ export const SoundProvider = ({ children }: { children: ReactNode }) => {
       }),
       winnersession: new Howl({
         src: ['/sounds/winner-session.mp3'],
-        volume: 0.55,
+        volume: 0.44,
         preload: 'metadata',
         html5: true,
         onload: () => console.log('✅ winner-session.mp3 loaded'),
