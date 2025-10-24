@@ -242,14 +242,14 @@ export const DashboardHeader = ({ user }: DashboardHeaderProps) => {
 
       {/* Deposit Modal - Embedded iframe */}
       {showDepositModal && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[9999] flex items-center justify-center p-4">
-          <div className="w-full max-w-4xl max-h-[90vh] bg-slate-900 rounded-lg border border-slate-700/50 overflow-hidden flex flex-col shadow-2xl">
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[9999] flex items-center justify-center p-2 sm:p-4 md:p-6">
+          <div className="w-full h-[calc(100vh-1rem)] sm:h-[calc(100vh-2rem)] md:h-[calc(100vh-3rem)] md:max-w-6xl bg-slate-900 rounded-lg border border-slate-700/50 overflow-hidden flex flex-col shadow-2xl">
             {/* Header */}
-            <div className="px-6 py-4 border-b border-slate-700/30 flex items-center justify-between bg-slate-900/50">
-              <h2 className="text-xl font-bold text-white">Deposit</h2>
+            <div className="px-4 sm:px-6 py-3 sm:py-4 border-b border-slate-700/30 flex items-center justify-between bg-slate-900/50 flex-shrink-0">
+              <h2 className="text-lg sm:text-xl font-bold text-white">Deposit</h2>
               <button
                 onClick={() => setShowDepositModal(false)}
-                className="p-2 hover:bg-slate-800 rounded-lg transition-colors"
+                className="p-2 hover:bg-slate-800 rounded-lg transition-colors flex-shrink-0 ml-2"
                 aria-label="Close modal"
               >
                 <svg className="w-5 h-5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -274,14 +274,14 @@ export const DashboardHeader = ({ user }: DashboardHeaderProps) => {
 
       {/* Withdraw Modal - Embedded iframe */}
       {showWithdrawModal && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[9999] flex items-center justify-center p-4">
-          <div className="w-full max-w-4xl max-h-[90vh] bg-slate-900 rounded-lg border border-slate-700/50 overflow-hidden flex flex-col shadow-2xl">
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[9999] flex items-center justify-center p-2 sm:p-4 md:p-6">
+          <div className="w-full h-[calc(100vh-1rem)] sm:h-[calc(100vh-2rem)] md:h-[calc(100vh-3rem)] md:max-w-6xl bg-slate-900 rounded-lg border border-slate-700/50 overflow-hidden flex flex-col shadow-2xl">
             {/* Header */}
-            <div className="px-6 py-4 border-b border-slate-700/30 flex items-center justify-between bg-slate-900/50">
-              <h2 className="text-xl font-bold text-white">Withdraw</h2>
+            <div className="px-4 sm:px-6 py-3 sm:py-4 border-b border-slate-700/30 flex items-center justify-between bg-slate-900/50 flex-shrink-0">
+              <h2 className="text-lg sm:text-xl font-bold text-white">Withdraw</h2>
               <button
                 onClick={() => setShowWithdrawModal(false)}
-                className="p-2 hover:bg-slate-800 rounded-lg transition-colors"
+                className="p-2 hover:bg-slate-800 rounded-lg transition-colors flex-shrink-0 ml-2"
                 aria-label="Close modal"
               >
                 <svg className="w-5 h-5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
