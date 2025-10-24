@@ -18,6 +18,19 @@ interface ReferralCardProps {
 export function ReferralCard({ stats, isLoading, onCopyToClipboard }: ReferralCardProps) {
   const [copied, setCopied] = useState(false);
 
+  // Show debug message if in development
+  React.useEffect(() => {
+    if (isLoading) {
+      console.log('🔄 ReferralCard loading...');
+    }
+    if (!stats) {
+      console.log('⚠️ ReferralCard: stats is null or undefined');
+    }
+    if (stats) {
+      console.log('✅ ReferralCard: stats loaded', stats);
+    }
+  }, [stats, isLoading]);
+
   const handleCopyCode = async () => {
     if (!stats?.code) return;
     const success = await onCopyToClipboard(stats.code);
@@ -70,7 +83,13 @@ export function ReferralCard({ stats, isLoading, onCopyToClipboard }: ReferralCa
   }
 
   if (!stats) {
-    return null;
+    return (
+      <div className="p-4 rounded-lg bg-slate-800/40 border border-slate-700/50">
+        <p className="text-sm text-slate-400">
+          ℹ️ Sistema de referência disponível quando a tabela for criada no Supabase
+        </p>
+      </div>
+    );
   }
 
   return (

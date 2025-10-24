@@ -17,25 +17,37 @@ export function useReferralData(userId: string | null) {
 
   const fetchReferralData = async () => {
     if (!userId) {
+      console.log('⏭️ useReferralData: no userId, skipping');
       setStats(null);
       return;
     }
 
+    console.log('🔄 useReferralData: fetching data for userId:', userId);
     setIsLoading(true);
     setError(null);
 
     try {
       // Fetch referral code
+      console.log('📍 Fetching referral code from /api/referrals/my-code/' + userId);
       const codeResponse = await fetch(`/api/referrals/my-code/${userId}`);
-      if (!codeResponse.ok) throw new Error('Failed to fetch referral code');
+      if (!codeResponse.ok) {
+        const errorText = await codeResponse.text();
+        throw new Error(`Failed to fetch referral code: ${codeResponse.status} ${errorText}`);
+      }
       const codeData = await codeResponse.json();
+      console.log('✅ Code data:', codeData);
 
       // Fetch referral stats
+      console.log('📍 Fetching referral stats from /api/referrals/stats/' + userId);
       const statsResponse = await fetch(`/api/referrals/stats/${userId}`);
-      if (!statsResponse.ok) throw new Error('Failed to fetch referral stats');
+      if (!statsResponse.ok) {
+        const errorText = await statsResponse.text();
+        throw new Error(`Failed to fetch referral stats: ${statsResponse.status} ${errorText}`);
+      }
       const statsData = await statsResponse.json();
+      console.log('✅ Stats data:', statsData);
 
-      setStats({
+      const newStats = {
         code: codeData.code,
         shareLink: codeData.shareLink,
         totalReferrals: statsData.totalReferrals,
@@ -43,10 +55,13 @@ export function useReferralData(userId: string | null) {
         registeredReferrals: statsData.registeredReferrals,
         pendingReferrals: statsData.pendingReferrals,
         xpEarned: statsData.xpEarned,
-      });
+      };
+      console.log('✅ useReferralData: successfully loaded stats', newStats);
+      setStats(newStats);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Unknown error');
-      console.error('❌ Error fetching referral data:', err);
+      const errorMsg = err instanceof Error ? err.message : 'Unknown error';
+      setError(errorMsg);
+      console.error('❌ Error fetching referral data:', errorMsg);
     } finally {
       setIsLoading(false);
     }
