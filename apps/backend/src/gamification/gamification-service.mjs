@@ -49,6 +49,8 @@ export async function initializeUserGamification(supabase, userId) {
 
 /**
  * Get user gamification progress
+ * Automatically recalculates xp_next_level using new polynomial formula
+ * (handles legacy data from exponential formula)
  */
 export async function getUserProgress(supabase, userId) {
   try {
@@ -67,6 +69,27 @@ export async function getUserProgress(supabase, userId) {
         }
       }
       throw error;
+    }
+
+    // Recalculate xp_next_level using new polynomial formula (handles legacy data)
+    const correctXpForNextLevel = getXPForNextLevel(data.current_level);
+
+    // If mismatch detected (legacy exponential formula), update it silently
+    if (data.xp_next_level !== correctXpForNextLevel) {
+      // Update in background without blocking response
+      supabase
+        .from('user_gamification')
+        .update({ xp_next_level: correctXpForNextLevel })
+        .eq('user_id', userId)
+        .then(() => {
+          console.log(`✅ Updated xp_next_level for ${userId}: ${data.xp_next_level} → ${correctXpForNextLevel}`);
+        })
+        .catch((err) => {
+          console.error(`⚠️ Error updating xp_next_level for ${userId}:`, err);
+        });
+
+      // Return corrected data to user
+      data.xp_next_level = correctXpForNextLevel;
     }
 
     return { success: true, data };
