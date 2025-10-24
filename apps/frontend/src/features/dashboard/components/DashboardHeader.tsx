@@ -22,6 +22,8 @@ export const DashboardHeader = ({ user }: DashboardHeaderProps) => {
   // ✅ Pass userId to useBalance for per-user balance isolation
   const { balance, isLoading, error, accountType, setAccountType } = useBalance(true, user?.id)
   const [menuOpen, setMenuOpen] = useState(false)
+  const [showDepositModal, setShowDepositModal] = useState(false)
+  const [showWithdrawModal, setShowWithdrawModal] = useState(false)
   const menuRef = useRef<HTMLDivElement>(null)
 
   // Close menu when clicking outside
@@ -66,14 +68,13 @@ export const DashboardHeader = ({ user }: DashboardHeaderProps) => {
 
   const handleWithdraw = () => {
     playClick()
-    toast.info('Modal de saque em breve')
+    setShowWithdrawModal(true)
     setMenuOpen(false)
   }
 
   const handleDeposit = () => {
     playClick()
-    toast.info('Modal de depósito em breve')
-    setMenuOpen(false)
+    setShowDepositModal(true)
   }
 
   const handleSettings = () => {
@@ -238,6 +239,70 @@ export const DashboardHeader = ({ user }: DashboardHeaderProps) => {
           )}
         </div>
       </div>
+
+      {/* Deposit Modal - Embedded iframe */}
+      {showDepositModal && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[9999] flex items-center justify-center p-4">
+          <div className="w-full max-w-4xl max-h-[90vh] bg-slate-900 rounded-lg border border-slate-700/50 overflow-hidden flex flex-col shadow-2xl">
+            {/* Header */}
+            <div className="px-6 py-4 border-b border-slate-700/30 flex items-center justify-between bg-slate-900/50">
+              <h2 className="text-xl font-bold text-white">Deposit</h2>
+              <button
+                onClick={() => setShowDepositModal(false)}
+                className="p-2 hover:bg-slate-800 rounded-lg transition-colors"
+                aria-label="Close modal"
+              >
+                <svg className="w-5 h-5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+
+            {/* iframe Content */}
+            <div className="flex-1 overflow-hidden">
+              <iframe
+                src="https://trade.avalonbroker.com/pt/counting"
+                className="w-full h-full border-0"
+                title="Deposit"
+                sandbox="allow-same-origin allow-scripts allow-popups allow-forms"
+                allow="payment"
+              />
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Withdraw Modal - Embedded iframe */}
+      {showWithdrawModal && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[9999] flex items-center justify-center p-4">
+          <div className="w-full max-w-4xl max-h-[90vh] bg-slate-900 rounded-lg border border-slate-700/50 overflow-hidden flex flex-col shadow-2xl">
+            {/* Header */}
+            <div className="px-6 py-4 border-b border-slate-700/30 flex items-center justify-between bg-slate-900/50">
+              <h2 className="text-xl font-bold text-white">Withdraw</h2>
+              <button
+                onClick={() => setShowWithdrawModal(false)}
+                className="p-2 hover:bg-slate-800 rounded-lg transition-colors"
+                aria-label="Close modal"
+              >
+                <svg className="w-5 h-5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+
+            {/* iframe Content */}
+            <div className="flex-1 overflow-hidden">
+              <iframe
+                src="https://trade.avalonbroker.com/en/withdrawal"
+                className="w-full h-full border-0"
+                title="Withdraw"
+                sandbox="allow-same-origin allow-scripts allow-popups allow-forms"
+                allow="payment"
+              />
+            </div>
+          </div>
+        </div>
+      )}
     </header>
   )
 }
