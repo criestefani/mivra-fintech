@@ -75,21 +75,21 @@ export function BadgesCollection({ userId, maxColumns = 4 }: BadgesCollectionPro
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-2xl font-bold text-white">Badges & Conquistas</h2>
-          <p className="text-sm text-slate-400 mt-1">
+          <h2 className="text-lg md:text-xl lg:text-2xl font-bold text-white">Badges & Conquistas</h2>
+          <p className="text-xs md:text-sm text-slate-400 mt-1">
             {totalBadges} total • {stats.byRarity.legendary} legendários
           </p>
         </div>
       </div>
 
       {/* Stats by Rarity */}
-      <div className="grid grid-cols-4 gap-2">
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2">
         {BADGE_RARITIES.map((rarity) => (
           <button
             key={rarity}
             onClick={() => setSelectedRarity(selectedRarity === rarity ? null : rarity)}
             className={cn(
-              'px-3 py-2 rounded-lg text-sm font-medium transition-all',
+              'px-2 md:px-3 py-1.5 md:py-2 rounded-lg text-xs md:text-sm font-medium transition-all',
               selectedRarity === rarity
                 ? `bg-gradient-to-r ${RARITY_COLORS[rarity as keyof typeof RARITY_COLORS]} border text-white`
                 : 'bg-slate-800/50 border border-slate-700 text-slate-300 hover:bg-slate-700/50'
@@ -102,11 +102,11 @@ export function BadgesCollection({ userId, maxColumns = 4 }: BadgesCollectionPro
       </div>
 
       {/* Category Filter */}
-      <div className="flex flex-wrap gap-2">
+      <div className="flex flex-wrap gap-1 md:gap-2">
         <button
           onClick={() => setSelectedCategory(null)}
           className={cn(
-            'px-3 py-1.5 rounded-lg text-sm transition-all',
+            'px-2 md:px-3 py-1 md:py-1.5 rounded-lg text-xs md:text-sm transition-all',
             selectedCategory === null
               ? 'bg-primary/30 border border-primary text-primary'
               : 'bg-slate-800/30 border border-slate-700 text-slate-400 hover:bg-slate-700/30'
@@ -119,7 +119,7 @@ export function BadgesCollection({ userId, maxColumns = 4 }: BadgesCollectionPro
             key={category}
             onClick={() => setSelectedCategory(selectedCategory === category ? null : category)}
             className={cn(
-              'px-3 py-1.5 rounded-lg text-sm transition-all',
+              'px-2 md:px-3 py-1 md:py-1.5 rounded-lg text-xs md:text-sm transition-all',
               selectedCategory === category
                 ? 'bg-primary/30 border border-primary text-primary'
                 : 'bg-slate-800/30 border border-slate-700 text-slate-400 hover:bg-slate-700/30'
@@ -155,7 +155,7 @@ export function BadgesCollection({ userId, maxColumns = 4 }: BadgesCollectionPro
               transition={{ delay: index * 0.05 }}
               onClick={() => setSelectedBadge(badge)}
               className={cn(
-                'p-4 rounded-lg border backdrop-blur-xl transition-all group relative overflow-hidden',
+                'p-2 md:p-3 lg:p-4 rounded-lg border backdrop-blur-xl transition-all group relative overflow-hidden',
                 `bg-gradient-to-br ${RARITY_COLORS[badge.badge_rarity as keyof typeof RARITY_COLORS]}`,
                 'hover:shadow-lg hover:shadow-current hover:scale-105 active:scale-95'
               )}
@@ -163,10 +163,10 @@ export function BadgesCollection({ userId, maxColumns = 4 }: BadgesCollectionPro
               whileTap={{ scale: 0.95 }}
             >
               {/* Badge content */}
-              <div className="flex flex-col items-center text-center space-y-2">
-                <div className="text-3xl">{badge.badge_icon || '🏆'}</div>
+              <div className="flex flex-col items-center text-center space-y-1 md:space-y-2">
+                <div className="text-2xl md:text-3xl">{badge.badge_icon || '🏆'}</div>
                 <div className="flex-1">
-                  <h3 className="text-sm font-semibold text-white line-clamp-2">
+                  <h3 className="text-xs md:text-sm font-semibold text-white line-clamp-2">
                     {badge.badge_name}
                   </h3>
                   <p className="text-xs opacity-75 mt-1 text-white/70">
@@ -198,15 +198,15 @@ export function BadgesCollection({ userId, maxColumns = 4 }: BadgesCollectionPro
             exit={{ scale: 0.9, y: 20 }}
             onClick={(e) => e.stopPropagation()}
             className={cn(
-              'w-full max-w-sm p-6 rounded-xl border backdrop-blur-xl',
+              'w-full max-w-sm p-4 md:p-6 rounded-xl border backdrop-blur-xl',
               `bg-gradient-to-br ${RARITY_COLORS[selectedBadge.badge_rarity as keyof typeof RARITY_COLORS]}`
             )}
           >
             {/* Badge icon */}
-            <div className="text-6xl text-center mb-4">{selectedBadge.badge_icon || '🏆'}</div>
+            <div className="text-5xl md:text-6xl text-center mb-3 md:mb-4">{selectedBadge.badge_icon || '🏆'}</div>
 
             {/* Badge name */}
-            <h2 className="text-2xl font-bold text-white text-center mb-2">
+            <h2 className="text-lg md:text-2xl font-bold text-white text-center mb-2">
               {selectedBadge.badge_name}
             </h2>
 

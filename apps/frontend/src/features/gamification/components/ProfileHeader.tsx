@@ -37,10 +37,10 @@ export function ProfileHeader({ stats, rank }: ProfileHeaderProps) {
       {/* Info */}
       <div className="flex-1 space-y-3">
         <div>
-          <h1 className="text-4xl lg:text-5xl font-bold text-white">
+          <h1 className="text-2xl md:text-3xl lg:text-4xl font-bold text-white">
             Level {stats.current_level}
           </h1>
-          <p className="text-slate-400 text-lg">
+          <p className="text-slate-400 text-sm md:text-base lg:text-lg">
             {stats.level_title} • {stats.total_xp.toLocaleString()} XP
           </p>
           {rank && (

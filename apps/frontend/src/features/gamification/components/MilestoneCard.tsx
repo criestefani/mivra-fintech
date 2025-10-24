@@ -29,17 +29,17 @@ export function MilestoneCard({ milestone, index = 0 }: MilestoneCardProps) {
       transition={{ delay: index * 0.05 }}
       whileHover={milestone.achieved ? { scale: 1.05 } : {}}
       className={cn(
-        'backdrop-blur-xl bg-slate-900/50 border-slate-700/50 rounded-lg p-6 transition-all duration-300 border',
+        'backdrop-blur-xl bg-slate-900/50 border-slate-700/50 rounded-lg p-3 md:p-4 lg:p-6 transition-all duration-300 border',
         milestone.achieved
           ? 'hover:shadow-lg hover:shadow-primary/20 cursor-pointer'
           : 'opacity-50 grayscale'
       )}
     >
       {/* Icon */}
-      <div className="text-5xl mb-4">{milestone.icon}</div>
+      <div className="text-4xl md:text-5xl mb-2 md:mb-4">{milestone.icon}</div>
 
       {/* Content */}
-      <h3 className="font-bold text-white text-lg truncate">
+      <h3 className="font-bold text-white text-sm md:text-base lg:text-lg truncate">
         {milestone.name}
       </h3>
 

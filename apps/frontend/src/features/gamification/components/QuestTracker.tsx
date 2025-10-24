@@ -84,7 +84,7 @@ export function QuestTracker({ userId, maxQuests = 6 }: QuestTrackerProps) {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h3 className="text-lg font-bold text-white">Missões Ativas</h3>
+          <h3 className="text-sm md:text-base lg:text-lg font-bold text-white">Missões Ativas</h3>
           <p className="text-xs text-slate-400 mt-1">
             {claimableQuests.length} completada{claimableQuests.length !== 1 ? 's' : ''}
           </p>
@@ -115,7 +115,7 @@ export function QuestTracker({ userId, maxQuests = 6 }: QuestTrackerProps) {
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ delay: index * 0.1 }}
                 className={cn(
-                  'p-3 rounded-lg border backdrop-blur-lg transition-all bg-gradient-to-r',
+                  'p-2 md:p-3 lg:p-4 rounded-lg border backdrop-blur-lg transition-all bg-gradient-to-r',
                   quest.quest_type === 'daily' && 'from-blue-900/40 to-blue-800/40 border-blue-500/30',
                   quest.quest_type === 'weekly' && 'from-purple-900/40 to-purple-800/40 border-purple-500/30',
                   quest.quest_type === 'special' && 'from-amber-900/40 to-amber-800/40 border-amber-500/30',
@@ -123,9 +123,9 @@ export function QuestTracker({ userId, maxQuests = 6 }: QuestTrackerProps) {
                   isClaimable && 'ring-2 ring-primary/50'
                 )}
               >
-                <div className="flex items-start gap-3">
+                <div className="flex items-start gap-2 md:gap-3">
                   {/* Icon */}
-                  <div className="text-xl flex-shrink-0 mt-0.5">
+                  <div className="text-lg md:text-xl flex-shrink-0 mt-0.5">
                     {getQuestIcon(quest.quest_name)}
                   </div>
 
@@ -133,7 +133,7 @@ export function QuestTracker({ userId, maxQuests = 6 }: QuestTrackerProps) {
                   <div className="flex-1 min-w-0">
                     {/* Title and badges */}
                     <div className="flex items-center gap-2 flex-wrap">
-                      <h4 className="text-sm font-semibold text-white truncate">
+                      <h4 className="text-xs md:text-sm font-semibold text-white truncate">
                         {quest.quest_name}
                       </h4>
                       <span className="text-xs px-2 py-0.5 rounded bg-white/10 text-white/70">
@@ -193,7 +193,7 @@ export function QuestTracker({ userId, maxQuests = 6 }: QuestTrackerProps) {
                       whileHover={{ scale: 1.05 }}
                       whileTap={{ scale: 0.95 }}
                       onClick={() => claimQuest(quest.id)}
-                      className="flex-shrink-0 px-3 py-1.5 rounded-lg bg-emerald-500/30 border border-emerald-500/50 text-emerald-300 hover:bg-emerald-500/50 font-semibold text-xs transition-all"
+                      className="flex-shrink-0 px-2 md:px-3 py-1 md:py-1.5 rounded-lg bg-emerald-500/30 border border-emerald-500/50 text-emerald-300 hover:bg-emerald-500/50 font-semibold text-xs transition-all"
                     >
                       Claim
                     </motion.button>

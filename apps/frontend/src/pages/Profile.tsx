@@ -60,20 +60,20 @@ const ProfilePage_Wrapper = () => {
       <DashboardHeader user={user} />
       <Sidebar />
 
-      <main className="lg:ml-64 pt-8 pb-32 relative z-20">
+      <main className="lg:ml-64 pt-6 md:pt-8 pb-32 relative z-20">
         {/* Diagonal Section Header with Title */}
         <DiagonalSection
           direction="bottom-left"
           gradientFrom="from-primary/40"
-          className="h-48 lg:h-64 relative z-20 mt-4"
+          className="h-32 md:h-40 lg:h-48 relative z-20 mt-4 -mx-3 md:mx-0"
         >
           <div className="relative z-30">
-            <h1 className="text-4xl lg:text-5xl font-bold text-white">Seu Perfil</h1>
-            <p className="text-muted-foreground mt-2 text-lg">Acompanhe seu progresso e conquistas</p>
+            <h1 className="text-2xl md:text-3xl lg:text-4xl font-bold text-white">Seu Perfil</h1>
+            <p className="text-muted-foreground mt-1 md:mt-2 text-xs md:text-sm lg:text-base">Acompanhe seu progresso e conquistas</p>
           </div>
         </DiagonalSection>
 
-        <div className="px-4 pt-8 pb-8 space-y-12">
+        <div className="px-3 md:px-4 pt-6 md:pt-8 pb-8 space-y-8 md:space-y-10 lg:space-y-12">
           {/* Profile Header - User Stats */}
           {!isProfileLoading && profileData?.stats ? (
             <motion.div
@@ -95,27 +95,27 @@ const ProfilePage_Wrapper = () => {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.5, delay: 0.1 }}
-              className="grid grid-cols-2 md:grid-cols-4 gap-4"
+              className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2 md:gap-3 lg:gap-4"
             >
               {/* Total Badges */}
-              <div className="backdrop-blur-xl bg-slate-900/50 border border-slate-700/50 rounded-lg p-6 text-center">
-                <div className="text-3xl mb-2">🏆</div>
-                <p className="text-slate-400 text-sm mb-1">Conquistas</p>
-                <p className="text-2xl font-bold text-white">{profileData.totalBadges}</p>
+              <div className="backdrop-blur-xl bg-slate-900/50 border border-slate-700/50 rounded-lg p-3 md:p-4 lg:p-6 text-center">
+                <div className="text-2xl md:text-3xl mb-1 md:mb-2">🏆</div>
+                <p className="text-slate-400 text-xs md:text-sm mb-1">Conquistas</p>
+                <p className="text-lg md:text-2xl font-bold text-white">{profileData.totalBadges}</p>
               </div>
 
               {/* Total Trades */}
-              <div className="backdrop-blur-xl bg-slate-900/50 border border-slate-700/50 rounded-lg p-6 text-center">
-                <div className="text-3xl mb-2">📊</div>
-                <p className="text-slate-400 text-sm mb-1">Trades</p>
-                <p className="text-2xl font-bold text-white">{profileData.stats.total_trades}</p>
+              <div className="backdrop-blur-xl bg-slate-900/50 border border-slate-700/50 rounded-lg p-3 md:p-4 lg:p-6 text-center">
+                <div className="text-2xl md:text-3xl mb-1 md:mb-2">📊</div>
+                <p className="text-slate-400 text-xs md:text-sm mb-1">Trades</p>
+                <p className="text-lg md:text-2xl font-bold text-white">{profileData.stats.total_trades}</p>
               </div>
 
               {/* Win Rate */}
-              <div className="backdrop-blur-xl bg-slate-900/50 border border-slate-700/50 rounded-lg p-6 text-center">
-                <div className="text-3xl mb-2">📈</div>
-                <p className="text-slate-400 text-sm mb-1">Taxa de Vitória</p>
-                <p className="text-2xl font-bold text-white">
+              <div className="backdrop-blur-xl bg-slate-900/50 border border-slate-700/50 rounded-lg p-3 md:p-4 lg:p-6 text-center">
+                <div className="text-2xl md:text-3xl mb-1 md:mb-2">📈</div>
+                <p className="text-slate-400 text-xs md:text-sm mb-1">Taxa de Vitória</p>
+                <p className="text-lg md:text-2xl font-bold text-white">
                   {profileData.stats.total_trades > 0
                     ? ((profileData.stats.total_wins / profileData.stats.total_trades) * 100).toFixed(1)
                     : 0}%
@@ -123,10 +123,10 @@ const ProfilePage_Wrapper = () => {
               </div>
 
               {/* Current Streak */}
-              <div className="backdrop-blur-xl bg-slate-900/50 border border-slate-700/50 rounded-lg p-6 text-center">
-                <div className="text-3xl mb-2">🔥</div>
-                <p className="text-slate-400 text-sm mb-1">Streak Atual</p>
-                <p className="text-2xl font-bold text-white">{profileData.stats.current_streak}</p>
+              <div className="backdrop-blur-xl bg-slate-900/50 border border-slate-700/50 rounded-lg p-3 md:p-4 lg:p-6 text-center">
+                <div className="text-2xl md:text-3xl mb-1 md:mb-2">🔥</div>
+                <p className="text-slate-400 text-xs md:text-sm mb-1">Streak Atual</p>
+                <p className="text-lg md:text-2xl font-bold text-white">{profileData.stats.current_streak}</p>
               </div>
             </motion.div>
           )}

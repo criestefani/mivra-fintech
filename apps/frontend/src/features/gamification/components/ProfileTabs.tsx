@@ -28,19 +28,19 @@ export function ProfileTabs({ userId }: ProfileTabsProps) {
   return (
     <div className="space-y-6">
       {/* Tab Navigation */}
-      <div className="flex flex-wrap gap-2 border-b border-slate-700/50 pb-4">
+      <div className="flex flex-wrap gap-1 md:gap-2 border-b border-slate-700/50 pb-4">
         {TABS.map((tab) => (
           <button
             key={tab.id}
             onClick={() => setActiveTab(tab.id)}
             className={cn(
-              'px-4 py-2 rounded-lg font-medium transition-all relative',
+              'px-2 md:px-4 py-2 rounded-lg font-medium transition-all relative text-xs md:text-sm',
               activeTab === tab.id
                 ? 'text-white'
                 : 'text-slate-400 hover:text-slate-300'
             )}
           >
-            <span className="mr-2">{tab.icon}</span>
+            <span className="mr-1 md:mr-2">{tab.icon}</span>
             {tab.label}
             {activeTab === tab.id && (
               <motion.div
