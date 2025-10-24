@@ -32,6 +32,12 @@ export const useBotSocket = (userId?: string): BotSocketData => {
     socketInstance.on('connect', () => {
       console.log('[useBotSocket] ✅ Connected to Socket.IO')
       setIsConnected(true)
+
+      // ✅ Authenticate with server and associate userId with socket
+      if (userId) {
+        socketInstance.emit('user:auth', { userId })
+        console.log(`[useBotSocket] 🔐 Authenticated with userId: ${userId}`)
+      }
     })
 
     socketInstance.on('disconnect', () => {

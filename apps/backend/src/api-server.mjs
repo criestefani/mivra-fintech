@@ -259,6 +259,16 @@ function setupCandlesHandlers() {
   io.on('connection', (socket) => {
     console.log('🔌 Frontend connected:', socket.id);
 
+    // ✅ Associate user ID with socket connection for per-user broadcasting
+    socket.on('user:auth', ({ userId }) => {
+      if (userId) {
+        socket.userId = userId;
+        // Join a room with user ID for bot status updates
+        socket.join(userId);
+        console.log(`✅ Socket ${socket.id} associated with user ${userId}`);
+      }
+    });
+
     // Subscribe to candles using realTimeChartDataLayer
     socket.on('subscribe-candles', async ({ asset, timeframe, strategy }) => {
       console.log('📡 === SUBSCRIBE-CANDLES RECEBIDO ===');
