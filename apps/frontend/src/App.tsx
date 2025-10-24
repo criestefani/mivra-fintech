@@ -5,6 +5,7 @@ import { useSupabaseUser } from '@/hooks/useSupabaseUser'
 import { ThemeProvider } from '@/shared/context/ThemeProvider'
 import { BrokerProvider } from '@/shared/context/BrokerContext'
 import { NotificationProvider } from '@/features/gamification/providers/NotificationProvider'
+import { SoundProvider } from '@/contexts/SoundContext'
 
 // MivraTech Pages
 import Auth from '@/pages/Auth'
@@ -33,7 +34,8 @@ function App() {
       <QueryClientProvider client={queryClient}>
         <BrokerProvider>
           <NotificationProvider>
-            <BrowserRouter>
+            <SoundProvider>
+              <BrowserRouter>
               <Routes>
                 {/* Auth */}
                 <Route path="/auth" element={<Auth />} />
@@ -55,6 +57,7 @@ function App() {
               {/* Global Toast Notifications */}
               <Toaster position="top-right" richColors closeButton />
             </BrowserRouter>
+            </SoundProvider>
           </NotificationProvider>
         </BrokerProvider>
       </QueryClientProvider>

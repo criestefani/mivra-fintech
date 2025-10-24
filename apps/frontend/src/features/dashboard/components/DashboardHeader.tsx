@@ -7,6 +7,7 @@ import { supabase } from '@/integrations/supabase/client'
 import { useNavigate } from 'react-router-dom'
 import { useBalance } from '@/shared/hooks/useBalance'
 import { useToast } from '@/shared/hooks/use-toast'
+import { useSound } from '@/contexts/SoundContext'
 import { useState, useRef, useEffect } from 'react'
 import { cn } from '@/shared/utils/cn'
 
@@ -17,6 +18,7 @@ interface DashboardHeaderProps {
 export const DashboardHeader = ({ user }: DashboardHeaderProps) => {
   const navigate = useNavigate()
   const { toast } = useToast()
+  const { playClick } = useSound()
   // ✅ Pass userId to useBalance for per-user balance isolation
   const { balance, isLoading, error, accountType, setAccountType } = useBalance(true, user?.id)
   const [menuOpen, setMenuOpen] = useState(false)
@@ -51,26 +53,31 @@ export const DashboardHeader = ({ user }: DashboardHeaderProps) => {
   }, [menuOpen])
 
   const handleSignOut = async () => {
+    playClick()
     await supabase.auth.signOut()
     navigate('/auth')
   }
 
   const handleReloadDemo = () => {
+    playClick()
     toast.info('Recarregando conta demo...')
     setMenuOpen(false)
   }
 
   const handleWithdraw = () => {
+    playClick()
     toast.info('Modal de saque em breve')
     setMenuOpen(false)
   }
 
   const handleDeposit = () => {
+    playClick()
     toast.info('Modal de depósito em breve')
     setMenuOpen(false)
   }
 
   const handleSettings = () => {
+    playClick()
     navigate('/settings')
     setMenuOpen(false)
   }
@@ -114,7 +121,10 @@ export const DashboardHeader = ({ user }: DashboardHeaderProps) => {
               <span className="text-sm text-muted-foreground">Carregando...</span>
             ) : error ? (
               <Button
-                onClick={handleSettings}
+                onClick={() => {
+                  playClick()
+                  handleSettings()
+                }}
                 size="sm"
                 className="bg-gradient-to-r from-red-600 via-red-500 to-red-600 hover:from-red-500 hover:via-red-400 hover:to-red-500 text-white shadow-lg shadow-red-500/30 font-semibold text-xs gap-2 px-4 py-1.5 transition-all duration-300 hover:shadow-xl hover:shadow-red-500/50 hover:scale-105 active:scale-95"
               >
@@ -133,7 +143,10 @@ export const DashboardHeader = ({ user }: DashboardHeaderProps) => {
           {/* Account Type Icon - Clean */}
           {balance && (
             <button
-              onClick={() => setAccountType(accountType === 'demo' ? 'real' : 'demo')}
+              onClick={() => {
+                playClick()
+                setAccountType(accountType === 'demo' ? 'real' : 'demo')
+              }}
               className="p-1.5 md:p-2 rounded-lg hover:bg-primary/20 transition-all duration-300 group"
               title={`Alternar: ${accountType === 'demo' ? 'Demo' : 'Real'}`}
             >
@@ -149,7 +162,10 @@ export const DashboardHeader = ({ user }: DashboardHeaderProps) => {
         <div className="flex items-center gap-2 relative" ref={menuRef}>
           {/* Deposit Button - Always Visible */}
           <Button
-            onClick={handleDeposit}
+            onClick={() => {
+              playClick()
+              handleDeposit()
+            }}
             size="sm"
             className="bg-gradient-to-r from-positive via-positive to-positive/80 hover:from-positive/95 hover:via-positive/90 hover:to-positive/75 text-positive-foreground shadow-lg shadow-positive/50 font-bold text-sm transition-all duration-300 hover:shadow-2xl hover:shadow-positive/60 hover:scale-105 active:scale-95 px-6"
           >
@@ -158,7 +174,10 @@ export const DashboardHeader = ({ user }: DashboardHeaderProps) => {
 
           {/* User Menu Button - Modern & Elegant */}
           <button
-            onClick={() => setMenuOpen(!menuOpen)}
+            onClick={() => {
+              playClick()
+              setMenuOpen(!menuOpen)
+            }}
             className={cn(
               'relative p-2 rounded-lg transition-all duration-300 group',
               'hover:bg-slate-800/40 active:scale-95',

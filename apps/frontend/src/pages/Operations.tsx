@@ -43,7 +43,7 @@ import { BadgeUnlockModal, LevelUpModal } from "@/components/gamification";
 import { useGamification, useStreaks, useQuests } from "@/hooks/useGamification";
 import { useFloatingXP } from "@/hooks/useFloatingXP";
 import { useFloatingPnL } from "@/components/ui/gamification";
-import { useSoundEffects } from "@/hooks/useSoundEffects";
+import { useSound } from "@/contexts/SoundContext";
 
 // ✅ New Hook
 import { useBotSocket } from "@/shared/hooks/useBotSocket";
@@ -128,7 +128,7 @@ const Operations = () => {
   const { dailyQuests } = useQuests(user?.id || null);
   const { xpInstances, showXP } = useFloatingXP();
   const { pnlInstances, showPnL, showLoss } = useFloatingPnL();
-  const sounds = useSoundEffects({ volume: 0.5, enabled: true });
+  const { playSwitchPages, playStartStopBot, playLoss, playLoserSession, playWin, playWinnerSession, playStreak, playClick } = useSound();
 
   // ✅ Track last processed trade to avoid infinite loops
   const lastProcessedTradeRef = useRef<string | null>(null);
@@ -709,13 +709,18 @@ const Operations = () => {
     }
   }, [sessionTrades, sessionStartTime, isRunning]);
 
-  // ✅ Play winner session sound when positive session ends
+  // ✅ Play winner/loser session sound when session ends
   useEffect(() => {
-    if (showSessionSummary && sessionPnL > 0) {
+    if (showSessionSummary) {
       // Only play once per session (check if we haven't played for this PnL value)
       if (lastSessionPnLRef.current !== sessionPnL) {
-        console.log('🏆 [Session Summary] Positive session - playing winner sound');
-        sounds.playWinnerSession();
+        if (sessionPnL > 0) {
+          console.log('🏆 [Session Summary] Positive session - playing winner sound');
+          playWinnerSession();
+        } else if (sessionPnL < 0) {
+          console.log('❌ [Session Summary] Negative session - playing loser sound');
+          playLoserSession();
+        }
         lastSessionPnLRef.current = sessionPnL;
       }
     } else if (!showSessionSummary) {
@@ -728,7 +733,7 @@ const Operations = () => {
   useEffect(() => {
     if (currentWinStreak >= 3 && currentWinStreak !== lastStreakSoundRef.current) {
       console.log('🔥 [Streak] 3+ win streak - playing streak sound');
-      sounds.playStreak();
+      playStreak();
       lastStreakSoundRef.current = currentWinStreak;
     }
   }, [currentWinStreak]);
@@ -764,7 +769,7 @@ const Operations = () => {
 
     if (latestTrade.result === "WIN") {
       console.log('✅ [Trade Result Effect] WIN detected - playing sound and showing XP and PnL');
-      sounds.playWin();
+      playWin();
       console.log('✅ [Trade Result Effect] Called playWin()');
 
       // Show floating animations
@@ -781,9 +786,10 @@ const Operations = () => {
         console.log('✅ [Trade Result Effect] Called showPnL() with amount:', latestTrade.pnl);
       }
     } else if (latestTrade.result === "LOSS") {
-      console.log('❌ [Trade Result Effect] LOSS detected - showing loss animation (no sound)');
+      console.log('❌ [Trade Result Effect] LOSS detected - playing loss sound and showing loss animation');
+      playLoss();
 
-      // Show floating loss animation (1.5 second duration, no sound)
+      // Show floating loss animation (1.5 second duration)
       if (latestTrade.pnl && latestTrade.pnl < 0) {
         const centerX = window.innerWidth / 2;
         const centerY = window.innerHeight / 2;
@@ -796,6 +802,7 @@ const Operations = () => {
   // START BOT handler
   const handleStartBot = async () => {
     console.log('🎯 [handleStartBot] Called - isConnected:', isConnected, 'entryValue:', entryValue, 'botMode:', botMode);
+    playStartStopBot();
 
     if (!isConnected) {
       console.log('❌ [handleStartBot] BLOCKED: Not connected to broker');
@@ -912,6 +919,7 @@ const Operations = () => {
 
   // STOP BOT handler
   const handleStopBot = async () => {
+    playStartStopBot();
     try {
       await stopBotRuntime(user!.id);
 
@@ -960,9 +968,9 @@ const Operations = () => {
       });
       return;
     }
+    playSwitchPages(); // ✅ Play switch pages sound
     setBotMode(mode);
     localStorage.setItem('botMode', mode); // ✅ Save to localStorage
-    sounds.playSwitchPages(); // ✅ Play switch pages sound
     console.log(`✅ [Operations] Mode changed to ${mode.toUpperCase()} and saved to localStorage`);
   };
 
@@ -1074,7 +1082,10 @@ const Operations = () => {
               <div className="flex-1 relative" ref={strategyMenuRef}>
                 <label className="text-xs md:text-sm font-medium text-white mb-2 block">Strategy</label>
                 <button
-                  onClick={() => setShowStrategyMenu(!showStrategyMenu)}
+                  onClick={() => {
+                    playClick();
+                    setShowStrategyMenu(!showStrategyMenu);
+                  }}
                   disabled={isRunning}
                   className="w-full px-4 py-2.5 rounded-lg bg-slate-900/50 border border-slate-700/50 text-white hover:border-slate-600/50 disabled:opacity-50 disabled:cursor-not-allowed transition-all focus:outline-none focus:ring-2 focus:ring-primary/50 text-left flex items-center justify-between"
                 >
@@ -1091,6 +1102,7 @@ const Operations = () => {
                         <button
                           key={strategy}
                           onClick={() => {
+                            playClick();
                             setSelectedStrategy(strategy);
                             setShowStrategyMenu(false);
                           }}
@@ -1112,7 +1124,10 @@ const Operations = () => {
               <Button
                 variant="outline"
                 size="sm"
-                onClick={() => setShowStrategyHelp(true)}
+                onClick={() => {
+                  playClick();
+                  setShowStrategyHelp(true);
+                }}
                 className="gap-2 border-slate-700/50 hover:bg-slate-800/50 mt-6 md:mt-6"
                 title="Strategy Information"
               >

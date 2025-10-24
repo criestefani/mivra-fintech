@@ -1,5 +1,6 @@
 import { Link, useLocation } from 'react-router-dom'
 import { cn } from '@/shared/utils/cn'
+import { useSound } from '@/contexts/SoundContext'
 import {
   Activity,
   TrendingUp,
@@ -39,6 +40,7 @@ const links: SidebarLink[] = [
 
 export const Sidebar = () => {
   const location = useLocation()
+  const { playSwitchPages } = useSound()
 
   const isActive = (path: string) => {
     return location.pathname === path
@@ -53,6 +55,7 @@ export const Sidebar = () => {
             <Link
               key={link.to}
               to={link.to}
+              onClick={playSwitchPages}
               className={cn(
                 'group flex items-center gap-3 rounded-lg px-4 py-3 text-sm font-medium transition-all duration-300 border',
                 isActive(link.to)
@@ -87,6 +90,7 @@ export const Sidebar = () => {
             <Link
               key={link.to}
               to={link.to}
+              onClick={playSwitchPages}
               className={cn(
                 'flex min-w-[56px] flex-col items-center gap-1.5 rounded-t-lg px-3 py-2 text-xs font-medium transition-all duration-300 border-b-2 relative',
                 isActive(link.to)
