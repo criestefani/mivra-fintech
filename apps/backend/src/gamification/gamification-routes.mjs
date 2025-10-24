@@ -508,7 +508,28 @@ router.get('/profile/:userId', async (req, res) => {
 
     if (statsError) throw statsError;
 
-    // 2. Get user badges count
+    // 2. Recalculate xp_next_level using new polynomial formula (handles legacy data)
+    const correctXpForNextLevel = stats.current_level >= 30 ? 0 :
+      Math.round(100 + 50 * (stats.current_level + 1 - 1) + 1.8 * Math.pow(stats.current_level + 1 - 1, 2));
+
+    if (stats.xp_next_level !== correctXpForNextLevel) {
+      // Update in background (don't block response)
+      req.db
+        .from('user_gamification')
+        .update({ xp_next_level: correctXpForNextLevel })
+        .eq('user_id', userId)
+        .then(() => {
+          console.log(`✅ Fixed xp_next_level for ${userId}: ${stats.xp_next_level} → ${correctXpForNextLevel}`);
+        })
+        .catch((err) => {
+          console.error(`⚠️ Error updating xp_next_level for ${userId}:`, err);
+        });
+
+      // Return corrected data to user
+      stats.xp_next_level = correctXpForNextLevel;
+    }
+
+    // 3. Get user badges count
     const { data: badges, error: badgesError } = await req.db
       .from('user_badges')
       .select('id, earned_at')
@@ -517,7 +538,7 @@ router.get('/profile/:userId', async (req, res) => {
 
     if (badgesError) throw badgesError;
 
-    // 3. Calculate milestones
+    // 4. Calculate milestones
     // Get first trade demo
     const { data: firstTradeDemo } = await req.db
       .from('trade_history')
