@@ -2,7 +2,7 @@ import { User } from '@supabase/supabase-js'
 import { Button } from '@/shared/components/ui/button'
 import { Badge } from '@/shared/components/ui/badge'
 import { Switch } from '@/shared/components/ui/switch'
-import { LogOut, Settings, RotateCw, ArrowUpRight, Menu, Repeat2, AlertCircle } from 'lucide-react'
+import { LogOut, Settings, RotateCw, ArrowUpRight, Menu, Repeat2, AlertCircle, Plug } from 'lucide-react'
 import { supabase } from '@/integrations/supabase/client'
 import { useNavigate } from 'react-router-dom'
 import { useBalance } from '@/shared/hooks/useBalance'
@@ -113,7 +113,15 @@ export const DashboardHeader = ({ user }: DashboardHeaderProps) => {
             {isLoading ? (
               <span className="text-sm text-muted-foreground">Carregando...</span>
             ) : error ? (
-              <span className="text-sm text-destructive font-semibold">Desconectado</span>
+              <Button
+                onClick={handleSettings}
+                size="sm"
+                variant="ghost"
+                className="h-auto py-0.5 px-2 text-xs font-semibold gap-1.5 text-red-400 hover:text-red-300 hover:bg-red-400/10 transition-all duration-200"
+              >
+                <Plug className="w-3.5 h-3.5" />
+                Connect Broker
+              </Button>
             ) : balance ? (
               <span className={`text-lg font-bold ${accountType === 'demo' ? 'text-yellow-400' : 'text-green-400'}`}>
                 {formatBalance(balance.amount)}
