@@ -67,24 +67,16 @@ export const BrokerProvider: React.FC<BrokerProviderProps> = ({ children }) => {
     try {
       console.log(`[BrokerContext] Checking status for user ${userId}...`)
 
-      // Query Supabase directly for real-time status
-      const { data, error } = await supabase
-        .from('bot_status')
-        .select('is_connected, broker_balance, connection_type')
-        .eq('user_id', userId)
-        .maybeSingle()
-
-      if (error) {
-        console.error(`[BrokerContext] Error checking status for ${userId}:`, error)
-        return
-      }
+      // ✅ Call backend endpoint to validate real connection state
+      const response = await botAPI.getStatus(userId)
+      const data = response.data
 
       if (data) {
-        console.log(`[BrokerContext] User ${userId} status: ${data.is_connected ? 'Connected' : 'Disconnected'}, Balance: ${data.broker_balance}`)
+        console.log(`[BrokerContext] User ${userId} status: ${data.isConnected ? 'Connected' : 'Disconnected'}, Balance: ${data.balance}`)
         updateUserSession(userId, {
-          isConnected: data.is_connected || false,
-          balance: data.broker_balance || 0,
-          connectionType: data.connection_type || null,
+          isConnected: data.isConnected || false,
+          balance: data.balance || 0,
+          connectionType: data.connectionType || null,
         })
       } else {
         console.log(`[BrokerContext] No status record for user ${userId}`)

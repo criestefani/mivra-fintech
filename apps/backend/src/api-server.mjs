@@ -493,11 +493,15 @@ app.get('/health', (req, res) => {
 });
 
 // ✅ Endpoint: Status do bot (per-user)
-app.get('/api/bot/status', (req, res) => {
+app.get('/api/bot/status', async (req, res) => {
   try {
     const { userId } = req.query;
 
     console.log(`🔍 [BOT-STATUS] Checking status for user: ${userId}`);
+
+    // ✅ Check if user has an active SDK instance in memory
+    const userSdk = userSdkInstances.get(userId);
+    const hasActiveConnection = !!userSdk;
 
     // ✅ Get per-user bot status from userBotStatus Map
     const userPerUserStatus = userBotStatus.get(userId);
@@ -507,13 +511,39 @@ app.get('/api/bot/status', (req, res) => {
       lastUpdate: new Date().toISOString()
     };
 
-    // Also include connection info from Supabase bot_status if available
-    console.log(`📊 [BOT-STATUS] User ${userId} - Status:`, userStatus);
+    // ✅ VALIDATION: If no active SDK but Supabase says connected, update Supabase
+    if (!hasActiveConnection && userStatus.isConnected) {
+      console.log(`⚠️ [BOT-STATUS] Stale connection detected for user ${userId}. Cleaning up...`);
+
+      // Update Supabase to reflect actual state
+      await supabase
+        .from('bot_status')
+        .update({
+          is_connected: false,
+          ssid: null,
+          connection_type: null,
+          last_updated: new Date().toISOString()
+        })
+        .eq('user_id', userId)
+        .catch(err => console.warn('⚠️ Failed to update stale connection:', err.message));
+
+      // Update local state with stale connection cleared
+      const cleanedStatus = {
+        running: false,
+        isConnected: false,
+        balance: 0,
+        connectionType: null,
+        lastUpdate: new Date().toISOString()
+      };
+      userBotStatus.set(userId, cleanedStatus);
+    }
+
+    console.log(`📊 [BOT-STATUS] User ${userId} - Status: Connected=${hasActiveConnection || userStatus.isConnected}, Running=${userStatus.running}`);
 
     res.json({
       ...userStatus,
       userId: userId,
-      isConnected: userBotStatus.has(userId) || botStatus?.isConnected || false
+      isConnected: hasActiveConnection || userStatus.isConnected || false
     });
   } catch (error) {
     console.error('❌ [BOT-STATUS] Error:', error.message);
@@ -620,10 +650,12 @@ app.post('/api/bot/connect', async (req, res) => {
       console.log(`💰 Selected Balance: ${balance.amount} ${balance.currency} (ID: ${balance.id})`);
     }
 
-    // ✅ Update per-user bot status
+    // ✅ Update per-user bot status (with balance for UI display)
     const userStatus = {
       running: false, // ✅ Bot runtime is NOT running - only broker is connected
       isConnected: true,
+      balance: balance?.amount || 0,
+      connectionType: 'websocket',
       lastUpdate: new Date().toISOString(),
       ssid: userSSID.substring(0, 15) + '...'  // ✅ SSID individual do usuário
     };
@@ -1170,6 +1202,8 @@ app.post('/api/bot/disconnect', async (req, res) => {
     const disconnectStatus = {
       running: false,
       isConnected: false,
+      balance: 0,
+      connectionType: null,
       ssid: null,
       lastUpdate: new Date().toISOString()
     };
