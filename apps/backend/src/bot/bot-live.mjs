@@ -95,6 +95,10 @@ class MivraTecBot {
     // ✅ ONE-AT-A-TIME TRADING: Only one position open at a time
     this.currentOpenPosition = null;
 
+    // ✅ OPERATION INTERVAL: 2-second delay between operations
+    this.lastOperationClosedAt = null;
+    this.operationCooldownMs = 2000; // 2 seconds between operations
+
     // ✅ DYNAMIC STATUS TRACKING
     this.botStatus = 'Starting bot...';
     this.currentAsset = null;
@@ -154,7 +158,9 @@ class MivraTecBot {
         // ✅ RESET FLAG: This position is closed, bot can trade again
         if (this.currentOpenPosition === position.externalId) {
           this.currentOpenPosition = null;
-          console.log('🟢 Bot livre para nova operação\n');
+          // ✅ SET COOLDOWN: 2-second delay before next operation
+          this.lastOperationClosedAt = Date.now();
+          console.log('🟢 Bot livre para nova operação (aguardando 2 segundos)\n');
         }
 
         await this.salvarResultado(position, position.externalId);
@@ -850,6 +856,16 @@ class MivraTecBot {
       if (this.currentOpenPosition) {
         console.log(`⏸️ Aguardando posição ${this.currentOpenPosition} fechar...\n`);
         return;
+      }
+
+      // ✅ COOLDOWN CHECK: Ensure 2 seconds between operations
+      if (this.lastOperationClosedAt) {
+        const timeSinceLastOperation = Date.now() - this.lastOperationClosedAt;
+        if (timeSinceLastOperation < this.operationCooldownMs) {
+          const remainingMs = this.operationCooldownMs - timeSinceLastOperation;
+          console.log(`⏳ Aguardando cooldown: ${Math.ceil(remainingMs / 1000)}s restantes\n`);
+          return;
+        }
       }
 
       let signals = [];
