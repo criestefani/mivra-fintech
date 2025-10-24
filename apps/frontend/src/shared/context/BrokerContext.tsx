@@ -20,6 +20,7 @@ interface BrokerContextType {
   disconnect: (userId: string) => Promise<void>
   checkStatus: (userId: string) => Promise<void>
   currentUserId: string | null
+  setActiveUser: (userId: string) => void  // ✅ Let components set active user
 }
 
 const BrokerContext = createContext<BrokerContextType | undefined>(undefined)
@@ -168,6 +169,7 @@ export const BrokerProvider: React.FC<BrokerProviderProps> = ({ children }) => {
     disconnect,
     checkStatus,
     currentUserId,
+    setActiveUser: (userId: string) => setCurrentUserId(userId),
   }
 
   return <BrokerContext.Provider value={value}>{children}</BrokerContext.Provider>

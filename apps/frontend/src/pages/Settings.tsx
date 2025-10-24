@@ -27,8 +27,8 @@ const Settings = () => {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   
-  // âœ… Usar hook correto useAvalon
-  const { isConnected, isLoading: avalonLoading, connect, disconnect, checkStatus } = useBrokerContext();
+  // âœ… Usar hook correto useAvalon com setActiveUser para isolamento por usuário
+  const { isConnected, isLoading: avalonLoading, connect, disconnect, checkStatus, setActiveUser } = useBrokerContext();
   
   const [brokerId, setBrokerId] = useState('');
   const [firstName, setFirstName] = useState('');
@@ -78,12 +78,15 @@ const Settings = () => {
     getUser();
   }, []);
 
-  // Check broker connection status when user is loaded
+  // ✅ Set active user and check broker connection status when user is loaded
   useEffect(() => {
     if (user?.id) {
+      // Inform BrokerContext that this user is now active
+      setActiveUser(user.id);
+      // Check this user's broker connection status
       checkStatus(user.id);
     }
-  }, [user?.id, checkStatus]);
+  }, [user?.id, checkStatus, setActiveUser]);
 
   // Handle profile data save
   const handleSaveProfile = async () => {
