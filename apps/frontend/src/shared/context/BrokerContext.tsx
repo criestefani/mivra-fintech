@@ -3,6 +3,14 @@ import { supabase } from '@/integrations/supabase/client'
 import { botAPI } from '@/shared/services/api/client'
 import { toast } from 'sonner'
 
+// ✅ User-specific session state
+interface UserSessionState {
+  isConnected: boolean
+  isLoading: boolean
+  balance: number
+  connectionType: string | null
+}
+
 interface BrokerContextType {
   isConnected: boolean
   isLoading: boolean
@@ -11,6 +19,7 @@ interface BrokerContextType {
   connect: (userId: string) => Promise<void>
   disconnect: (userId: string) => Promise<void>
   checkStatus: (userId: string) => Promise<void>
+  currentUserId: string | null
 }
 
 const BrokerContext = createContext<BrokerContextType | undefined>(undefined)
@@ -20,17 +29,41 @@ interface BrokerProviderProps {
 }
 
 export const BrokerProvider: React.FC<BrokerProviderProps> = ({ children }) => {
-  const [isConnected, setIsConnected] = useState(false)
-  const [isLoading, setIsLoading] = useState(false)
-  const [balance, setBalance] = useState(0)
-  const [connectionType, setConnectionType] = useState<string | null>(null)
+  // ✅ Store separate session state for each user
+  const [userSessions, setUserSessions] = useState<Record<string, UserSessionState>>({})
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null)
 
-  // Check connection status from database
+  // ✅ Get current user's state
+  const getCurrentSession = (userId?: string): UserSessionState => {
+    const id = userId || currentUserId
+    if (!id) {
+      return { isConnected: false, isLoading: false, balance: 0, connectionType: null }
+    }
+    return userSessions[id] || { isConnected: false, isLoading: false, balance: 0, connectionType: null }
+  }
+
+  // ✅ Update specific user's state
+  const updateUserSession = (userId: string, updates: Partial<UserSessionState>) => {
+    setUserSessions(prev => ({
+      ...prev,
+      [userId]: { ...getCurrentSession(userId), ...updates }
+    }))
+  }
+
+  // ✅ Set which user is "active" in this context
+  const setActiveUser = (userId: string) => {
+    setCurrentUserId(userId)
+  }
+
+  // Expose current user's state
+  const currentSession = getCurrentSession()
+
+  // ✅ Check connection status for specific user
   const checkStatus = useCallback(async (userId: string) => {
     if (!userId) return
 
     try {
-      console.log('[BrokerContext] Checking connection status from database...')
+      console.log(`[BrokerContext] Checking status for user ${userId}...`)
 
       // Query Supabase directly for real-time status
       const { data, error } = await supabase
@@ -40,44 +73,51 @@ export const BrokerProvider: React.FC<BrokerProviderProps> = ({ children }) => {
         .maybeSingle()
 
       if (error) {
-        console.error('[BrokerContext] Error checking status:', error)
+        console.error(`[BrokerContext] Error checking status for ${userId}:`, error)
         return
       }
 
       if (data) {
-        setIsConnected(data.is_connected || false)
-        setBalance(data.broker_balance || 0)
-        setConnectionType(data.connection_type || null)
-        console.log(`[BrokerContext] Status loaded: ${data.is_connected ? 'Connected' : 'Disconnected'}`)
+        console.log(`[BrokerContext] User ${userId} status: ${data.is_connected ? 'Connected' : 'Disconnected'}, Balance: ${data.broker_balance}`)
+        updateUserSession(userId, {
+          isConnected: data.is_connected || false,
+          balance: data.broker_balance || 0,
+          connectionType: data.connection_type || null,
+        })
       } else {
-        setIsConnected(false)
-        setBalance(0)
-        setConnectionType(null)
-        console.log('[BrokerContext] No status record found')
+        console.log(`[BrokerContext] No status record for user ${userId}`)
+        updateUserSession(userId, {
+          isConnected: false,
+          balance: 0,
+          connectionType: null,
+        })
       }
     } catch (error: any) {
-      console.error('[BrokerContext] Unexpected error:', error)
+      console.error(`[BrokerContext] Unexpected error for ${userId}:`, error)
     }
-  }, [])
+  }, [userSessions])
 
-  // Connect to broker
+  // ✅ Connect to broker for specific user
   const connect = useCallback(async (userId: string) => {
     if (!userId) {
       toast.error('Usuário não identificado')
       return
     }
 
-    setIsLoading(true)
+    updateUserSession(userId, { isLoading: true })
     try {
-      console.log('[BrokerContext] Connecting to broker...')
+      console.log(`[BrokerContext] Connecting user ${userId} to broker...`)
       const response = await botAPI.connect(userId)
 
       if (response.data?.success) {
-        setIsConnected(true)
-        setBalance(response.data.balanceAmount || 0)
-        setConnectionType('websocket')
+        updateUserSession(userId, {
+          isConnected: true,
+          balance: response.data.balanceAmount || 0,
+          connectionType: 'websocket',
+          isLoading: false,
+        })
         toast.success('Conectado à corretora com sucesso')
-        console.log('[BrokerContext] Connected successfully')
+        console.log(`[BrokerContext] User ${userId} connected successfully`)
 
         // Refresh status to ensure sync
         await checkStatus(userId)
@@ -85,47 +125,49 @@ export const BrokerProvider: React.FC<BrokerProviderProps> = ({ children }) => {
         throw new Error(response.data?.error || 'Falha ao conectar')
       }
     } catch (error: any) {
-      console.error('[BrokerContext] Connection failed:', error)
+      console.error(`[BrokerContext] Connection failed for ${userId}:`, error)
       toast.error(error.message || 'Falha ao conectar à corretora')
-      setIsConnected(false)
-    } finally {
-      setIsLoading(false)
+      updateUserSession(userId, { isConnected: false, isLoading: false })
     }
-  }, [checkStatus])
+  }, [checkStatus, userSessions])
 
-  // Disconnect from broker
+  // ✅ Disconnect from broker for specific user
   const disconnect = useCallback(async (userId: string) => {
     if (!userId) {
       toast.error('Usuário não identificado')
       return
     }
 
-    setIsLoading(true)
+    updateUserSession(userId, { isLoading: true })
     try {
-      console.log('[BrokerContext] Disconnecting from broker...')
+      console.log(`[BrokerContext] Disconnecting user ${userId} from broker...`)
       await botAPI.disconnect(userId)
 
-      setIsConnected(false)
-      setBalance(0)
-      setConnectionType(null)
+      updateUserSession(userId, {
+        isConnected: false,
+        balance: 0,
+        connectionType: null,
+        isLoading: false,
+      })
       toast.success('Desconectado da corretora')
-      console.log('[BrokerContext] Disconnected successfully')
+      console.log(`[BrokerContext] User ${userId} disconnected successfully`)
     } catch (error: any) {
-      console.error('[BrokerContext] Disconnect failed:', error)
+      console.error(`[BrokerContext] Disconnect failed for ${userId}:`, error)
       toast.error(error.message || 'Falha ao desconectar')
-    } finally {
-      setIsLoading(false)
+      updateUserSession(userId, { isLoading: false })
     }
-  }, [])
+  }, [userSessions])
 
+  // ✅ Expose current user's state from context
   const value: BrokerContextType = {
-    isConnected,
-    isLoading,
-    balance,
-    connectionType,
+    isConnected: currentSession.isConnected,
+    isLoading: currentSession.isLoading,
+    balance: currentSession.balance,
+    connectionType: currentSession.connectionType,
     connect,
     disconnect,
     checkStatus,
+    currentUserId,
   }
 
   return <BrokerContext.Provider value={value}>{children}</BrokerContext.Provider>
