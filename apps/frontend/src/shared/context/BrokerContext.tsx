@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useCallback, ReactNode } from 'react'
+import React, { createContext, useContext, useState, useCallback, useMemo, ReactNode } from 'react'
 import { supabase } from '@/integrations/supabase/client'
 import { botAPI } from '@/shared/services/api/client'
 import { toast } from 'sonner'
@@ -56,10 +56,11 @@ export const BrokerProvider: React.FC<BrokerProviderProps> = ({ children }) => {
     setCurrentUserId(userId)
   }
 
-  // Expose current user's state
-  const currentSession = getCurrentSession()
+  // ✅ Expose current user's state - REACTIVE with useMemo
+  const currentSession = useMemo(() => getCurrentSession(), [currentUserId, userSessions])
 
   // ✅ Check connection status for specific user
+  // ⚠️ Important: NO dependencies! Prevents infinite loops
   const checkStatus = useCallback(async (userId: string) => {
     if (!userId) return
 
@@ -96,9 +97,10 @@ export const BrokerProvider: React.FC<BrokerProviderProps> = ({ children }) => {
     } catch (error: any) {
       console.error(`[BrokerContext] Unexpected error for ${userId}:`, error)
     }
-  }, [userSessions])
+  }, [])
 
   // ✅ Connect to broker for specific user
+  // ⚠️ Important: NO dependencies! Prevents infinite loops
   const connect = useCallback(async (userId: string) => {
     if (!userId) {
       toast.error('Usuário não identificado')
@@ -121,7 +123,8 @@ export const BrokerProvider: React.FC<BrokerProviderProps> = ({ children }) => {
         console.log(`[BrokerContext] User ${userId} connected successfully`)
 
         // Refresh status to ensure sync
-        await checkStatus(userId)
+        // Note: We call checkStatus directly without awaiting to avoid delays
+        checkStatus(userId).catch(err => console.error('checkStatus failed:', err))
       } else {
         throw new Error(response.data?.error || 'Falha ao conectar')
       }
@@ -130,9 +133,10 @@ export const BrokerProvider: React.FC<BrokerProviderProps> = ({ children }) => {
       toast.error(error.message || 'Falha ao conectar à corretora')
       updateUserSession(userId, { isConnected: false, isLoading: false })
     }
-  }, [checkStatus, userSessions])
+  }, [])
 
   // ✅ Disconnect from broker for specific user
+  // ⚠️ Important: NO dependencies! Prevents infinite loops
   const disconnect = useCallback(async (userId: string) => {
     if (!userId) {
       toast.error('Usuário não identificado')
@@ -157,7 +161,7 @@ export const BrokerProvider: React.FC<BrokerProviderProps> = ({ children }) => {
       toast.error(error.message || 'Falha ao desconectar')
       updateUserSession(userId, { isLoading: false })
     }
-  }, [userSessions])
+  }, [])
 
   // ✅ Expose current user's state from context
   const value: BrokerContextType = {
