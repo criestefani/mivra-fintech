@@ -13,6 +13,7 @@ interface CreateUserParams {
   last_name: string
   country_code: string
   locale: string
+  balance_currency_code?: string
 }
 
 interface CreateUserResult {
@@ -37,6 +38,9 @@ class AvalonService {
           last_name: params.last_name,
           email: params.email,
           password: params.password,
+          country_code: params.country_code,
+          balance_currency_code: params.balance_currency_code || 'USD',
+          locale: params.locale,
           affId: AVALON_AFF_ID,
         }),
       })

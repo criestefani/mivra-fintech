@@ -13,6 +13,65 @@ import { DiagonalSection } from "@/components/ui/gamification";
 // 🆕 IMPORTAR O SERVIÇO AVALON
 import avalonService from "@/features/broker/services/avalon.service";
 
+// ✅ Mapeamento de país -> moeda
+const COUNTRY_CURRENCY_MAP: Record<string, string> = {
+  'BR': 'BRL', // Brasil
+  'US': 'USD', // Estados Unidos
+  'CA': 'CAD', // Canadá
+  'MX': 'MXN', // México
+  'AR': 'ARS', // Argentina
+  'CL': 'CLP', // Chile
+  'CO': 'COP', // Colômbia
+  'PE': 'PEN', // Peru
+  'GB': 'GBP', // Reino Unido
+  'IE': 'EUR', // Irlanda
+  'DE': 'EUR', // Alemanha
+  'FR': 'EUR', // França
+  'IT': 'EUR', // Itália
+  'ES': 'EUR', // Espanha
+  'PT': 'EUR', // Portugal
+  'JP': 'JPY', // Japão
+  'CN': 'CNY', // China
+  'IN': 'INR', // Índia
+  'AU': 'AUD', // Austrália
+};
+
+// ✅ Função para detectar país do usuário
+async function detectUserCountry(): Promise<string> {
+  try {
+    const response = await fetch('https://ipapi.co/json/', {
+      signal: AbortSignal.timeout(2000)
+    });
+    const data = await response.json();
+    return data.country_code || 'BR';
+  } catch {
+    return 'BR'; // Padrão Brasil
+  }
+}
+
+// ✅ Função para obter moeda baseado no país
+function getCurrencyForCountry(countryCode: string): string {
+  return COUNTRY_CURRENCY_MAP[countryCode] || 'USD';
+}
+
+// ✅ Função para obter locale baseado no país
+function getLocaleForCountry(countryCode: string): string {
+  const localeMap: Record<string, string> = {
+    'BR': 'pt-BR',
+    'PT': 'pt-PT',
+    'US': 'en-US',
+    'GB': 'en-GB',
+    'DE': 'de-DE',
+    'FR': 'fr-FR',
+    'IT': 'it-IT',
+    'ES': 'es-ES',
+    'MX': 'es-MX',
+    'JP': 'ja-JP',
+    'CN': 'zh-CN',
+  };
+  return localeMap[countryCode] || 'en-US';
+}
+
 const authSchema = z.object({
   email: z.string().trim().email({ message: "Email inválido" }),
   password: z.string().min(6, { message: "Senha deve ter no mínimo 6 caracteres" }),
@@ -22,11 +81,17 @@ const authSchema = z.object({
 const Auth = () => {
   const navigate = useNavigate();
   const [isLoading, setIsLoading] = useState(false);
+  const [userCountry, setUserCountry] = useState<string>('BR');
   const [formData, setFormData] = useState({
     email: "",
     password: "",
     fullName: "",
   });
+
+  // ✅ Detectar país do usuário ao montar o componente
+  React.useEffect(() => {
+    detectUserCountry().then(setUserCountry);
+  }, []);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -76,13 +141,21 @@ const Auth = () => {
 
       // ✅ PASSO 1: Tentar criar na Avalon PRIMEIRO
       console.log('🔄 Testando criação na Avalon...');
+      console.log('📍 País detectado:', userCountry);
+
+      const currency = getCurrencyForCountry(userCountry);
+      const locale = getLocaleForCountry(userCountry);
+
+      console.log('💱 Moeda:', currency, '📝 Locale:', locale);
+
       const avalonResult = await avalonService.createUser({
         email: formData.email,
         password: formData.password,
         first_name: formData.fullName?.split(' ')[0] || 'Usuario',
         last_name: formData.fullName?.split(' ').slice(1).join(' ') || 'MivraTech',
-        country_code: 'BR',
-        locale: 'pt_BR',
+        country_code: userCountry,
+        balance_currency_code: currency,
+        locale: locale,
       });
 
       if (!avalonResult.success) {
