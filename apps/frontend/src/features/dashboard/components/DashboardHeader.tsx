@@ -107,7 +107,8 @@ export const DashboardHeader = ({ user }: DashboardHeaderProps) => {
   )
 
   return (
-    <header className="fixed top-0 left-0 right-0 z-50 bg-gradient-to-r from-slate-900/95 via-slate-800/95 to-slate-900/95 border-b border-primary/30 shadow-2xl backdrop-blur-md" style={{ paddingTop: 'max(1rem, env(safe-area-inset-top))', paddingBottom: '1rem', minHeight: '4rem' }}>
+    <>
+      <header className="fixed top-0 left-0 right-0 z-50 bg-gradient-to-r from-slate-900/95 via-slate-800/95 to-slate-900/95 border-b border-primary/30 shadow-2xl backdrop-blur-md" style={{ paddingTop: 'max(1rem, env(safe-area-inset-top))', paddingBottom: '1rem', minHeight: '4rem' }}>
       <div className="container mx-auto h-full px-4 flex items-center justify-between gap-4">
         {/* Left: Demo + Balance + Account Toggle */}
         <div className="flex items-center gap-3 md:gap-4">
@@ -240,69 +241,88 @@ export const DashboardHeader = ({ user }: DashboardHeaderProps) => {
         </div>
       </div>
 
-      {/* Deposit Modal - Embedded iframe */}
-      {showDepositModal && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[9999] flex items-center justify-center p-2 sm:p-4 md:p-6">
-          <div className="w-full h-[calc(100vh-1rem)] sm:h-[calc(100vh-2rem)] md:h-[calc(100vh-3rem)] md:max-w-6xl bg-slate-900 rounded-lg border border-slate-700/50 overflow-hidden flex flex-col shadow-2xl">
+    </header>
+
+    {/* Deposit Popup - FORA do header para maior liberdade */}
+    {showDepositModal && (
+      <>
+        {/* Overlay */}
+        <div
+          className="fixed inset-0 bg-black/70 backdrop-blur-md z-[9998]"
+          onClick={() => setShowDepositModal(false)}
+        />
+
+        {/* Popup Container - GRANDE E CENTRALIZADO */}
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center p-2 sm:p-3 md:p-4 lg:p-6">
+          <div className="w-[95vw] h-[95vh] sm:w-[90vw] md:w-[85vw] lg:w-[80vw] max-w-7xl bg-slate-900 rounded-2xl border border-slate-700/50 shadow-2xl flex flex-col overflow-hidden">
             {/* Header */}
-            <div className="px-4 sm:px-6 py-3 sm:py-4 border-b border-slate-700/30 flex items-center justify-between bg-slate-900/50 flex-shrink-0">
-              <h2 className="text-lg sm:text-xl font-bold text-white">Deposit</h2>
+            <div className="flex items-center justify-between px-4 sm:px-6 md:px-8 py-4 sm:py-5 md:py-6 bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 border-b border-slate-700/30 flex-shrink-0">
+              <h2 className="text-xl sm:text-2xl md:text-3xl font-bold text-white">💰 Deposit</h2>
               <button
                 onClick={() => setShowDepositModal(false)}
-                className="p-2 hover:bg-slate-800 rounded-lg transition-colors flex-shrink-0 ml-2"
-                aria-label="Close modal"
+                className="p-2 sm:p-3 hover:bg-slate-700/50 rounded-lg transition-all duration-200 flex-shrink-0 text-slate-400 hover:text-white active:scale-95"
+                aria-label="Close"
               >
-                <svg className="w-5 h-5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="w-7 h-7 sm:w-8 sm:h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                 </svg>
               </button>
             </div>
 
-            {/* iframe Content */}
-            <div className="flex-1 overflow-hidden">
+            {/* Content with scroll - FULL HEIGHT */}
+            <div className="flex-1 overflow-y-auto bg-slate-950/50">
               <iframe
                 src="https://trade.avalonbroker.com/pt/counting"
                 className="w-full h-full border-0"
                 title="Deposit"
-                sandbox="allow-same-origin allow-scripts allow-popups allow-forms"
+                sandbox="allow-same-origin allow-scripts allow-popups allow-forms allow-top-navigation"
                 allow="payment"
               />
             </div>
           </div>
         </div>
-      )}
+      </>
+    )}
 
-      {/* Withdraw Modal - Embedded iframe */}
-      {showWithdrawModal && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[9999] flex items-center justify-center p-2 sm:p-4 md:p-6">
-          <div className="w-full h-[calc(100vh-1rem)] sm:h-[calc(100vh-2rem)] md:h-[calc(100vh-3rem)] md:max-w-6xl bg-slate-900 rounded-lg border border-slate-700/50 overflow-hidden flex flex-col shadow-2xl">
+    {/* Withdraw Popup - FORA do header para maior liberdade */}
+    {showWithdrawModal && (
+      <>
+        {/* Overlay */}
+        <div
+          className="fixed inset-0 bg-black/70 backdrop-blur-md z-[9998]"
+          onClick={() => setShowWithdrawModal(false)}
+        />
+
+        {/* Popup Container - GRANDE E CENTRALIZADO */}
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center p-2 sm:p-3 md:p-4 lg:p-6">
+          <div className="w-[95vw] h-[95vh] sm:w-[90vw] md:w-[85vw] lg:w-[80vw] max-w-7xl bg-slate-900 rounded-2xl border border-slate-700/50 shadow-2xl flex flex-col overflow-hidden">
             {/* Header */}
-            <div className="px-4 sm:px-6 py-3 sm:py-4 border-b border-slate-700/30 flex items-center justify-between bg-slate-900/50 flex-shrink-0">
-              <h2 className="text-lg sm:text-xl font-bold text-white">Withdraw</h2>
+            <div className="flex items-center justify-between px-4 sm:px-6 md:px-8 py-4 sm:py-5 md:py-6 bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 border-b border-slate-700/30 flex-shrink-0">
+              <h2 className="text-xl sm:text-2xl md:text-3xl font-bold text-white">💸 Withdraw</h2>
               <button
                 onClick={() => setShowWithdrawModal(false)}
-                className="p-2 hover:bg-slate-800 rounded-lg transition-colors flex-shrink-0 ml-2"
-                aria-label="Close modal"
+                className="p-2 sm:p-3 hover:bg-slate-700/50 rounded-lg transition-all duration-200 flex-shrink-0 text-slate-400 hover:text-white active:scale-95"
+                aria-label="Close"
               >
-                <svg className="w-5 h-5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="w-7 h-7 sm:w-8 sm:h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                 </svg>
               </button>
             </div>
 
-            {/* iframe Content */}
-            <div className="flex-1 overflow-hidden">
+            {/* Content with scroll - FULL HEIGHT */}
+            <div className="flex-1 overflow-y-auto bg-slate-950/50">
               <iframe
                 src="https://trade.avalonbroker.com/en/withdrawal"
                 className="w-full h-full border-0"
                 title="Withdraw"
-                sandbox="allow-same-origin allow-scripts allow-popups allow-forms"
+                sandbox="allow-same-origin allow-scripts allow-popups allow-forms allow-top-navigation"
                 allow="payment"
               />
             </div>
           </div>
         </div>
-      )}
-    </header>
+      </>
+    )}
   )
 }
