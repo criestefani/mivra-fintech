@@ -1416,15 +1416,15 @@ app.post('/api/bot/start-runtime', async (req, res) => {
       if (output.includes('[BOT-STATUS]')) {
         const statusData = extractJsonFromOutput(output);
         if (statusData) {
-          // Broadcast to all connected clients via Socket.io
-          io.emit('bot:status-update', {
+          // ✅ Broadcast to user's connected clients ONLY via Socket.io
+          io.to(userId).emit('bot:status-update', {
             status: statusData.status,
             currentAsset: statusData.currentAsset,
             timestamp: statusData.timestamp,
             userId: userId
           });
 
-          console.log(`📡 Bot status broadcasted: ${statusData.status}`);
+          console.log(`📡 Bot status broadcasted to user ${userId}: ${statusData.status}`);
         } else {
           console.error('❌ Failed to parse BOT-STATUS JSON');
         }
@@ -1434,8 +1434,8 @@ app.post('/api/bot/start-runtime', async (req, res) => {
       if (output.includes('[BOT-POSITION-OPENED]')) {
         const positionData = extractJsonFromOutput(output);
         if (positionData) {
-          // Broadcast to all connected clients via Socket.io
-          io.emit('position:opened', {
+          // ✅ Broadcast to user's connected clients ONLY via Socket.io
+          io.to(userId).emit('position:opened', {
             positionId: positionData.positionId,
             activeName: positionData.activeName,
             activeId: positionData.activeId,
@@ -1444,7 +1444,7 @@ app.post('/api/bot/start-runtime', async (req, res) => {
             userId: userId
           });
 
-          console.log(`✅ Position opened event broadcasted: ${positionData.activeName} → ${positionData.direction}`);
+          console.log(`✅ Position opened event broadcasted to user ${userId}: ${positionData.activeName} → ${positionData.direction}`);
         } else {
           console.error('❌ Failed to parse BOT-POSITION-OPENED JSON');
         }
@@ -1454,8 +1454,8 @@ app.post('/api/bot/start-runtime', async (req, res) => {
       if (output.includes('[BOT-POSITION-CLOSED]')) {
         const positionData = extractJsonFromOutput(output);
         if (positionData) {
-          // Broadcast to all connected clients via Socket.io
-          io.emit('position:closed', {
+          // ✅ Broadcast to user's connected clients ONLY via Socket.io
+          io.to(userId).emit('position:closed', {
             positionId: positionData.positionId,
             resultado: positionData.resultado,
             pnl: positionData.pnl,
@@ -1492,14 +1492,14 @@ app.post('/api/bot/start-runtime', async (req, res) => {
       botStatus.running = false;
       botStatus.lastUpdate = new Date().toISOString();
 
-      // ✅ Broadcast Bot Stopped status via Socket.io with userId
-      io.emit('bot:status-update', {
+      // ✅ Broadcast Bot Stopped status via Socket.io to user's connected clients ONLY
+      io.to(userId).emit('bot:status-update', {
         status: 'Bot Stopped',
         currentAsset: 'None',
         timestamp: new Date().toISOString(),
         userId: userId
       });
-      console.log('📡 Bot Stopped status broadcasted');
+      console.log(`📡 Bot Stopped status broadcasted to user ${userId}`);
 
       // ✅ Update bot_status in Supabase (async, non-blocking)
       supabase
