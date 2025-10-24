@@ -116,10 +116,9 @@ export const DashboardHeader = ({ user }: DashboardHeaderProps) => {
               <Button
                 onClick={handleSettings}
                 size="sm"
-                variant="ghost"
-                className="h-auto py-0.5 px-2 text-xs font-semibold gap-1.5 text-red-400 hover:text-red-300 hover:bg-red-400/10 transition-all duration-200"
+                className="bg-gradient-to-r from-red-600 via-red-500 to-red-600 hover:from-red-500 hover:via-red-400 hover:to-red-500 text-white shadow-lg shadow-red-500/30 font-semibold text-xs gap-2 px-4 py-1.5 transition-all duration-300 hover:shadow-xl hover:shadow-red-500/50 hover:scale-105 active:scale-95"
               >
-                <Plug className="w-3.5 h-3.5" />
+                <Plug className="w-4 h-4" />
                 Connect Broker
               </Button>
             ) : balance ? (
