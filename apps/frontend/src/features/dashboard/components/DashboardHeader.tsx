@@ -324,5 +324,6 @@ export const DashboardHeader = ({ user }: DashboardHeaderProps) => {
         </div>
       </>
     )}
+    </>
   )
 }
