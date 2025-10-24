@@ -65,7 +65,20 @@ export const DashboardHeader = ({ user }: DashboardHeaderProps) => {
     setMenuOpen(false)
 
     try {
-      const response = await fetch('http://localhost:4001/api/bot/reload-demo', {
+      // Construir URL dinâmica para funcionar em desktop e mobile
+      const getApiUrl = () => {
+        // Se está em localhost/127.0.0.1 (desktop dev), usa localhost:4001
+        if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+          return 'http://localhost:4001'
+        }
+        // Se está em IP ou domínio (mobile/produção), usa o mesmo host com porta 4001
+        return `http://${window.location.hostname}:4001`
+      }
+
+      const apiUrl = getApiUrl()
+      console.log(`🌐 [Reload Demo] Chamando API em: ${apiUrl}/api/bot/reload-demo`)
+
+      const response = await fetch(`${apiUrl}/api/bot/reload-demo`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ userId: user.id })
