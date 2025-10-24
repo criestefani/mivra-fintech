@@ -17,7 +17,8 @@ interface DashboardHeaderProps {
 export const DashboardHeader = ({ user }: DashboardHeaderProps) => {
   const navigate = useNavigate()
   const { toast } = useToast()
-  const { balance, isLoading, error, accountType, setAccountType } = useBalance(true)
+  // ✅ Pass userId to useBalance for per-user balance isolation
+  const { balance, isLoading, error, accountType, setAccountType } = useBalance(true, user?.id)
   const [menuOpen, setMenuOpen] = useState(false)
   const menuRef = useRef<HTMLDivElement>(null)
 

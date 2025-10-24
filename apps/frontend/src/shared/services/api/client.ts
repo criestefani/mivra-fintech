@@ -43,8 +43,13 @@ apiClient.interceptors.response.use(
 export const botAPI = {
   connect: (userId: string) => apiClient.post('/api/bot/connect', { userId }),
   disconnect: (userId: string) => apiClient.post('/api/bot/disconnect', { userId }),
-  getBalance: (accountType: 'demo' | 'real') =>
-    apiClient.get(`/api/bot/balance?accountType=${accountType}`),
+  // ✅ getBalance now accepts optional userId for per-user balance isolation
+  getBalance: (accountType: 'demo' | 'real', userId?: string) => {
+    const url = userId
+      ? `/api/bot/balance?accountType=${accountType}&userId=${userId}`
+      : `/api/bot/balance?accountType=${accountType}`
+    return apiClient.get(url)
+  },
   switchAccountType: (accountType: 'demo' | 'real') =>
     apiClient.post('/api/bot/account-type', { accountType }),
   startRuntime: (userId: string, config?: any) =>

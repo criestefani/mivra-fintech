@@ -31,7 +31,7 @@ interface UseBalanceReturn {
 
 const POLLING_INTERVAL = 5000 // 5 seconds
 
-export function useBalance(enabled = true): UseBalanceReturn {
+export function useBalance(enabled = true, userId?: string): UseBalanceReturn {
   const [accountType, setAccountType] = useState<AccountType>('demo')
   const [balance, setBalance] = useState<BalanceData | null>(null)
   const [availableBalances, setAvailableBalances] = useState<{ demo: number; real: number } | null>(null)
@@ -41,7 +41,11 @@ export function useBalance(enabled = true): UseBalanceReturn {
   const fetchBalance = useCallback(async () => {
     try {
       setError(null)
-      const response = await fetch(`/api/bot/balance?accountType=${accountType}`)
+      // ✅ Include userId in query if provided for per-user balance isolation
+      const url = userId
+        ? `/api/bot/balance?accountType=${accountType}&userId=${userId}`
+        : `/api/bot/balance?accountType=${accountType}`
+      const response = await fetch(url)
 
       // Check if response has valid JSON content before parsing
       const contentType = response.headers.get('content-type')
@@ -86,7 +90,7 @@ export function useBalance(enabled = true): UseBalanceReturn {
     } finally {
       setIsLoading(false)
     }
-  }, [accountType])
+  }, [accountType, userId])
 
   // Initial fetch
   useEffect(() => {
