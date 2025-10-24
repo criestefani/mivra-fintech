@@ -10,7 +10,7 @@ dotenv.config({ path: path.resolve(__dirname, '../.env') });
 import express from 'express';
 import cors from 'cors';
 import { spawn } from 'child_process';
-import { ClientSdk, SsidAuthMethod } from '@quadcode-tech/client-sdk-js'; // ✅ WebSocket SDK
+import { ClientSdk, SsidAuthMethod, BalanceType } from '@quadcode-tech/client-sdk-js'; // ✅ WebSocket SDK
 import { supabase } from '../config/supabase.mjs';
 import { createServer } from 'http';
 import { Server } from 'socket.io';
@@ -2324,6 +2324,69 @@ app.get('/api/bot/sessions/:userId/status', (req, res) => {
     });
   } catch (error) {
     console.error(`❌ [API] Erro ao obter status:`, error.message);
+    return res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
+// POST /api/bot/reload-demo - Recarrega saldo da conta demo para $10,000
+app.post('/api/bot/reload-demo', async (req, res) => {
+  try {
+    const { userId } = req.body;
+
+    if (!userId) {
+      return res.status(400).json({
+        success: false,
+        error: 'userId is required'
+      });
+    }
+
+    // Obter SDK do usuário
+    const userSdk = userSdkInstances.get(userId);
+    if (!userSdk) {
+      console.log(`❌ [Reload Demo] SDK não encontrado para usuário ${userId}`);
+      return res.status(400).json({
+        success: false,
+        error: 'Not connected to broker. Please call /api/bot/connect first.'
+      });
+    }
+
+    console.log(`🔄 [Reload Demo] Recarregando saldo demo para usuário ${userId}...`);
+
+    // Obter balances
+    const balancesData = await userSdk.balances();
+    const allBalances = balancesData.getBalances();
+
+    console.log(`📊 [Reload Demo] Balances encontrados: ${allBalances.length}`);
+
+    // Encontrar balance demo
+    const demoBalance = allBalances.find(b => b.type === BalanceType.Demo);
+
+    if (!demoBalance) {
+      console.log(`❌ [Reload Demo] Nenhuma conta demo encontrada para usuário ${userId}`);
+      return res.status(404).json({
+        success: false,
+        error: 'Demo balance not found. Only real accounts available.'
+      });
+    }
+
+    console.log(`💰 [Reload Demo] Demo balance encontrado. Saldo atual: $${demoBalance.amount}`);
+
+    // Resetar balance demo para $10,000
+    await demoBalance.resetDemoBalance();
+
+    console.log(`✅ [Reload Demo] Saldo demo recarregado para usuário ${userId}`);
+
+    return res.json({
+      success: true,
+      message: 'Demo balance reloaded successfully to $10,000',
+      newBalance: 10000
+    });
+
+  } catch (error) {
+    console.error(`❌ [Reload Demo] Erro:`, error.message);
     return res.status(500).json({
       success: false,
       error: error.message

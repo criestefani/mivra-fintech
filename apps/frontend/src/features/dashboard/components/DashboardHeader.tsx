@@ -60,10 +60,40 @@ export const DashboardHeader = ({ user }: DashboardHeaderProps) => {
     navigate('/auth')
   }
 
-  const handleReloadDemo = () => {
+  const handleReloadDemo = async () => {
     playClick()
-    toast.info('Recarregando conta demo...')
     setMenuOpen(false)
+
+    try {
+      const response = await fetch('http://localhost:4001/api/bot/reload-demo', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId: user.id })
+      })
+
+      const data = await response.json()
+
+      if (data.success) {
+        toast({
+          title: "✅ Demo Account Reloaded",
+          description: `Your demo balance has been reset to $${data.newBalance.toLocaleString()}`,
+          variant: "default",
+        })
+      } else {
+        toast({
+          title: "❌ Error",
+          description: data.error || "Failed to reload demo account",
+          variant: "destructive",
+        })
+      }
+    } catch (error) {
+      console.error('Error reloading demo:', error)
+      toast({
+        title: "❌ Error",
+        description: "Failed to reload demo account. Make sure you're connected to the broker.",
+        variant: "destructive",
+      })
+    }
   }
 
   const handleWithdraw = () => {
@@ -269,6 +299,21 @@ export const DashboardHeader = ({ user }: DashboardHeaderProps) => {
               </button>
             </div>
 
+            {/* Warning Banner - PROMINENT */}
+            <div className="px-4 sm:px-6 md:px-8 py-4 sm:py-5 md:py-6 bg-gradient-to-r from-amber-900/50 via-amber-800/40 to-amber-900/50 border-b-2 border-amber-500 flex items-start gap-4 flex-shrink-0 shadow-lg">
+              <svg className="w-7 h-7 sm:w-8 sm:h-8 text-amber-400 flex-shrink-0 mt-1" fill="currentColor" viewBox="0 0 20 20">
+                <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+              </svg>
+              <div className="flex flex-col gap-1">
+                <p className="text-sm sm:text-base md:text-lg text-amber-50 font-bold">
+                  Important Notice
+                </p>
+                <p className="text-xs sm:text-sm text-amber-100 font-medium">
+                  Please log in to Avalon using the SAME credentials you use to access MivraTech.
+                </p>
+              </div>
+            </div>
+
             {/* Content with scroll - FULL HEIGHT */}
             <div className="flex-1 overflow-y-auto bg-slate-950/50">
               <iframe
@@ -308,6 +353,21 @@ export const DashboardHeader = ({ user }: DashboardHeaderProps) => {
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                 </svg>
               </button>
+            </div>
+
+            {/* Warning Banner - PROMINENT */}
+            <div className="px-4 sm:px-6 md:px-8 py-4 sm:py-5 md:py-6 bg-gradient-to-r from-amber-900/50 via-amber-800/40 to-amber-900/50 border-b-2 border-amber-500 flex items-start gap-4 flex-shrink-0 shadow-lg">
+              <svg className="w-7 h-7 sm:w-8 sm:h-8 text-amber-400 flex-shrink-0 mt-1" fill="currentColor" viewBox="0 0 20 20">
+                <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+              </svg>
+              <div className="flex flex-col gap-1">
+                <p className="text-sm sm:text-base md:text-lg text-amber-50 font-bold">
+                  Important Notice
+                </p>
+                <p className="text-xs sm:text-sm text-amber-100 font-medium">
+                  Please log in to Avalon using the SAME credentials you use to access MivraTech.
+                </p>
+              </div>
             </div>
 
             {/* Content with scroll - FULL HEIGHT */}
