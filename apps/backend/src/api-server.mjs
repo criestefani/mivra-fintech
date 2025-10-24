@@ -956,15 +956,12 @@ app.post('/api/avalon/create-user', async (req, res) => {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        // ✅ TODOS OS CAMPOS OBRIGATÓRIOS para API Avalon
+        // ✅ PAYLOAD SIMPLES - API Avalon /users aceita apenas estes campos
+        // (country_code, locale, ip e balance_currency_code são ignorados pela API)
+        // Guardaremos esses dados no Supabase para future reference
+        name: `${req.body.first_name} ${req.body.last_name}`,
         email: req.body.email,
         password: req.body.password,
-        country_code: req.body.country_code || 'BR',
-        ip: req.body.ip || '127.0.0.1',
-        balance_currency_code: req.body.balance_currency_code || 'USD',
-        first_name: req.body.first_name,
-        last_name: req.body.last_name,
-        locale: req.body.locale || 'pt-BR',
         affId: parseInt(process.env.AVALON_AFF_ID || '430322')
       })
     });

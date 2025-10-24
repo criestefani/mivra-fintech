@@ -13,20 +13,27 @@ import { DiagonalSection } from "@/components/ui/gamification";
 // 🆕 IMPORTAR O SERVIÇO AVALON
 import avalonService from "@/features/broker/services/avalon.service";
 
-// ✅ Mapeamento de país -> moeda (LatAm + fallback)
+// ✅ Mapeamento de país -> moeda
 const COUNTRY_CURRENCY_MAP: Record<string, string> = {
-  'BR': 'BRL', // 🇧🇷 Brasil
-  'MX': 'MXN', // 🇲🇽 México
-  'AR': 'ARS', // 🇦🇷 Argentina
-  'CL': 'CLP', // 🇨🇱 Chile
-  'CO': 'COP', // 🇨🇴 Colômbia
-  'PE': 'PEN', // 🇵🇪 Peru
-  'EC': 'USD', // 🇪🇨 Equador
-  'VE': 'VES', // 🇻🇪 Venezuela
-  'UY': 'UYU', // 🇺🇾 Uruguai
-  'PY': 'PYG', // 🇵🇾 Paraguai
-  'BO': 'BOB', // 🇧🇴 Bolívia
-  'US': 'USD', // Fallback EUA
+  'BR': 'BRL', // Brasil
+  'US': 'USD', // Estados Unidos
+  'CA': 'CAD', // Canadá
+  'MX': 'MXN', // México
+  'AR': 'ARS', // Argentina
+  'CL': 'CLP', // Chile
+  'CO': 'COP', // Colômbia
+  'PE': 'PEN', // Peru
+  'GB': 'GBP', // Reino Unido
+  'IE': 'EUR', // Irlanda
+  'DE': 'EUR', // Alemanha
+  'FR': 'EUR', // França
+  'IT': 'EUR', // Itália
+  'ES': 'EUR', // Espanha
+  'PT': 'EUR', // Portugal
+  'JP': 'JPY', // Japão
+  'CN': 'CNY', // China
+  'IN': 'INR', // Índia
+  'AU': 'AUD', // Austrália
 };
 
 // ✅ Função para detectar país do usuário
@@ -47,26 +54,22 @@ function getCurrencyForCountry(countryCode: string): string {
   return COUNTRY_CURRENCY_MAP[countryCode] || 'USD';
 }
 
-// ✅ Função para obter locale baseado no país (LatAm + extensível)
+// ✅ Função para obter locale baseado no país
 function getLocaleForCountry(countryCode: string): string {
   const localeMap: Record<string, string> = {
-    // LatAm (prioridade)
-    'BR': 'pt-BR', // Brasil
-    'MX': 'es-MX', // México
-    'AR': 'es-AR', // Argentina
-    'CL': 'es-CL', // Chile
-    'CO': 'es-CO', // Colômbia
-    'PE': 'es-PE', // Peru
-    'EC': 'es-EC', // Equador
-    'VE': 'es-VE', // Venezuela
-    'UY': 'es-UY', // Uruguai
-    'PY': 'es-PY', // Paraguai
-    'BO': 'es-BO', // Bolívia
-    // Outros (extensível para futuro)
-    'US': 'en-US', // EUA
-    'PT': 'pt-PT', // Portugal
+    'BR': 'pt-BR',
+    'PT': 'pt-PT',
+    'US': 'en-US',
+    'GB': 'en-GB',
+    'DE': 'de-DE',
+    'FR': 'fr-FR',
+    'IT': 'it-IT',
+    'ES': 'es-ES',
+    'MX': 'es-MX',
+    'JP': 'ja-JP',
+    'CN': 'zh-CN',
   };
-  return localeMap[countryCode] || 'en-US'; // Fallback para inglês
+  return localeMap[countryCode] || 'en-US';
 }
 
 const authSchema = z.object({
