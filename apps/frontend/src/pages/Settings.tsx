@@ -79,6 +79,7 @@ const Settings = () => {
   }, []);
 
   // ✅ Set active user and check broker connection status when user is loaded
+  // ⚠️ Important: Only depend on user?.id to prevent infinite loops
   useEffect(() => {
     if (user?.id) {
       // Inform BrokerContext that this user is now active
@@ -86,7 +87,7 @@ const Settings = () => {
       // Check this user's broker connection status
       checkStatus(user.id);
     }
-  }, [user?.id, checkStatus, setActiveUser]);
+  }, [user?.id]);
 
   // Handle profile data save
   const handleSaveProfile = async () => {

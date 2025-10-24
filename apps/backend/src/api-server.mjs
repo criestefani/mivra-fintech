@@ -1492,16 +1492,6 @@ app.post('/api/bot/start-runtime', async (req, res) => {
       botStatus.running = false;
       botStatus.lastUpdate = new Date().toISOString();
 
-      // ✅ Update Supabase bot_status
-      supabase
-        .from('bot_status')
-        .update({
-          bot_running: false,
-          bot_pid: null
-        })
-        .eq('user_id', userId)
-        .catch((error) => console.warn('⚠️ Failed to update bot_status on exit:', error.message));
-
       // ✅ Broadcast Bot Stopped status via Socket.io with userId
       io.emit('bot:status-update', {
         status: 'Bot Stopped',
@@ -1511,7 +1501,7 @@ app.post('/api/bot/start-runtime', async (req, res) => {
       });
       console.log('📡 Bot Stopped status broadcasted');
 
-      // Update bot_status (async, non-blocking)
+      // ✅ Update bot_status in Supabase (async, non-blocking)
       supabase
         .from('bot_status')
         .update({ bot_running: false, bot_pid: null })
@@ -1519,7 +1509,7 @@ app.post('/api/bot/start-runtime', async (req, res) => {
         .then(() => console.log('✅ Bot status updated: stopped'))
         .catch((err) => console.error('❌ Error updating bot_status:', err.message));
 
-      // Mark bot_control entry as processed (async, non-blocking)
+      // ✅ Mark bot_control entry as processed (async, non-blocking)
       supabase
         .from('bot_control')
         .update({ status: 'processed', processed_at: new Date().toISOString() })
