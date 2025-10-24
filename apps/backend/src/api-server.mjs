@@ -484,21 +484,34 @@ app.get('/health', (req, res) => {
 
 // ✅ Endpoint: Status do bot (per-user)
 app.get('/api/bot/status', (req, res) => {
-  const { userId } = req.query;
+  try {
+    const { userId } = req.query;
 
-  console.log(`🔍 [BOT-STATUS] Checking status for user: ${userId}`);
+    console.log(`🔍 [BOT-STATUS] Checking status for user: ${userId}`);
 
-  // ✅ Get per-user bot status from userBotStatus Map
-  let userStatus = userBotStatus.get(userId) || botStatus;
+    // ✅ Get per-user bot status from userBotStatus Map
+    const userPerUserStatus = userBotStatus.get(userId);
+    const userStatus = userPerUserStatus || botStatus || {
+      running: false,
+      isConnected: false,
+      lastUpdate: new Date().toISOString()
+    };
 
-  // Also include connection info from Supabase bot_status if available
-  console.log(`📊 [BOT-STATUS] User ${userId} - Status:`, userStatus);
+    // Also include connection info from Supabase bot_status if available
+    console.log(`📊 [BOT-STATUS] User ${userId} - Status:`, userStatus);
 
-  res.json({
-    ...userStatus,
-    userId: userId,
-    isConnected: userBotStatus.has(userId) || botStatus.isConnected
-  });
+    res.json({
+      ...userStatus,
+      userId: userId,
+      isConnected: userBotStatus.has(userId) || botStatus?.isConnected || false
+    });
+  } catch (error) {
+    console.error('❌ [BOT-STATUS] Error:', error.message);
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
 });
 
 // ✅ Endpoint: Conectar ao Avalon usando WebSocket SDK
@@ -1621,27 +1634,35 @@ app.post('/api/bot/stop-runtime', async (req, res) => {
 
 // ✅ Endpoint: Get bot runtime status (per-user)
 app.get('/api/bot/runtime-status', (req, res) => {
-  const { userId } = req.query;
+  try {
+    const { userId } = req.query;
 
-  console.log(`🔍 [RUNTIME-STATUS] Checking status for user: ${userId}`);
+    console.log(`🔍 [RUNTIME-STATUS] Checking status for user: ${userId}`);
 
-  // ✅ Get per-user bot process status
-  const userProcess = userBotProcesses.get(userId);
-  const isRunning = userProcess && !userProcess.process.killed;
-  const pid = userProcess?.pid;
+    // ✅ Get per-user bot process status
+    const userProcess = userBotProcesses.get(userId);
+    const isRunning = userProcess && !userProcess.process.killed;
+    const pid = userProcess?.pid;
 
-  console.log(`📊 [RUNTIME-STATUS] User ${userId} - Running: ${isRunning}, PID: ${pid}`);
+    console.log(`📊 [RUNTIME-STATUS] User ${userId} - Running: ${isRunning}, PID: ${pid}`);
 
-  res.json({
-    success: true,
-    isRunning: isRunning || false,
-    pid: pid || null,
-    userId: userId,
-    debug: {
-      processExists: !!userProcess,
-      processKilled: userProcess?.process?.killed
-    }
-  });
+    res.json({
+      success: true,
+      isRunning: isRunning || false,
+      pid: pid || null,
+      userId: userId,
+      debug: {
+        processExists: !!userProcess,
+        processKilled: userProcess?.process?.killed
+      }
+    });
+  } catch (error) {
+    console.error('❌ [RUNTIME-STATUS] Error:', error.message);
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
 });
 
 // ✅ Endpoint: Reconnect to Avalon (if SDK was lost)
