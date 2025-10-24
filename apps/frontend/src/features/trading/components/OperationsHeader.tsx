@@ -18,47 +18,71 @@ export const OperationsHeader: React.FC<OperationsHeaderProps> = ({
   isRunning,
 }) => {
   return (
-    <div className="flex items-center justify-center py-4">
+    <div className="w-full px-4 py-6">
       <motion.div
         layout
-        className="inline-flex items-center gap-0 p-1 rounded-xl backdrop-blur-xl bg-slate-900/50 border border-slate-700/50 shadow-lg"
+        className="relative w-full p-1 rounded-2xl backdrop-blur-xl bg-gradient-to-b from-slate-800/60 to-slate-900/40 border border-slate-700/50 shadow-2xl overflow-hidden"
       >
-        {/* Auto Mode Button */}
-        <motion.button
-          whileHover={!isRunning ? { scale: 1.05 } : {}}
-          whileTap={!isRunning ? { scale: 0.95 } : {}}
-          onClick={() => !isRunning && onBotModeChange('auto')}
-          disabled={isRunning}
-          className={cn(
-            'flex items-center gap-2 px-6 py-2.5 rounded-lg font-semibold text-sm transition-all duration-300',
-            botMode === 'auto'
-              ? 'bg-gradient-to-r from-primary/80 to-primary text-white shadow-lg shadow-primary/40'
-              : 'text-slate-400 hover:text-slate-200'
-          )}
-        >
-          <Bot className="w-4 h-4" />
-          Auto
-        </motion.button>
+        {/* Background animated glow */}
+        <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+          <div className="absolute top-0 left-0 w-32 h-32 bg-primary/10 rounded-full blur-3xl -top-16 -left-16" />
+          <div className="absolute bottom-0 right-0 w-32 h-32 bg-warning/10 rounded-full blur-3xl -bottom-16 -right-16" />
+        </div>
 
-        {/* Divider Toggle */}
-        <div className="w-0.5 h-8 bg-gradient-to-b from-slate-700/0 via-slate-600/50 to-slate-700/0 mx-2" />
+        {/* Animated background slide */}
+        {botMode && (
+          <motion.div
+            layoutId="mode-background"
+            className={cn(
+              'absolute top-1 bottom-1 left-1 right-1 rounded-xl',
+              botMode === 'auto'
+                ? 'bg-gradient-to-r from-primary/20 via-primary/10 to-transparent'
+                : 'bg-gradient-to-r from-warning/20 via-warning/10 to-transparent'
+            )}
+            transition={{ type: 'spring', bounce: 0.2, duration: 0.6 }}
+            style={{
+              width: 'calc(50% - 0.5rem)',
+              left: botMode === 'auto' ? '0.5rem' : '50%'
+            }}
+          />
+        )}
 
-        {/* Manual Mode Button */}
-        <motion.button
-          whileHover={!isRunning ? { scale: 1.05 } : {}}
-          whileTap={!isRunning ? { scale: 0.95 } : {}}
-          onClick={() => !isRunning && onBotModeChange('manual')}
-          disabled={isRunning}
-          className={cn(
-            'flex items-center gap-2 px-6 py-2.5 rounded-lg font-semibold text-sm transition-all duration-300',
-            botMode === 'manual'
-              ? 'bg-gradient-to-r from-warning/80 to-warning text-white shadow-lg shadow-warning/40'
-              : 'text-slate-400 hover:text-slate-200'
-          )}
-        >
-          <Gamepad2 className="w-4 h-4" />
-          Manual
-        </motion.button>
+        {/* Content container */}
+        <div className="relative flex gap-2">
+          {/* Auto Mode Button */}
+          <motion.button
+            whileHover={!isRunning ? { y: -2 } : {}}
+            whileTap={!isRunning ? { y: 0 } : {}}
+            onClick={() => !isRunning && onBotModeChange('auto')}
+            disabled={isRunning}
+            className={cn(
+              'flex-1 flex items-center justify-center gap-2.5 px-4 py-3.5 rounded-xl font-semibold text-sm transition-all duration-300 relative z-10',
+              botMode === 'auto'
+                ? 'text-white drop-shadow-lg'
+                : 'text-slate-400 hover:text-slate-300'
+            )}
+          >
+            <Bot className="w-5 h-5" />
+            <span>Auto</span>
+          </motion.button>
+
+          {/* Manual Mode Button */}
+          <motion.button
+            whileHover={!isRunning ? { y: -2 } : {}}
+            whileTap={!isRunning ? { y: 0 } : {}}
+            onClick={() => !isRunning && onBotModeChange('manual')}
+            disabled={isRunning}
+            className={cn(
+              'flex-1 flex items-center justify-center gap-2.5 px-4 py-3.5 rounded-xl font-semibold text-sm transition-all duration-300 relative z-10',
+              botMode === 'manual'
+                ? 'text-white drop-shadow-lg'
+                : 'text-slate-400 hover:text-slate-300'
+            )}
+          >
+            <Gamepad2 className="w-5 h-5" />
+            <span>Manual</span>
+          </motion.button>
+        </div>
       </motion.div>
     </div>
   )
