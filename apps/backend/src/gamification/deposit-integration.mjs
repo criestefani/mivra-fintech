@@ -10,6 +10,7 @@ import { createClient } from '@supabase/supabase-js';
 import { notifyFirstDeposit, notifyLevelUp } from '../notifications/notification-service.mjs';
 import { getLevelInfo, getXPForNextLevel } from './constants.mjs';
 import { processFirstDeposit as processReferralFirstDeposit } from './referral-service.mjs';
+import { updateQuestProgress } from './quest-service.mjs';
 
 const supabaseUrl = process.env.SUPABASE_URL;
 const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -86,6 +87,12 @@ export async function processDepositWebhook(userId, amount, brokerTransactionId)
     let referralResult = { referralProcessed: false };
     if (isFirstDeposit) {
       referralResult = await processReferralFirstDeposit(supabase, userId, amount);
+    }
+
+    // Update quest progress for deposit-related quests
+    await updateQuestProgress(supabase, userId, 'deposit_amount', amount);
+    if (isFirstDeposit) {
+      await updateQuestProgress(supabase, userId, 'first_deposit', 1);
     }
 
     console.log(`✅ Deposit processed for ${userId}`);

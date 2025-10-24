@@ -41,6 +41,9 @@ import gamificationRouter from './gamification/gamification-routes.mjs';
 // Referral System Module
 import referralRouter from './gamification/referral-routes.mjs';
 
+// Quest System Module
+import questRouter from './gamification/quest-routes.mjs';
+
 // Notification Service
 import notificationService from './notifications/notification-service.mjs';
 
@@ -3382,6 +3385,9 @@ app.use('/api/gamification', gamificationRouter);
 
 // Mount Referral System module
 app.use('/api/referrals', referralRouter);
+
+// Mount Quest System module
+app.use('/api/quests', questRouter);
 
 // ✅ Inicializar servidor de forma assíncrona
 (async () => {
