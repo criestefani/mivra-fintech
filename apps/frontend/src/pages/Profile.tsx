@@ -5,9 +5,11 @@ import { User } from '@supabase/supabase-js';
 import { motion } from 'framer-motion';
 import { DashboardHeader, Sidebar } from '@/features/dashboard';
 import { useUserProfile } from '@/features/gamification/hooks/useUserProfile';
+import { useReferralData } from '@/hooks/useReferralData';
 import { ProfileHeader } from '@/features/gamification/components/ProfileHeader';
 import { MilestonesGrid } from '@/features/gamification/components/MilestonesGrid';
 import { ProfileTabs } from '@/features/gamification/components/ProfileTabs';
+import { ReferralCard } from '@/features/gamification/components/ReferralCard';
 import { DiagonalSection } from '@/components/ui/gamification';
 import { cn } from '@/shared/utils/cn';
 
@@ -16,6 +18,7 @@ const ProfilePage_Wrapper = () => {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const { data: profileData, isLoading: isProfileLoading, error: profileError } = useUserProfile(user?.id || null);
+  const { stats: referralStats, isLoading: isReferralLoading, copyToClipboard } = useReferralData(user?.id || null);
 
   useEffect(() => {
     const checkAuth = async () => {
@@ -154,6 +157,22 @@ const ProfilePage_Wrapper = () => {
             >
               <h2 className="text-2xl font-bold text-white">Conteúdo</h2>
               <ProfileTabs userId={user?.id || null} />
+            </motion.div>
+          )}
+
+          {/* Referral System Section */}
+          {!isReferralLoading && (
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5, delay: 0.4 }}
+              className="space-y-4"
+            >
+              <ReferralCard
+                stats={referralStats}
+                isLoading={isReferralLoading}
+                onCopyToClipboard={copyToClipboard}
+              />
             </motion.div>
           )}
 

@@ -9,6 +9,7 @@
 import { createClient } from '@supabase/supabase-js';
 import { notifyFirstDeposit, notifyLevelUp } from '../notifications/notification-service.mjs';
 import { getLevelInfo, getXPForNextLevel } from './constants.mjs';
+import { processFirstDeposit as processReferralFirstDeposit } from './referral-service.mjs';
 
 const supabaseUrl = process.env.SUPABASE_URL;
 const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -81,6 +82,12 @@ export async function processDepositWebhook(userId, amount, brokerTransactionId)
       await notifyFirstDeposit(userId, amount);
     }
 
+    // Process referral rewards (if user was referred, award XP to referrer on first deposit)
+    let referralResult = { referralProcessed: false };
+    if (isFirstDeposit) {
+      referralResult = await processReferralFirstDeposit(supabase, userId, amount);
+    }
+
     console.log(`✅ Deposit processed for ${userId}`);
     console.log(`   💎 Freezes: +${benefits.freezes}`);
     console.log(`   🔍 Scanner Tier: ${updates.scanner_tier}`);
@@ -93,6 +100,11 @@ export async function processDepositWebhook(userId, amount, brokerTransactionId)
         scannerTier: updates.scanner_tier,
         xpAwarded,
       },
+      referral: referralResult.referralProcessed ? {
+        xp_awarded: referralResult.xp_awarded,
+        referrer_user_id: referralResult.referrer_user_id,
+        badges_unlocked: referralResult.badges_unlocked,
+      } : null,
     };
   } catch (error) {
     console.error('❌ Error processing deposit webhook:', error);

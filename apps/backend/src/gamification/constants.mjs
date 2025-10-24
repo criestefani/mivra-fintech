@@ -36,8 +36,7 @@ export const XP_REWARDS = {
   trade_from_scanner: 50,     // Real trade from Scanner signal
 
   // SOCIAL
-  referral_signup: 100,       // Referral signed up
-  referral_deposit: 500,      // Referral deposited
+  referral_deposit: 500,      // Referral made first deposit (FTD only)
 };
 
 /**

@@ -82,6 +82,7 @@ const Auth = () => {
   const navigate = useNavigate();
   const [isLoading, setIsLoading] = useState(false);
   const [userCountry, setUserCountry] = useState<string>('BR');
+  const [referralCode, setReferralCode] = useState<string | null>(null);
   const [formData, setFormData] = useState({
     email: "",
     password: "",
@@ -91,6 +92,14 @@ const Auth = () => {
   // ✅ Detectar país do usuário ao montar o componente
   React.useEffect(() => {
     detectUserCountry().then(setUserCountry);
+
+    // ✅ Capturar código de referência da URL
+    const params = new URLSearchParams(window.location.search);
+    const ref = params.get('ref');
+    if (ref) {
+      setReferralCode(ref);
+      console.log('🔗 Referral code captured:', ref);
+    }
   }, []);
 
   const handleLogin = async (e: React.FormEvent) => {
@@ -188,7 +197,39 @@ const Auth = () => {
       }
 
       console.log('✅ Usuário criado no Supabase');
-      toast.success("Conta criada com sucesso nas duas plataformas! 🎉");
+
+      // ✅ PASSO 3: Registrar referral se código foi fornecido
+      if (referralCode) {
+        try {
+          const user = await supabase.auth.getUser();
+          if (user.data.user?.id) {
+            const referralResponse = await fetch('/api/referrals/register', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                referralCode,
+                refereeUserId: user.data.user.id,
+                refereeEmail: formData.email,
+              }),
+            });
+
+            if (referralResponse.ok) {
+              console.log('✅ Referral registered successfully');
+              toast.success("Conta criada! Você foi referenciado com sucesso 🎁");
+            } else {
+              console.error('⚠️ Failed to register referral');
+              toast.success("Conta criada com sucesso nas duas plataformas! 🎉");
+            }
+          }
+        } catch (referralError) {
+          console.error('⚠️ Erro ao registrar referral:', referralError);
+          // Não bloqueia o fluxo se referral falhar
+          toast.success("Conta criada com sucesso nas duas plataformas! 🎉");
+        }
+      } else {
+        toast.success("Conta criada com sucesso nas duas plataformas! 🎉");
+      }
+
       navigate("/");
 
     } catch (error) {

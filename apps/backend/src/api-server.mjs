@@ -38,6 +38,9 @@ import integrationsRouter from './integrations/integrations.mjs';
 // Gamification Module
 import gamificationRouter from './gamification/gamification-routes.mjs';
 
+// Referral System Module
+import referralRouter from './gamification/referral-routes.mjs';
+
 // Notification Service
 import notificationService from './notifications/notification-service.mjs';
 
@@ -3376,6 +3379,9 @@ app.use('/api/crm/integrations', integrationsRouter);
 
 // Mount Gamification module
 app.use('/api/gamification', gamificationRouter);
+
+// Mount Referral System module
+app.use('/api/referrals', referralRouter);
 
 // ✅ Inicializar servidor de forma assíncrona
 (async () => {
