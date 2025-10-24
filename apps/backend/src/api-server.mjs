@@ -133,7 +133,10 @@ const userSdkInstances = new Map(); // userId -> sdkInstance
 // ✅ Per-user bot status (for multi-user isolation)
 const userBotStatus = new Map(); // userId -> botStatus
 
-// ✅ Bot runtime process management
+// ✅ Per-user bot processes (for multi-user isolation)
+const userBotProcesses = new Map(); // userId -> { process, pid, config }
+
+// ✅ Bot runtime process management (kept for backward compatibility - NOT USED)
 let botProcess = null;
 let botProcessPID = null;
 
@@ -1240,17 +1243,19 @@ app.post('/api/bot/start-runtime', async (req, res) => {
   }
 
   try {
-    // Check if bot is already running
-    if (botProcess && !botProcess.killed) {
+    // ✅ Check if THIS user's bot is already running
+    const existingProcess = userBotProcesses.get(userId);
+    if (existingProcess && !existingProcess.process.killed) {
       return res.status(400).json({
         success: false,
-        error: 'Bot is already running',
-        pid: botProcessPID
+        error: `Bot is already running for this user`,
+        pid: existingProcess.pid
       });
     }
 
-    // Check if SDK is connected
-    if (!sdkInstance) {
+    // ✅ Check if user's SDK is connected
+    const userSdk = userSdkInstances.get(userId);
+    if (!userSdk && !sdkInstance) {
       return res.status(400).json({
         success: false,
         error: 'Not connected to Avalon. Connect broker first.'
@@ -1301,30 +1306,42 @@ app.post('/api/bot/start-runtime', async (req, res) => {
 
     console.log(`✅ Bot control entry created with ID: ${controlEntry.id}`);
 
-    // Spawn bot-live.mjs process
-    // ✅ Use correct absolute path: src/bot/bot-live.mjs
+    // ✅ Spawn bot-live.mjs process with userId as argument
     const botLivePath = path.join(__dirname, 'bot', 'bot-live.mjs');
 
     console.log(`📂 Bot file path: ${botLivePath}`);
+    console.log(`👤 Starting bot for userId: ${userId}`);
 
-    botProcess = spawn('node', [botLivePath], {
+    // ✅ Pass userId as NODE_USER_ID environment variable
+    const userBotProcess = spawn('node', [botLivePath], {
       cwd: process.cwd(),
       stdio: ['ignore', 'pipe', 'pipe'],
       detached: false,
-      env: { ...process.env }
+      env: {
+        ...process.env,
+        NODE_USER_ID: userId  // ✅ Pass userId to bot process
+      }
     });
 
-    botProcessPID = botProcess.pid;
+    const userBotPID = userBotProcess.pid;
 
-    console.log(`✅ Bot process started with PID: ${botProcessPID}`);
+    console.log(`✅ Bot process started for user ${userId} with PID: ${userBotPID}`);
+
+    // ✅ Store user's bot process in Map
+    userBotProcesses.set(userId, {
+      process: userBotProcess,
+      pid: userBotPID,
+      config: config || {},
+      startedAt: new Date().toISOString()
+    });
 
     // ✅ SEND RESPONSE IMMEDIATELY (fire-and-forget pattern)
-    // This fixes the 30-second timeout issue
     res.json({
       success: true,
       message: 'Bot runtime starting...',
-      pid: botProcessPID,
-      status: 'initializing'
+      pid: userBotPID,
+      status: 'initializing',
+      userId
     });
 
     // ✅ All operations below run asynchronously (non-blocking)
@@ -1334,20 +1351,27 @@ app.post('/api/bot/start-runtime', async (req, res) => {
       .from('bot_status')
       .update({
         bot_running: true,
-        bot_pid: botProcessPID
+        bot_pid: userBotPID
       })
       .eq('user_id', userId)
-      .then(() => console.log(`✅ Bot status updated: running with PID ${botProcessPID}`))
+      .then(() => console.log(`✅ Bot status updated for user ${userId}: running with PID ${userBotPID}`))
       .catch((error) => console.warn('⚠️ Failed to update bot_status:', error.message));
 
-    // ✅ Update global botStatus to reflect bot is running
+    // ✅ Update per-user botStatus
+    userBotStatus.set(userId, {
+      running: true,
+      lastUpdate: new Date().toISOString(),
+      pid: userBotPID
+    });
+
+    // Also keep global botStatus for backward compatibility
     botStatus.running = true;
     botStatus.lastUpdate = new Date().toISOString();
 
-    // Listen to stdout (async, no blocking)
-    botProcess.stdout.on('data', (data) => {
+    // ✅ Listen to stdout (async, no blocking) - specific for this user's bot
+    userBotProcess.stdout.on('data', (data) => {
       const output = data.toString();
-      console.log(`[BOT] ${output}`);
+      console.log(`[BOT-${userId}] ${output}`);
 
       // ✅ PARSE BOT STATUS UPDATES
       if (output.includes('[BOT-STATUS]')) {
@@ -1407,21 +1431,39 @@ app.post('/api/bot/start-runtime', async (req, res) => {
       }
     });
 
-    // Listen to stderr (async, no blocking)
-    botProcess.stderr.on('data', (data) => {
-      console.error(`[BOT ERROR] ${data.toString()}`);
+    // ✅ Listen to stderr (async, no blocking) - specific for this user's bot
+    userBotProcess.stderr.on('data', (data) => {
+      console.error(`[BOT-${userId} ERROR] ${data.toString()}`);
     });
 
-    // Handle process exit (async, no blocking)
-    botProcess.on('exit', (code, signal) => {
-      console.log(`🛑 Bot process exited with code ${code}, signal ${signal}`);
-      botProcess = null;
-      botProcessPID = null;
-      // ✅ Update global botStatus
+    // ✅ Handle process exit (async, no blocking) - specific for this user's bot
+    userBotProcess.on('exit', (code, signal) => {
+      console.log(`🛑 Bot process for user ${userId} exited with code ${code}, signal ${signal}`);
+
+      // ✅ Remove user's bot process from Map
+      userBotProcesses.delete(userId);
+
+      // ✅ Update per-user botStatus
+      userBotStatus.set(userId, {
+        running: false,
+        lastUpdate: new Date().toISOString()
+      });
+
+      // Also update global botStatus for backward compatibility
       botStatus.running = false;
       botStatus.lastUpdate = new Date().toISOString();
 
-      // ✅ Broadcast Bot Stopped status via Socket.io
+      // ✅ Update Supabase bot_status
+      supabase
+        .from('bot_status')
+        .update({
+          bot_running: false,
+          bot_pid: null
+        })
+        .eq('user_id', userId)
+        .catch((error) => console.warn('⚠️ Failed to update bot_status on exit:', error.message));
+
+      // ✅ Broadcast Bot Stopped status via Socket.io with userId
       io.emit('bot:status-update', {
         status: 'Bot Stopped',
         currentAsset: 'None',
@@ -1468,46 +1510,60 @@ app.post('/api/bot/stop-runtime', async (req, res) => {
   }
 
   try {
-    // ✅ Check database state first
-    const { data: dbStatus } = await supabase
-      .from('bot_status')
-      .select('bot_running, bot_pid')
-      .eq('user_id', userId)
-      .single();
-
+    // ✅ Check if THIS user's bot process is running
+    const userProcess = userBotProcesses.get(userId);
     let pid = null;
 
-    // If process exists and is running, kill it
-    if (botProcess && !botProcess.killed) {
-      console.log(`🛑 Stopping bot process PID: ${botProcessPID}`);
+    if (userProcess && !userProcess.process.killed) {
+      console.log(`🛑 Stopping bot process for user ${userId}, PID: ${userProcess.pid}`);
 
       // Kill the process
-      botProcess.kill('SIGTERM');
+      userProcess.process.kill('SIGTERM');
 
       // Wait a bit, then force kill if needed
       setTimeout(() => {
-        if (botProcess && !botProcess.killed) {
-          console.warn('⚠️ Force killing bot process');
-          botProcess.kill('SIGKILL');
+        const stillRunning = userBotProcesses.get(userId);
+        if (stillRunning && !stillRunning.process.killed) {
+          console.warn(`⚠️ Force killing bot process for user ${userId}`);
+          stillRunning.process.kill('SIGKILL');
         }
       }, 5000);
 
-      pid = botProcessPID;
-      botProcess = null;
-      botProcessPID = null;
+      pid = userProcess.pid;
 
-      console.log(`✅ Bot process ${pid} stopped`);
-    } else if (dbStatus?.bot_running) {
-      // ✅ Process not running but database says it is - sync database state
-      console.warn('⚠️ Bot process not found but database shows running - syncing state');
-      pid = dbStatus.bot_pid;
+      // ✅ Remove from Map (will also happen on process exit event)
+      userBotProcesses.delete(userId);
+
+      console.log(`✅ Bot process ${pid} for user ${userId} stopped`);
     } else {
-      // Neither process nor database shows running
-      return res.status(400).json({
-        success: false,
-        error: 'Bot is not running'
-      });
+      // Check database state as fallback
+      const { data: dbStatus } = await supabase
+        .from('bot_status')
+        .select('bot_running, bot_pid')
+        .eq('user_id', userId)
+        .single();
+
+      if (!dbStatus?.bot_running) {
+        return res.status(400).json({
+          success: false,
+          error: 'Bot is not running for this user'
+        });
+      }
+
+      // ✅ Process not running but database says it is - sync database state
+      console.warn(`⚠️ Bot process not found for user ${userId} but database shows running - syncing state`);
+      pid = dbStatus.bot_pid;
     }
+
+    // ✅ Update per-user bot status
+    userBotStatus.set(userId, {
+      running: false,
+      lastUpdate: new Date().toISOString()
+    });
+
+    // Also update global botStatus for backward compatibility
+    botStatus.running = false;
+    botStatus.lastUpdate = new Date().toISOString();
 
     // Update bot_status in Supabase (always sync to stopped state)
     const { error } = await supabase
@@ -1522,14 +1578,11 @@ app.post('/api/bot/stop-runtime', async (req, res) => {
       console.warn('⚠️ Failed to update bot_status:', error.message);
     }
 
-    // ✅ Update global botStatus to reflect bot is NOT running
-    botStatus.running = false;
-    botStatus.lastUpdate = new Date().toISOString();
-
     res.json({
       success: true,
       message: 'Bot runtime stopped successfully',
-      pid
+      pid,
+      userId
     });
   } catch (error) {
     console.error('❌ Error stopping bot:', error.message);
