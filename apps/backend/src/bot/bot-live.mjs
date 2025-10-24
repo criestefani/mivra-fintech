@@ -23,17 +23,23 @@ import { processTradeCompletion } from '../gamification/gamification-service.mjs
 
 // CONFIGURAÇÃO
 const STRATEGY = process.env.STRATEGY || 'balanced';
-
+const NODE_USER_ID = process.env.NODE_USER_ID; // ✅ User ID passed from api-server
 
 // ✅ MAPEAMENTO: env → constants (permite usar STRATEGY da env)
 const STRATEGY_MAP = Object.fromEntries(
   STRATEGIES.map(s => [s.id, s])
 );
 
-
+// ✅ Hardcoded SSID as fallback, but should be overridden per user
 const SSID = "aaecf415a5e7e16128f8b109b77cedda";
 const TRADE_AMOUNT = 1;
 const MIN_CONSENSUS = 2;
+
+// ✅ Log user context at startup
+console.log(`\n${'='.repeat(80)}`);
+console.log(`🤖 MivraTec Bot Starting`);
+console.log(`👤 User ID: ${NODE_USER_ID || 'SYSTEM'}`);
+console.log(`${'='.repeat(80)}\n`);
 
 
 // ✅ Service Role Key para ignorar RLS
@@ -44,7 +50,7 @@ const supabase = createClient(
 
 
 class MivraTecBot {
-  constructor() {
+  constructor(userId) {
     this.sdk = null;
     this.blitz = null;
     this.candlesService = null;
@@ -58,7 +64,7 @@ class MivraTecBot {
     this.isStarted = false;
 
     // ✅ Armazena user_id, SSID, estratégia e modo do comando START
-    this.currentUserId = null;
+    this.currentUserId = userId || NODE_USER_ID; // ✅ Use passed userId or from env
     this.userSSID = null;
     this.strategy = 'aggressive'; // Default: aggressive
     this.botMode = 'auto'; // Default: auto
@@ -99,9 +105,33 @@ class MivraTecBot {
   async init() {
     console.log('🔐 Conectando ao Avalon...');
 
-    // ✅ Usar SSID do usuário (não hardcoded)
+    // ✅ Fetch user's SSID from bot_control table if available
+    if (this.currentUserId && !this.userSSID) {
+      try {
+        const { data: controlEntry, error } = await supabase
+          .from('bot_control')
+          .select('ssid')
+          .eq('user_id', this.currentUserId)
+          .eq('status', 'ACTIVE')
+          .order('created_at', { ascending: false })
+          .limit(1)
+          .single();
+
+        if (controlEntry?.ssid) {
+          this.userSSID = controlEntry.ssid;
+          console.log(`✅ Fetched SSID for user ${this.currentUserId}: ${this.userSSID.substring(0, 15)}...`);
+        } else if (error && error.code !== 'PGRST116') { // 'PGRST116' = no rows returned
+          console.warn(`⚠️ Failed to fetch SSID from bot_control:`, error.message);
+        }
+      } catch (err) {
+        console.warn(`⚠️ Error fetching SSID:`, err.message);
+      }
+    }
+
+    // ✅ Usar SSID do usuário (ou fallback para hardcoded)
     const ssidToUse = this.userSSID || SSID;
     console.log(`🔑 Usando SSID: ${ssidToUse.substring(0, 15)}...`);
+    console.log(`👤 User ID: ${this.currentUserId || 'SYSTEM'}`);
 
     this.sdk = await ClientSdk.create(
       'wss://ws.trade.avalonbroker.com/echo/websocket',
@@ -1027,9 +1057,10 @@ class MivraTecBot {
 }
 
 
-const bot = new MivraTecBot();
+// ✅ Create bot instance with userId context
+const bot = new MivraTecBot(NODE_USER_ID);
 bot.start().catch(err => {
-  console.error('❌ Fatal:', err.message);
+  console.error(`❌ Fatal for user ${NODE_USER_ID}:`, err.message);
   process.exit(1);
 });
 
